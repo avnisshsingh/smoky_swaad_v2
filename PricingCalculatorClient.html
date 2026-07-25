@@ -164,6 +164,7 @@ window.businessCosts = [];
 
         `;
       }
+      recalculatePricing();
    }
 
    /**
@@ -260,8 +261,8 @@ function calculateIngredientCosts() {
 const ingredientCost =
     recipeBaseQuantity * purchaseRate;
 
- row.dataset.ingredientCost =
-    ingredientCost.toFixed(2);
+row.dataset.ingredientCost =
+    ingredientCost;
 
     row.querySelector(".ingredientCost").innerText =
     "₹" + ingredientCost.toFixed(2);
@@ -737,30 +738,22 @@ function loadBusinessCosts() {
 
     google.script.run
 
-        .withSuccessHandler(function(response){
+       .withSuccessHandler(function(response){
 
-            if (!response.success){
+    if (!response.success){
 
-                alert("Unable to load Business Costs.");
+        alert("Unable to load Business Costs.");
 
-                return;
+        return;
 
-            }
+    }
 
-            window.businessCosts =
-                response.businessCosts || [];
+    window.businessCosts =
+        response.businessCosts || [];
 
-        })
+    recalculatePricing();
 
-        .withFailureHandler(function(error){
-
-            console.error(error);
-
-            alert(error);
-
-        })
-
-        .getBusinessCosts();
+})
 
 }
 
@@ -783,7 +776,8 @@ function loadBusinessCosts() {
 
             <option
                 value="${item.menuItem}"
-                data-category="${item.category}">
+                data-category="${item.category}"
+                data-selling-price="${item.sellingPrice}">
 
                 ${item.menuItem}
 
@@ -793,19 +787,33 @@ function loadBusinessCosts() {
       });
    }
 
-   /**
-    * ==========================================
-    * Menu Item Changed
-    * ==========================================
-    */
-   function menuItemChanged() {
-      const menu = document.getElementById("pricingMenuItem");
 
-      const selected = menu.options[menu.selectedIndex];
 
-      document.getElementById("pricingCategory").value =
-         selected.dataset.category || "";
-   }
+
+
+/**
+ * ==========================================
+ * Menu Item Changed
+ * ==========================================
+ */
+function menuItemChanged() {
+
+    const menu =
+        document.getElementById("pricingMenuItem");
+
+    const selected =
+        menu.options[menu.selectedIndex];
+
+    document.getElementById("pricingCategory").value =
+        selected.dataset.category || "";
+
+    document.getElementById("sellingPrice").value =
+        selected.dataset.sellingPrice || "";
+
+    recalculatePricing();
+
+
+}
 
 
   /**
