@@ -668,7 +668,7 @@ function recalculatePricing() {
 
             // Reset Cost
             
-           row.dataset.ingredientCost = "0.00";
+           row.dataset.ingredientCost = 0;
 
             recalculatePricing();
          })
@@ -738,22 +738,32 @@ function loadBusinessCosts() {
 
     google.script.run
 
-       .withSuccessHandler(function(response){
+        .withSuccessHandler(function(response){
 
-    if (!response.success){
+            if (!response.success){
 
-        alert("Unable to load Business Costs.");
+                alert("Unable to load Business Costs.");
 
-        return;
+                return;
 
-    }
+            }
 
-    window.businessCosts =
-        response.businessCosts || [];
+            window.businessCosts =
+                response.businessCosts || [];
 
-    recalculatePricing();
+            recalculatePricing();
 
-})
+        })
+
+        .withFailureHandler(function(error){
+
+            console.error(error);
+
+            alert(error);
+
+        })
+
+        .getBusinessCosts();
 
 }
 
