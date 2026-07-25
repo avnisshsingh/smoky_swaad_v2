@@ -1,0 +1,253 @@
+<!-- ==========================================
+     Today's KPI
+========================================== -->
+
+<div class="row g-3 mb-4">
+   <div class="col-md-4">
+      <div class="card shadow-sm">
+         <div class="card-body text-center">
+            <h6 class="text-muted">Today's Sales</h6>
+
+            <h3 id="todaySales">₹0.00</h3>
+         </div>
+      </div>
+   </div>
+
+   <div class="col-md-4">
+      <div class="card shadow-sm">
+         <div class="card-body text-center">
+            <h6 class="text-muted">Today's Orders</h6>
+
+            <h3 id="todayOrders">0</h3>
+         </div>
+      </div>
+   </div>
+
+   <div class="col-md-4">
+      <div class="card shadow-sm">
+         <div class="card-body text-center">
+            <h6 class="text-muted">Today's Profit</h6>
+
+            <h3 id="todayProfit">₹0.00</h3>
+         </div>
+      </div>
+   </div>
+</div>
+
+<!-- ==========================================
+     Report Filters
+========================================== -->
+
+<div class="card shadow-sm mb-4">
+   <div class="card-header bg-primary text-white">📅 Report Filters</div>
+
+   <div class="card-body">
+      <div class="row g-3">
+         <div class="col-md-3">
+            <label class="form-label fw-bold"> From Date </label>
+
+            <input type="date" id="reportFromDate" class="form-control" />
+         </div>
+
+         <div class="col-md-3">
+            <label class="form-label fw-bold"> To Date </label>
+
+            <input type="date" id="reportToDate" class="form-control" />
+         </div>
+
+         <div class="col-md-3 d-grid">
+            <label class="form-label">&nbsp;</label>
+
+            <button class="btn btn-success" onclick="generateReport()">
+               📊 Generate Report
+            </button>
+         </div>
+
+         <div class="col-md-3 d-grid">
+            <label class="form-label">&nbsp;</label>
+
+            <button
+               id="btnDownloadPDF"
+               class="btn btn-danger"
+               onclick="downloadReportPDF()"
+               disabled
+            >
+               📄 Download PDF
+            </button>
+         </div>
+      </div>
+   </div>
+</div>
+
+<!-- ==========================================
+     Printable Report Content
+========================================== -->
+
+<div id="reportContent">
+   <!-- ==========================================
+         Report Summary
+    ========================================== -->
+
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">📊 Report Summary</div>
+
+      <div class="card-body">
+         <div class="row g-3">
+            <div class="col-md-6">
+               <div class="card border-primary h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Total Orders</h6>
+
+                     <h3 id="reportTotalOrders">0</h3>
+                  </div>
+               </div>
+            </div>
+
+            <div class="col-md-6">
+               <div class="card border-success h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Total Sales</h6>
+
+                     <h3 id="reportTotalSales">₹0.00</h3>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- ==========================================
+     Profit Summary
+========================================== -->
+
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-success text-white">💰 Profit Summary</div>
+
+      <div class="card-body">
+         <div class="row g-3">
+            <!-- Revenue -->
+
+            <div class="col-md-3">
+               <div class="card border-primary h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Revenue</h6>
+
+                     <h3 id="reportRevenue">₹0.00</h3>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Food Cost -->
+
+            <div class="col-md-3">
+               <div class="card border-warning h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Food Cost</h6>
+
+                     <h3 id="reportFoodCost">₹0.00</h3>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Gross Profit -->
+
+            <div class="col-md-3">
+               <div class="card border-success h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Net Profit</h6>
+
+                     <h3 id="reportGrossProfit">₹0.00</h3>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Profit Percentage -->
+
+            <div class="col-md-3">
+               <div class="card border-dark h-100">
+                  <div class="card-body text-center">
+                     <h6 class="text-muted">Profit %</h6>
+
+                     <h3 id="reportProfitPercentage">0.00%</h3>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- ==========================================
+     Top Selling Items
+========================================== -->
+
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">🍽️ Top Selling Items</div>
+
+      <div class="card-body table-responsive">
+         <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+               <tr>
+                  <th style="width: 70px" class="text-center">Rank</th>
+
+                  <th>Menu Item</th>
+
+                  <th class="text-end">Qty Sold</th>
+
+                  <th class="text-end">Revenue</th>
+
+                  <th class="text-end">Food Cost</th>
+
+                  <th class="text-end">Profit</th>
+               </tr>
+            </thead>
+
+            <tbody id="topSellingItemsBody">
+               <tr>
+                  <td colspan="6" class="text-center text-muted py-4">
+                     No records found.
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+   <!-- ==========================================
+     Order Details
+========================================== -->
+
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">📋 Order Details</div>
+
+      <div class="card-body table-responsive">
+         <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+               <tr>
+                  <th style="width: 120px">Order ID</th>
+
+                  <th style="width: 120px">Date</th>
+
+                  <th>Customer</th>
+
+                  <th style="width: 140px">Mobile</th>
+
+                  <th style="width: 120px">Payment</th>
+
+                  <th style="width: 120px">Status</th>
+
+                  <th class="text-end" style="width: 130px">Amount</th>
+               </tr>
+            </thead>
+
+            <tbody id="reportOrdersBody">
+               <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                     No records found.
+                  </td>
+               </tr>
+            </tbody>
+         </table>
+      </div>
+   </div>
+</div>
+<!-- End of Printable Report Content -->

@@ -1,0 +1,2072 @@
+<!-- Bootstrap Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  /* ==========================================
+   Global Variables
+========================================== */
+
+   let cart = [];
+   let menuCache = [];
+   let appSettings = {};
+   let deliveryCharge = 0;
+   let purchaseSettings = {};
+   let selectedPurchaseItem = null;
+
+   const QUICK_NOTES = [
+      "Less Spicy",
+
+      "Extra Spicy",
+
+      "No Onion",
+
+      "No Garlic",
+
+      "Extra Gravy",
+
+      "Less Oil",
+
+      "Call Customer",
+
+      "Ring Bell",
+   ];
+
+   /* ==========================================
+   Application Startup
+========================================== */
+
+   document.addEventListener("DOMContentLoaded", initApp);
+
+   function initApp() {
+      console.log("Smoky Swaad ERP Started");
+
+      bindMenuEvents();
+   }
+
+   /* ==========================================
+   Navigation
+========================================== */
+
+   function bindMenuEvents() {
+      const menuLinks = document.querySelectorAll(".menu-link");
+
+      menuLinks.forEach((link) => {
+         link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const screen = this.dataset.screen;
+
+            setActiveMenu(this);
+
+            openScreen(screen);
+         });
+      });
+   }
+
+   /**
+    * ==========================================
+    * openScreen
+    * ==========================================
+    */
+
+   function openScreen(screen) {
+      google.script.run
+         .withSuccessHandler(function (html) {
+            document.getElementById("content").innerHTML = html;
+            document.title = "Smoky Swaad ERP - " + screen;
+
+            if (screen === "POS") {
+               loadMenuCache();
+               loadSettingsCache();
+
+               const orderDate = document.getElementById("orderDate");
+               if (orderDate) {
+                  orderDate.value = new Date().toISOString().split("T")[0];
+               }
+            } else if (screen === "Purchase") {
+               setTimeout(function () {
+                  if (document.getElementById("purchaseDate")) {
+                     initializePurchase();
+                  }
+               }, 100);
+            } else if (screen === "Invoice") {
+               setTimeout(function () {
+                  initializeInvoice();
+               }, 100);
+            } else if (screen === "Reports") {
+               setTimeout(function () {
+                  initializeReports();
+               }, 100); 
+            }
+              else if (screen === "BusinessCosts") {
+                    setTimeout(function () {
+                  initializeBusinessCosts();
+               }, 100); 
+            }
+              else if (screen === "PricingCalculator") {
+
+    setTimeout(function () {
+
+        initializePricingCalculator();
+
+    }, 100);
+
+}
+
+         })
+         .loadScreen(screen);
+   }
+
+   /**
+    * ==========================================
+    * setActiveMenu
+    * ==========================================
+    */
+
+   function setActiveMenu(selectedLink) {
+      document.querySelectorAll(".menu-link").forEach((link) => {
+         link.classList.remove("active");
+      });
+
+      selectedLink.classList.add("active");
+   }
+
+   /* ==========================================
+   Customer
+========================================== */
+
+   function searchCustomer() {
+      const mobileBox = document.getElementById("mobile");
+
+      if (!mobileBox) {
+         console.error("Mobile textbox not found.");
+         return;
+      }
+
+      const mobile = mobileBox.value.trim();
+
+      if (mobile.length !== 10) {
+         return;
+      }
+
+      google.script.run
+         .withSuccessHandler(fillCustomerForm)
+         .withFailureHandler(function (error) {
+            console.error(error);
+         })
+         .getCustomerByMobileNumber(mobile);
+   }
+
+   /**
+    * Fill Customer Details
+    */
+   function fillCustomerForm(customer) {
+      if (!customer) {
+         return;
+      }
+
+      document.getElementById("customerName").value =
+         customer.customerName || "";
+
+      document.getElementById("houseAddress").value =
+         customer.houseAddress || customer.address || "";
+
+      document.getElementById("deliveryArea").value =
+         customer.deliveryArea || "";
+   }
+
+   /* ==========================================
+   Menu Cache
+========================================== */
+
+   function loadMenuCache() {
+      google.script.run
+
+         .withSuccessHandler(function (menu) {
+            menuCache = menu;
+
+            console.log("Menu Loaded :", menuCache.length);
+         })
+
+         .loadMenu();
+   }
+
+   /**
+    * Load Application Settings
+    */
+   function loadSettingsCache() {
+      google.script.run
+
+         .withSuccessHandler(function (settings) {
+            appSettings = settings;
+
+            console.log(appSettings);
+            console.log(appSettings.deliveryAreas);
+            populatePOSDropdowns();
+
+            console.log("Settings Loaded");
+            const orderDate = document.getElementById("orderDate");
+
+            if (orderDate && !orderDate.value) {
+               orderDate.value = new Date().toISOString().split("T")[0];
+            }
+
+            // Enable Save Button
+            const saveButton = document.getElementById("btnSaveOrder");
+
+            if (saveButton) {
+               saveButton.disabled = false;
+            }
+         })
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+
+            alert("Unable to load application settings.");
+         })
+
+         .loadAppSettings();
+   }
+
+   /* ==========================================
+   Menu Search (Local Search)
+========================================== */
+
+   function searchMenuItems() {
+      const keyword = document
+         .getElementById("menuSearch")
+         .value.trim()
+         .toLowerCase();
+
+      const suggestionBox = document.getElementById("menuSuggestions");
+
+      suggestionBox.innerHTML = "";
+
+      if (keyword.length < 2) {
+         return;
+      }
+
+      const results = menuCache
+
+         .filter((item) => item.itemName.toLowerCase().includes(keyword))
+
+         .slice(0, 8);
+
+      showMenuSuggestions(results);
+   }
+
+   /* ==========================================
+   Menu Suggestions
+========================================== */
+
+   function showMenuSuggestions(items) {
+      const list = document.getElementById("menuSuggestions");
+
+      list.innerHTML = "";
+
+      if (items.length === 0) {
+         list.innerHTML = `<div class="list-group-item text-muted">
+
+            No menu item found
+
+        </div>`;
+
+         return;
+      }
+
+      items.forEach((item) => {
+         list.innerHTML += `<button
+            type="button"
+            class="list-group-item list-group-item-action"
+            onclick="addToCart('${item.itemId}')">
+
+            <div class="d-flex justify-content-between">
+
+                <span>${item.itemName}</span>
+
+                <strong>₹${item.price}</strong>
+
+            </div>
+
+        </button>`;
+      });
+   }
+
+   /* ==========================================
+   Shopping Cart
+========================================== */
+
+   /**
+    * Add Item To Cart
+    */
+   function addToCart(itemId) {
+      // Find selected item from cache
+      const selectedItem = menuCache.find((item) => item.itemId === itemId);
+
+      if (!selectedItem) {
+         return;
+      }
+
+      // Check if already in cart
+      const existingItem = cart.find((item) => item.itemId === itemId);
+
+      if (existingItem) {
+         existingItem.qty++;
+         refreshCartCalculations();
+      } else {
+         cart.push({
+            itemId: selectedItem.itemId,
+
+            itemName: selectedItem.itemName,
+
+            price: Number(selectedItem.price),
+
+            cost: Number(selectedItem.cost),
+
+            qty: 1,
+
+            lineTotal: Number(selectedItem.price),
+
+            profit: Number(selectedItem.price) - Number(selectedItem.cost),
+         });
+         refreshCartCalculations();
+      }
+
+      // Clear search
+      document.getElementById("menuSearch").value = "";
+
+      clearMenuSuggestions();
+
+      renderCart();
+   }
+
+   /**
+    * Render Shopping Cart
+    */
+   function renderCart() {
+      const cartContainer = document.getElementById("cartItems");
+
+      if (!cartContainer) return;
+
+      if (cart.length === 0) {
+         cartContainer.innerHTML = `
+    <div class="text-center text-muted py-5">
+
+        <i class="bi bi-cart-x fs-1"></i>
+
+        <h6 class="mt-3">
+
+            No items added
+
+        </h6>
+
+        <small>
+
+            Search menu items to begin
+
+        </small>
+
+    </div>
+`;
+
+         updateDiscountState();
+
+         calculateTotals();
+
+         return;
+      }
+
+      let html = "";
+
+      cart.forEach((item, index) => {
+         const lineTotal = item.lineTotal;
+
+         html += `
+
+        <div class="card shadow-sm mb-3 border-0">
+
+            <div class="card-body">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <h6 class="mb-0 fw-bold">
+                        ${item.itemName}
+                    </h6>
+
+                    <span class="badge bg-success fs-6">
+                        ₹${lineTotal}
+                    </span>
+
+                </div>
+
+                <hr>
+
+                <div class="row align-items-center">
+
+                    <div class="col-6">
+
+                        <small class="text-muted">
+                            Unit Price
+                        </small>
+
+                        <div class="fw-semibold">
+                            ₹${item.price}
+                        </div>
+
+                    </div>
+
+                    <div class="col-6 text-end">
+
+                        <small class="text-muted">
+                            Quantity
+                        </small>
+
+                        <div class="btn-group mt-1">
+
+                            <button
+                                class="btn btn-outline-secondary btn-sm"
+                                onclick="decreaseQty(${index})">
+
+                                −
+
+                            </button>
+
+                            <button
+                                class="btn btn-light btn-sm"
+                                disabled>
+
+                                ${item.qty}
+
+                            </button>
+
+                            <button
+                                class="btn btn-outline-primary btn-sm"
+                                onclick="increaseQty(${index})">
+
+                                +
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="text-end mt-3">
+
+                    <button
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="removeItem(${index})">
+
+                        🗑 Remove
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        `;
+      });
+
+      cartContainer.innerHTML = html;
+
+      updateDiscountState();
+
+      calculateTotals();
+   }
+
+   /**
+    * Increase Quantity
+    */
+   function increaseQty(index) {
+      cart[index].qty++;
+
+      refreshCartCalculations();
+
+      renderCart();
+   }
+
+   /**
+    * Decrease Quantity
+    */
+   function decreaseQty(index) {
+      if (!cart[index]) return;
+      cart[index].qty--;
+
+      if (cart[index].qty <= 0) {
+         cart.splice(index, 1);
+      } else {
+         refreshCartCalculations();
+      }
+
+      renderCart();
+   }
+
+   /**
+    * Remove Item From Cart
+    */
+   function removeItem(index) {
+      if (index < 0 || index >= cart.length) return;
+      cart.splice(index, 1);
+
+      refreshCartCalculations();
+
+      renderCart();
+   }
+
+   /**
+    * Calculate Order Totals
+    */
+   function calculateTotals() {
+      const subTotal = cart.reduce((total, item) => {
+         return total + item.price * item.qty;
+      }, 0);
+
+      let discount = parseFloat(document.getElementById("discount")?.value);
+
+      if (isNaN(discount)) discount = 0;
+
+      if (discount < 0) discount = 0;
+
+      if (discount > subTotal) {
+         discount = subTotal;
+
+         const discountBox = document.getElementById("discount");
+
+         if (discountBox) {
+            discountBox.value = discount;
+         }
+      }
+
+      const grandTotal = subTotal - discount + deliveryCharge;
+
+      const subTotalEl = document.getElementById("subTotal");
+
+      const deliveryEl = document.getElementById("deliveryCharge");
+
+      const grandEl = document.getElementById("grandTotal");
+
+      if (subTotalEl) subTotalEl.innerText = "₹" + subTotal.toFixed(2);
+
+      if (deliveryEl) deliveryEl.innerText = "₹" + deliveryCharge.toFixed(2);
+
+      if (grandEl) grandEl.innerText = "₹" + grandTotal.toFixed(2);
+   }
+
+   /**
+    * Collect Complete Order Data
+    */
+   function collectOrderData() {
+      const getValue = (id) => {
+         const element = document.getElementById(id);
+
+         if (!element) {
+            return "";
+         }
+
+         return element.value;
+      };
+
+      const customer = {
+         customerName: getValue("customerName").trim(),
+
+         mobile: getValue("mobile").trim(),
+
+         deliveryArea: getValue("deliveryArea"),
+
+         houseAddress: getValue("houseAddress").trim(),
+
+         deliverySlot: getValue("deliverySlot"),
+      };
+
+      const order = {
+         orderType: getValue("orderType"),
+
+         specialInstructions: getValue("specialInstructions").trim(),
+      };
+
+      const payment = {
+         paymentMode: getValue("paymentMode"),
+
+         paymentStatus: getValue("paymentStatus") || "Pending",
+      };
+
+      const discount = parseFloat(getValue("discount")) || 0;
+
+      const subTotal = cart.reduce((sum, item) => {
+         return sum + item.lineTotal;
+      }, 0);
+
+      const totals = {
+         subTotal: subTotal,
+
+         discount: discount,
+
+         deliveryCharge: deliveryCharge,
+
+         grandTotal: subTotal - discount + deliveryCharge,
+      };
+
+      const meta = {
+         orderDate: getValue("orderDate"),
+
+         source: "WEB",
+      };
+
+      return {
+         customer,
+
+         order,
+
+         payment,
+
+         totals,
+
+         cart: cart.map((item) => ({ ...item })),
+
+         meta,
+      };
+   }
+
+   /**
+    * Enable / Disable Discount Field
+    */
+   function updateDiscountState() {
+      const area = document.getElementById("deliveryArea");
+      const discountInput = document.getElementById("discount");
+
+      if (!discountInput) return;
+
+      if (cart.length === 0) {
+         deliveryCharge = 0;
+
+         if (area) {
+            area.value = "";
+         }
+
+         discountInput.value = 0;
+         discountInput.disabled = true;
+      } else {
+         discountInput.disabled = false;
+      }
+   }
+
+   /**
+    * Populate POS Dropdowns
+    */
+   function populatePOSDropdowns() {
+      if (appSettings.deliveryAreas) {
+         fillSelect(
+            "deliveryArea",
+            appSettings.deliveryAreas.map((x) => x.area),
+         );
+      }
+
+      if (appSettings.paymentModes) {
+         fillSelect("paymentMode", appSettings.paymentModes);
+      }
+
+      if (appSettings.paymentStatus) {
+         fillSelect("paymentStatus", appSettings.paymentStatus);
+      }
+
+      if (appSettings.orderTypes) {
+         fillSelect("orderType", appSettings.orderTypes);
+      }
+
+      if (appSettings.deliverySlots) {
+         fillSelect("deliverySlot", appSettings.deliverySlots);
+      }
+   }
+
+   /**
+    * Update Delivery Charge
+    */
+   function updateDeliveryCharge() {
+      const area = document.getElementById("deliveryArea").value;
+
+      if (!area) {
+         deliveryCharge = 0;
+
+         calculateTotals();
+
+         return;
+      }
+
+      const found = appSettings.deliveryAreas.find((x) => x.area === area);
+
+      deliveryCharge = found ? Number(found.charge) : 0;
+
+      calculateTotals();
+   }
+
+   /**
+    * Fill Select Box
+    */
+   function fillSelect(id, values) {
+      const select = document.getElementById(id);
+
+      if (!select) return;
+
+      if (!Array.isArray(values)) {
+         console.warn(id + " has no values.");
+
+         return;
+      }
+
+      let html = "";
+
+      // Delivery Area should be optional
+      if (id === "deliveryArea") {
+         html += `<option value="" selected>Select Delivery Area</option>`;
+      }
+
+      values.forEach((value) => {
+         html += `<option value="${value}">${value}</option>`;
+      });
+
+      select.innerHTML = html;
+   }
+
+   /**
+    * Add Quick Note
+    */
+   function addQuickNote(note) {
+      const box = document.getElementById("specialInstructions");
+
+      if (!box) return;
+
+      const current = box.value.trim();
+
+      if (current.includes(note)) {
+         return;
+      }
+
+      if (current === "") {
+         box.value = note;
+      } else {
+         box.value += ", " + note;
+      }
+   }
+
+   /**
+    * Load Quick Notes
+    */
+   function loadQuickNotes() {
+      const container = document.getElementById("quickNotes");
+
+      if (!container) return;
+
+      let html = "";
+
+      QUICK_NOTES.forEach((note) => {
+         const buttonClass =
+            note.includes("Call") || note.includes("Ring")
+               ? "btn-outline-info"
+               : "btn-outline-warning";
+
+         html += `
+            <button
+                type="button"
+                class="btn ${buttonClass} btn-sm m-1"
+                onclick="addQuickNote('${note}')">
+
+                ${note}
+
+            </button>
+        `;
+      });
+
+      container.innerHTML = html;
+   }
+
+   function clearSpecialInstructions() {
+      document.getElementById("specialInstructions").value = "";
+   }
+
+   /**
+    * Update Cart Calculations
+    */
+   function refreshCartCalculations() {
+      cart.forEach((item) => {
+         item.lineTotal = item.qty * item.price;
+
+         item.profit = (item.price - item.cost) * item.qty;
+      });
+   }
+
+   /**
+    * ==========================================
+    * Save Order
+    * ==========================================
+    */
+   function saveOrder() {
+      const orderData = collectOrderData();
+      console.log("Order Date:", orderData.meta.orderDate);
+
+      console.log(orderData);
+
+      google.script.run
+         .withSuccessHandler(function (response) {
+            if (response.success) {
+               alert(
+                  "Order Saved Successfully\n\nOrder ID : " + response.orderId,
+               );
+               clearPOSForm();
+            } else {
+               alert(response.message);
+            }
+         })
+         .withFailureHandler(function (error) {
+            alert(error.message);
+         })
+         .saveOrderFromWeb(orderData);
+   }
+
+   /* ==========================================
+   Utility
+========================================== */
+
+   function clearMenuSuggestions() {
+      const el = document.getElementById("menuSuggestions");
+      if (el) el.innerHTML = "";
+   }
+</script>
+
+<script>
+  /**
+    * ==========================================
+    * PURCHASE MODULE
+    * ==========================================
+    */
+
+   /**
+    * ==========================================
+    * Initialize Purchase Screen
+    * ==========================================
+    */
+   document.addEventListener("DOMContentLoaded", function () {
+      if (document.getElementById("purchaseDate")) initializePurchase();
+   });
+
+   /**
+    * ==========================================
+    * initializePurchase
+    * ==========================================
+    */
+   function initializePurchase() {
+      const purchaseDate = document.getElementById("purchaseDate");
+
+      if (purchaseDate) {
+         purchaseDate.value = new Date().toISOString().split("T")[0];
+      }
+
+      loadPurchaseSettings();
+
+      registerPurchaseEvents();
+
+      updatePurchaseSummary();
+   }
+
+   /**
+    * ==========================================
+    * registerPurchaseEvents
+    * ==========================================
+    */
+   function registerPurchaseEvents() {
+      [
+         "purchaseDate",
+         "itemSearch",
+         "quantity",
+         "unit",
+         "paymentType",
+         "amount",
+         "supplier",
+         "remarks",
+      ].forEach(function (id) {
+         const element = document.getElementById(id);
+
+         if (element) {
+            element.addEventListener("input", updatePurchaseSummary);
+            element.addEventListener("change", updatePurchaseSummary);
+         }
+      });
+   }
+
+   /**
+    * ==========================================
+    * Load Purchase Settings
+    * ==========================================
+    */
+   function loadPurchaseSettings() {
+      google.script.run
+
+         .withSuccessHandler(function (settings) {
+            purchaseSettings = settings;
+
+            populatePurchaseDropdowns();
+         })
+
+         .withFailureHandler(function (error) {
+            alert(error.message);
+         })
+
+         .loadPurchaseSettings();
+   }
+
+   /**
+    * ==========================================
+    * Populate Purchase Dropdowns
+    * ==========================================
+    */
+   function populatePurchaseDropdowns() {
+      fillPurchaseSelect("unit", purchaseSettings.units);
+
+      fillPurchaseSelect("paymentType", purchaseSettings.paymentTypes);
+
+      fillPurchaseSelect("supplier", purchaseSettings.suppliers);
+   }
+
+   /**
+    * ==========================================
+    * Fill Dropdown
+    * ==========================================
+    */
+   function fillPurchaseSelect(id, values) {
+      const select = document.getElementById(id);
+      if (!select) return;
+
+      select.innerHTML = '<option value="">Select</option>';
+
+      values.forEach(function (value) {
+         select.innerHTML += `<option value="${value}">${value}</option>`;
+      });
+   }
+
+   /**
+    * ==========================================
+    * Search Purchase Items
+    * ==========================================
+    */
+   function searchPurchaseItems() {
+      const keyword = document.getElementById("itemSearch").value.trim();
+
+      if (keyword.length === 0) {
+         clearPurchaseSuggestions();
+
+         return;
+      }
+
+      google.script.run
+
+         .withSuccessHandler(showPurchaseSuggestions)
+
+         .searchPurchaseItems(keyword);
+   }
+
+   /**
+    * ==========================================
+    * Show Purchase Suggestions
+    * ==========================================
+    */
+   function showPurchaseSuggestions(items) {
+      const keyword = document.getElementById("itemSearch").value.trim();
+
+      const suggestionBox = document.getElementById("itemSuggestions");
+      if (!suggestionBox) return;
+      suggestionBox.innerHTML = "";
+
+      // Existing Items
+      items.forEach(function (item) {
+         suggestionBox.innerHTML += `
+
+            <button
+                type="button"
+                class="list-group-item list-group-item-action"
+                onclick="selectPurchaseItem('${item.itemName.replace(/'/g, "\\'")}')">
+
+                ${item.itemName}
+
+            </button>
+
+        `;
+      });
+
+      // Check if exact item already exists
+      const exactMatch = items.some(
+         (item) => item.itemName.toLowerCase() === keyword.toLowerCase(),
+      );
+
+      // Show Add Option only if no exact match
+      if (keyword !== "" && !exactMatch) {
+         suggestionBox.innerHTML += `
+
+            <button
+                type="button"
+                class="list-group-item list-group-item-action text-success fw-bold border-top"
+                onclick="addNewPurchaseItem()">
+
+                ➕ Add "${keyword}"
+
+            </button>
+
+        `;
+      }
+   }
+
+   /**
+    * ==========================================
+    * Select Purchase Item
+    * ==========================================
+    */
+   function selectPurchaseItem(itemName) {
+      document.getElementById("itemSearch").value = itemName;
+
+      clearPurchaseSuggestions();
+
+      updatePurchaseSummary();
+   }
+
+   /**
+    * ==========================================
+    * Add New Purchase Item
+    * ==========================================
+    */
+   function addNewPurchaseItem() {
+      const itemName = document.getElementById("itemSearch").value.trim();
+
+      if (!itemName) return;
+
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            document.getElementById("itemSearch").value = response.itemName;
+
+            clearPurchaseSuggestions();
+
+            // Refresh purchase settings
+            loadPurchaseSettings();
+
+            // Auto-select newly added item
+            selectPurchaseItem(response.itemName);
+         })
+
+         .withFailureHandler(function (error) {
+            alert(error.message);
+         })
+
+         .addPurchaseItem(itemName);
+   }
+
+   /**
+    * ==========================================
+    * Clear Suggestions
+    * ==========================================
+    */
+   function clearPurchaseSuggestions() {
+      const el = document.getElementById("itemSuggestions");
+      if (el) el.innerHTML = "";
+   }
+
+   /**
+    * ==========================================
+    * Collect Purchase Data
+    * ==========================================
+    */
+   function collectPurchaseData() {
+      return {
+         purchase: {
+            purchaseDate: document.getElementById("purchaseDate").value,
+
+            itemName: document.getElementById("itemSearch").value.trim(),
+
+            quantity: Number(document.getElementById("quantity").value),
+
+            unit: document.getElementById("unit").value,
+
+            paymentType: document.getElementById("paymentType").value,
+
+            amount: Number(document.getElementById("amount").value),
+
+            supplier: document.getElementById("supplier").value,
+
+            remarks: document.getElementById("remarks").value.trim(),
+         },
+      };
+   }
+
+   /**
+    * ==========================================
+    * Save Purchase
+    * ==========================================
+    */
+   function savePurchase() {
+      const purchaseData = collectPurchaseData();
+
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            if (!response.success) {
+               alert(response.message);
+               return;
+            }
+
+            alert(
+               response.message + "\n\nPurchase ID : " + response.purchaseId,
+            );
+
+            clearPurchaseForm();
+         })
+
+         .withFailureHandler(function (error) {
+            alert(error.message);
+         })
+
+         .savePurchaseFromWeb(purchaseData);
+   }
+
+   /**
+    * ==========================================
+    * Update Purchase Summary
+    * ==========================================
+    */
+   function updatePurchaseSummary() {
+      if (!document.getElementById("summaryPurchaseDate")) return;
+
+      document.getElementById("summaryPurchaseDate").textContent =
+         document.getElementById("purchaseDate").value || "-";
+
+      document.getElementById("summaryItem").textContent =
+         document.getElementById("itemSearch").value || "-";
+
+      document.getElementById("summaryQuantity").textContent =
+         document.getElementById("quantity").value || "-";
+
+      document.getElementById("summaryUnit").textContent =
+         document.getElementById("unit").value || "-";
+
+      document.getElementById("summaryPaymentType").textContent =
+         document.getElementById("paymentType").value || "-";
+
+      const amount = document.getElementById("amount").value || 0;
+
+      document.getElementById("summaryAmount").textContent = "₹" + amount;
+
+      document.getElementById("summarySupplier").textContent =
+         document.getElementById("supplier").value || "-";
+
+      document.getElementById("summaryRemarks").textContent =
+         document.getElementById("remarks").value || "-";
+   }
+
+   /**
+    * ==========================================
+    * Clear Purchase Form
+    * ==========================================
+    */
+   function clearPurchaseForm() {
+      // Today's date
+      document.getElementById("purchaseDate").value = new Date()
+         .toISOString()
+         .split("T")[0];
+
+      // Clear form fields
+      document.getElementById("itemSearch").value = "";
+      document.getElementById("quantity").value = "";
+      document.getElementById("unit").selectedIndex = 0;
+      document.getElementById("paymentType").selectedIndex = 0;
+      document.getElementById("amount").value = "";
+      document.getElementById("supplier").selectedIndex = 0;
+      document.getElementById("remarks").value = "";
+
+      // Reset selected item
+      selectedPurchaseItem = null;
+
+      // Clear suggestions
+      clearPurchaseSuggestions();
+
+      // Refresh summary
+      updatePurchaseSummary();
+
+      // Cursor back to Search Item
+      document.getElementById("itemSearch").focus();
+   }
+
+   /**
+    * ==========================================
+    * Clear POS Form
+    * ==========================================
+    */
+   function clearPOSForm() {
+      console.log("Clearing POS Form...");
+
+      function setValue(id, value) {
+         const el = document.getElementById(id);
+         if (el) el.value = value;
+      }
+
+      function resetSelect(id) {
+         const el = document.getElementById(id);
+         if (el) el.selectedIndex = 0;
+      }
+
+      // Customer
+      setValue("customerName", "");
+      setValue("mobile", "");
+      setValue("houseAddress", "");
+
+      // Today's date
+      setValue("orderDate", new Date().toISOString().split("T")[0]);
+
+      // Dropdowns
+      resetSelect("deliveryArea");
+      resetSelect("deliverySlot");
+      resetSelect("orderType");
+      resetSelect("paymentMode");
+      resetSelect("paymentStatus");
+
+      // Search
+      setValue("menuSearch", "");
+
+      const suggestionBox = document.getElementById("menuSuggestions");
+
+      if (suggestionBox) {
+         suggestionBox.innerHTML = "";
+         suggestionBox.style.display = "none";
+      }
+
+      // Special Instructions
+      setValue("specialInstructions", "");
+
+      // Discount
+      setValue("discount", 0);
+
+      // Reset cart
+      if (typeof cart !== "undefined") {
+         cart = [];
+      }
+
+      if (typeof deliveryCharge !== "undefined") {
+         deliveryCharge = 0;
+      }
+
+      if (typeof renderCart === "function") {
+         renderCart();
+      }
+
+      if (typeof updateOrderSummary === "function") {
+         updateOrderSummary();
+      }
+
+      // Focus
+      const customer = document.getElementById("customerName");
+      if (customer) customer.focus();
+
+      console.log("POS Cleared");
+   }
+
+   /**
+    * ==========================================
+    * INVOICE MODULE
+    * ==========================================
+    */
+
+   /**
+    * ==========================================
+    * Initialize Invoice Module
+    * ==========================================
+    */
+   function initializeInvoice() {
+      console.log("Invoice Module Loaded");
+   }
+
+   /**
+    * ==========================================
+    * Search Invoice
+    * ==========================================
+    */
+   function searchInvoice() {
+      const orderId = document.getElementById("searchOrderId").value.trim();
+
+      if (!orderId) {
+         alert("Please enter Order ID.");
+
+         return;
+      }
+
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            if (!response.success) {
+               alert(response.message);
+
+               return;
+            }
+
+            renderInvoice(response);
+         })
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+
+            alert(error);
+         })
+
+         .getInvoice(orderId);
+   }
+
+   /**
+    * ==========================================
+    * renderInvoice
+    * ==========================================
+    */
+
+   function renderInvoice(data) {
+      const order = data.order;
+      const items = data.items;
+
+      let subtotal = 0;
+
+      // ===========================
+      // Header
+      // ===========================
+
+      document.getElementById("invOrderId").innerText = order.orderId;
+
+      document.getElementById("invDate").innerText = order.orderDate;
+
+      document.getElementById("invCustomer").innerText = order.customerName;
+
+      document.getElementById("invMobile").innerText = order.mobile;
+
+      document.getElementById("invDeliveryArea").innerText = order.deliveryArea;
+
+      document.getElementById("invDeliverySlot").innerText = order.deliverySlot;
+
+      document.getElementById("invOrderType").innerText = order.orderType;
+
+      document.getElementById("invAddress").innerHTML = (
+         order.houseAddress || ""
+      ).replace(/\n/g, "<br>");
+
+      document.getElementById("invPaymentMode2").innerText = order.paymentMode;
+
+      document.getElementById("invInstructions").innerText =
+         order.specialInstructions || "-";
+
+      // ===========================
+      // Status Badge
+      // ===========================
+
+      document.getElementById("invStatus").innerHTML =
+         `<span class="badge bg-primary">${order.status}</span>`;
+
+      document.getElementById("invPaymentStatus").innerHTML =
+         `<span class="badge bg-success">${order.paymentStatus}</span>`;
+
+      // ===========================
+      // Items
+      // ===========================
+
+      let rows = "";
+
+      items.forEach(function (item) {
+         subtotal += item.total;
+
+         rows += `
+        <tr>
+
+            <td>${item.itemName}</td>
+
+            <td class="text-center">${item.qty}</td>
+
+            <td class="text-end">₹${item.price.toFixed(2)}</td>
+
+            <td class="text-end">₹${item.total.toFixed(2)}</td>
+
+        </tr>
+        `;
+      });
+
+      document.getElementById("invoiceItemsBody").innerHTML = rows;
+
+      // ===========================
+      // Totals
+      // ===========================
+
+      document.getElementById("invSubtotal").innerText =
+         "₹" + subtotal.toFixed(2);
+
+      document.getElementById("invDeliveryCharge").innerText =
+         "₹" + Number(order.deliveryCharge || 0).toFixed(2);
+
+      document.getElementById("invDiscount").innerText =
+         "₹" + Number(order.discount || 0).toFixed(2);
+
+      document.getElementById("invGrandTotal").innerText =
+         "₹" + Number(order.grandTotal).toFixed(2);
+   }
+
+   /**
+    * ==========================================
+    * Print Invoice
+    * ==========================================
+    */
+   function printInvoice() {
+      const invoice = document.getElementById("invoicePdfContainer");
+
+      if (!invoice) {
+         alert("Invoice not found.");
+
+         return;
+      }
+
+      const printWindow = window.open("", "_blank");
+
+      printWindow.document.write(`
+        <html>
+
+        <head>
+
+            <title>Invoice</title>
+
+            <link
+                rel="stylesheet"
+                href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+            <style>
+
+                body{
+
+                    padding:20px;
+
+                    font-family:Arial,sans-serif;
+
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${invoice.outerHTML}
+
+        </body>
+
+        </html>
+    `);
+
+      printWindow.document.close();
+
+      printWindow.focus();
+
+      printWindow.print();
+
+      printWindow.close();
+   }
+
+   /**
+    * ==========================================
+    * Download Invoice PDF
+    * ==========================================
+    */
+   function downloadInvoicePdf() {
+      const invoice = document.getElementById("invoicePdfContainer");
+
+      if (!invoice) {
+         alert("Invoice not found.");
+
+         return;
+      }
+
+      const orderId = document.getElementById("invOrderId").innerText.trim();
+
+      if (!orderId || orderId === "-") {
+         alert("Please search an invoice first.");
+
+         return;
+      }
+
+      const btn = document.getElementById("btnDownloadPdf");
+
+      btn.disabled = true;
+
+      btn.innerHTML = "Generating PDF...";
+
+      const today = new Date();
+
+      const fileDate =
+         today.getFullYear() +
+         "-" +
+         String(today.getMonth() + 1).padStart(2, "0") +
+         "-" +
+         String(today.getDate()).padStart(2, "0");
+
+      const fileName = orderId + "_" + fileDate + ".pdf";
+
+      const options = {
+         margin: 10,
+
+         filename: fileName,
+
+         image: {
+            type: "jpeg",
+
+            quality: 1,
+         },
+
+         html2canvas: {
+            scale: 2,
+
+            useCORS: true,
+         },
+
+         jsPDF: {
+            unit: "mm",
+
+            format: "a4",
+
+            orientation: "portrait",
+         },
+      };
+
+      html2pdf()
+         .set(options)
+
+         .from(invoice)
+
+         .outputPdf("blob")
+
+         .then(async function (pdfBlob) {
+            // Download PDF
+
+            await html2pdf()
+               .set(options)
+
+               .from(invoice)
+
+               .save();
+
+            // Save to Google Drive
+
+            const base64Pdf = await blobToBase64(pdfBlob);
+
+            google.script.run
+
+               .withSuccessHandler(function (response) {
+                  console.log("PDF saved to Drive");
+
+                  console.log(response);
+               })
+
+               .withFailureHandler(function (error) {
+                  console.error(error);
+               })
+
+               .savePdf(fileName, base64Pdf);
+         })
+
+         .then(function () {
+            btn.disabled = false;
+
+            btn.innerHTML = "📄 Download PDF";
+         })
+
+         .catch(function (err) {
+            console.error(err);
+
+            btn.disabled = false;
+
+            btn.innerHTML = "📄 Download PDF";
+
+            alert("Unable to generate PDF.");
+         });
+   }
+
+   /**
+    * ==========================================
+    * Convert Blob to Base64
+    * ==========================================
+    */
+   function blobToBase64(blob) {
+      return new Promise(function (resolve, reject) {
+         const reader = new FileReader();
+
+         reader.onloadend = function () {
+            resolve(reader.result);
+         };
+
+         reader.onerror = reject;
+
+         reader.readAsDataURL(blob);
+      });
+   }
+
+   /**
+    * ==========================================
+    * Share Invoice on WhatsApp
+    * ==========================================
+    */
+   async function shareInvoiceWhatsApp() {
+      const invoice = document.getElementById("invoicePdfContainer");
+
+      if (!invoice) {
+         alert("Invoice not found.");
+
+         return;
+      }
+
+      const orderId = document.getElementById("invOrderId").innerText.trim();
+
+      if (!orderId || orderId === "-") {
+         alert("Please search an invoice first.");
+
+         return;
+      }
+
+      const customerName = document
+         .getElementById("invCustomer")
+         .innerText.trim();
+
+      let mobile = document.getElementById("invMobile").innerText.trim();
+
+      mobile = mobile.replace(/\D/g, "");
+
+      if (mobile.length === 10) {
+         mobile = "91" + mobile;
+      }
+
+      const grandTotal = document
+         .getElementById("invGrandTotal")
+         .innerText.trim();
+
+      const today = new Date();
+
+      const fileDate =
+         today.getFullYear() +
+         "-" +
+         String(today.getMonth() + 1).padStart(2, "0") +
+         "-" +
+         String(today.getDate()).padStart(2, "0");
+
+      const fileName = orderId + "_" + fileDate + ".pdf";
+
+      const options = {
+         margin: 10,
+
+         filename: fileName,
+
+         image: {
+            type: "jpeg",
+            quality: 1,
+         },
+
+         html2canvas: {
+            scale: 2,
+            useCORS: true,
+         },
+
+         jsPDF: {
+            unit: "mm",
+            format: "a4",
+            orientation: "portrait",
+         },
+      };
+
+      try {
+         // Generate PDF Blob
+
+         const pdfBlob = await html2pdf()
+            .set(options)
+
+            .from(invoice)
+
+            .outputPdf("blob");
+
+         // Convert Blob to Base64
+
+         const base64Pdf = await blobToBase64(pdfBlob);
+
+         // Save PDF to Google Drive
+
+         google.script.run
+
+            .withSuccessHandler(function (response) {
+               if (!response.success) {
+                  alert(response.message);
+
+                  return;
+               }
+
+               const message = `Hello ${customerName},
+
+Thank you for choosing Smoky Swaad.
+
+🧾 Invoice No : ${orderId}
+💰 Amount : ${grandTotal}
+
+📄 Your Invoice
+${response.fileUrl}
+
+Thank you for choosing Smoky Swaad.
+
+🍛 Smoky Swaad`;
+
+               window.open(
+                  "https://wa.me/" +
+                     mobile +
+                     "?text=" +
+                     encodeURIComponent(message),
+
+                  "_blank",
+               );
+            })
+
+            .withFailureHandler(function (error) {
+               console.error(error);
+
+               alert("Unable to save invoice to Google Drive.");
+            })
+
+            .saveInvoicePdf(fileName, base64Pdf);
+      } catch (err) {
+         console.error(err);
+
+         alert("Unable to generate Invoice PDF.");
+      }
+   }
+
+   /**
+    * ==========================================
+    * initializeReports
+    * ==========================================
+    */
+
+   function initializeReports() {
+      console.log("Reports Module Loaded");
+
+      const today = new Date().toISOString().split("T")[0];
+
+      const fromDate = document.getElementById("reportFromDate");
+
+      const toDate = document.getElementById("reportToDate");
+
+      // Set default values
+      fromDate.value = today;
+
+      toDate.value = today;
+
+      // Restrict future dates
+      fromDate.max = today;
+
+      toDate.max = today;
+
+      // Prevent To Date from being earlier than From Date
+      toDate.min = fromDate.value;
+
+      // From Date Change
+      fromDate.addEventListener("change", function () {
+         toDate.min = this.value;
+
+         if (toDate.value < this.value) {
+            toDate.value = this.value;
+         }
+
+      // Disable PDF until a new report is generated
+         document.getElementById("btnDownloadPDF").disabled = true;
+         
+      });
+
+      // To Date Change
+      toDate.addEventListener("change", function () {
+         fromDate.max = this.value > today ? today : this.value;
+
+         if (fromDate.value > this.value) {
+            fromDate.value = this.value;
+         }
+
+      // Disable PDF until a new report is generated
+         document.getElementById("btnDownloadPDF").disabled = true;
+  
+      });
+
+      google.script.run
+
+         .withSuccessHandler(renderReportDashboard)
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+         })
+
+         .getReportsData(today, today);
+   }
+
+   function renderReportDashboard(data) {
+      document.getElementById("todaySales").innerText =
+         "₹" + Number(data.todaySales).toFixed(2);
+
+      document.getElementById("todayOrders").innerText = data.todayOrders;
+
+      document.getElementById("todayProfit").innerText =
+         "₹" + Number(data.todayProfit).toFixed(2);
+   }
+
+   /**
+    * ==========================================
+    * Generate Report
+    * ==========================================
+    */
+   function generateReport() {
+      const fromDate = document.getElementById("reportFromDate").value;
+
+      const toDate = document.getElementById("reportToDate").value;
+
+      if (!fromDate || !toDate) {
+         alert("Please select both dates.");
+
+         return;
+      }
+
+      if (fromDate > toDate) {
+         alert("From Date cannot be greater than To Date.");
+
+         return;
+      }
+
+      google.script.run
+
+         .withSuccessHandler(function (data) {
+            console.log("Reports Response:", data);
+
+            if (!data.success) {
+               alert(data.message);
+
+               return;
+            }
+
+            renderSummary(data);
+
+            renderProfitSummary(data);
+
+            console.log("Top Selling Items:", data.topSellingItems);
+
+            renderTopSellingItems(data.topSellingItems);
+
+            renderOrderTable(data.orders);
+
+            document.getElementById("btnDownloadPDF").disabled = false;
+         })
+
+         .withFailureHandler(function (error) {
+            console.error("SERVER ERROR:", error);
+
+            alert(error.message || JSON.stringify(error));
+         })
+
+         .getReportsData(fromDate, toDate);
+   }
+
+   /**
+    * ==========================================
+    * Render renderSummary
+    * ==========================================
+    */
+
+   function renderSummary(data) {
+      document.getElementById("reportTotalOrders").innerText = data.totalOrders;
+
+      document.getElementById("reportTotalSales").innerText =
+         "₹" + Number(data.totalSales).toFixed(2);
+
+      renderOrderTable(data.orders);
+   }
+
+   /**
+    * ==========================================
+    * Render renderOrderTable
+    * ==========================================
+    */
+   function renderOrderTable(orders) {
+      const tbody = document.getElementById("reportOrdersBody");
+
+      tbody.innerHTML = "";
+
+      if (!orders || orders.length === 0) {
+         tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    No records found.
+                </td>
+            </tr>
+        `;
+
+         return;
+      }
+
+      let html = "";
+
+      orders.forEach(function (order) {
+         html += `
+        <tr>
+            <td>${order.orderId}</td>
+            <td>${order.orderDate}</td>
+            <td>${order.customer}</td>
+            <td>${order.mobile}</td>
+            <td>${order.paymentMode}</td>
+            <td>${order.paymentStatus}</td>
+            <td class="text-end">
+                ₹${Number(order.grandTotal).toFixed(2)}
+            </td>
+        </tr>
+    `;
+      });
+
+      tbody.innerHTML = html;
+   }
+
+   /**
+    * ==========================================
+    * Render Profit Summary
+    * ==========================================
+    */
+   function renderProfitSummary(data) {
+      document.getElementById("reportRevenue").innerText =
+         "₹" + Number(data.totalSales).toFixed(2);
+
+      document.getElementById("reportFoodCost").innerText =
+         "₹" + Number(data.totalCost).toFixed(2);
+
+      document.getElementById("reportGrossProfit").innerText =
+         "₹" + Number(data.grossProfit).toFixed(2);
+
+      document.getElementById("reportProfitPercentage").innerText =
+         data.profitPercentage + "%";
+   }
+
+   /**
+    * ==========================================
+    * Render Top Selling Items
+    * ==========================================
+    */
+   function renderTopSellingItems(items) {
+      const tbody = document.getElementById("topSellingItemsBody");
+
+      tbody.innerHTML = "";
+
+      if (!items || items.length === 0) {
+         tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    No records found.
+                </td>
+            </tr>
+        `;
+
+         return;
+      }
+
+      items.forEach(function (item, index) {
+         tbody.innerHTML += `
+
+            <tr>
+
+                <td>${index + 1}</td>
+
+                <td>${item.menuItem}</td>
+
+                <td class="text-end">${item.quantity}</td>
+
+                <td class="text-end">₹${Number(item.revenue).toFixed(2)}</td>
+
+                <td class="text-end">₹${Number(item.cost).toFixed(2)}</td>
+
+                <td class="text-end">₹${Number(item.profit).toFixed(2)}</td>
+
+            </tr>
+
+        `;
+      });
+   }
+
+   /**
+    * ==========================================
+    * Download Report PDF
+    * ==========================================
+    */
+   function downloadReportPDF() {
+      const element = document.getElementById("reportContent");
+
+      if (!element) {
+         alert("Report content not found.");
+
+         return;
+      }
+
+      const fromDate = document.getElementById("reportFromDate").value;
+
+      const toDate = document.getElementById("reportToDate").value;
+
+      if (!fromDate || !toDate) {
+
+    alert("Please select both From Date and To Date.");
+
+    return;
+
+}
+
+      const filename =
+         "Smoky_Swaad_Report_" + fromDate + "_to_" + toDate + ".pdf";
+
+      const options = {
+         margin: 0.5,
+
+         filename: filename,
+
+         image: {
+            type: "jpeg",
+
+            quality: 1,
+         },
+
+         html2canvas: {
+            scale: 2,
+
+            useCORS: true,
+
+            logging: false,
+         },
+
+         jsPDF: {
+            unit: "in",
+
+            format: "a4",
+
+            orientation: "portrait",
+         },
+      };
+
+      setTimeout(function () {
+         html2pdf().set(options).from(element).save();
+      }, 500);
+   }
+
+   /**
+    * ==========================================
+    * Toggle Download PDF Button
+    * ==========================================
+    */
+   function toggleDownloadPDFButton() {
+      const fromDate = document.getElementById("reportFromDate").value;
+
+      const toDate = document.getElementById("reportToDate").value;
+
+      const button = document.getElementById("btnDownloadPDF");
+
+      button.disabled = !(fromDate && toDate);
+   }
+</script>

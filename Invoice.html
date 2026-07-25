@@ -1,0 +1,583 @@
+<div class="container-fluid">
+
+    <div class="row">
+
+        <!-- ==========================================
+             LEFT PANEL
+        =========================================== -->
+
+        <div class="col-lg-4">
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h4 class="mb-0">
+                        🧾 Invoice Search
+                    </h4>
+
+                </div>
+
+                <div class="card-body">
+
+                    <h5 class="mb-3">
+                        Search Invoice
+                    </h5>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Order ID
+                        </label>
+
+                        <input
+                            type="text"
+                            id="searchOrderId"
+                            class="form-control"
+                            placeholder="Enter Order ID">
+
+                    </div>
+
+<button
+    id="btnSearchInvoice"
+    class="btn btn-primary w-100"
+    onclick="searchInvoice()">
+
+    🔍 Search Invoice
+
+</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+<!-- ==========================================
+     RIGHT PANEL
+========================================== -->
+
+<div class="col-lg-8">
+
+    <!-- PDF START -->
+    <div id="invoicePdfContainer">
+
+        <div class="card shadow border-0">
+
+    <!-- Company Header -->
+
+    <div class="card-header text-center py-4"
+         style="background:#ff6b00;color:white;">
+
+        <h2 class="fw-bold mb-1">
+
+            🍛 Smoky Swaad
+
+        </h2>
+
+        <div class="fs-5">
+
+            Fresh • Hot • Homemade Food
+
+        </div>
+
+        <small>
+
+            Brajrajnagar, Odisha
+
+        </small>
+
+    </div>
+
+   <div class="card-body p-4 bg-light">
+
+        <!-- Invoice Information -->
+
+        <div class="card mb-3 shadow-sm">
+
+            <div class="card-header bg-dark text-white">
+
+                <strong>
+
+                    🧾 Invoice Information
+
+                </strong>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-4">
+
+                        <label class="text-muted">
+
+                            Invoice No
+
+                        </label>
+
+                        <h5 id="invOrderId">
+
+                            -
+
+                        </h5>
+
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <label class="text-muted">
+
+                            Order Date
+
+                        </label>
+
+                        <h5 id="invDate">
+
+                            -
+
+                        </h5>
+
+                    </div>
+
+                    <div class="col-md-4">
+
+                        <label class="text-muted">
+
+                            Status
+
+                        </label>
+
+                        <div id="invStatus">
+
+                            <span class="badge bg-secondary">
+
+                                -
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Customer Information -->
+
+        <div class="card mb-3 shadow-sm">
+
+            <div class="card-header bg-primary text-white">
+
+                <strong>
+
+                    👤 Customer Information
+
+                </strong>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label class="text-muted">
+
+                            Customer Name
+
+                        </label>
+
+                        <h6 id="invCustomer">
+
+                            -
+
+                        </h6>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="text-muted">
+
+                            Mobile Number
+
+                        </label>
+
+                        <h6 id="invMobile">
+
+                            -
+
+                        </h6>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="text-muted">
+
+                            Delivery Area
+
+                        </label>
+
+                        <h6 id="invDeliveryArea">
+
+                            -
+
+                        </h6>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="text-muted">
+
+                            Delivery Slot
+
+                        </label>
+
+                        <h6 id="invDeliverySlot">
+
+                            -
+
+                        </h6>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="text-muted">
+
+                            Order Type
+
+                        </label>
+
+                        <h6 id="invOrderType">
+
+                            -
+
+                        </h6>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Delivery Address -->
+
+<div class="card mb-3 shadow-sm">
+
+    <div class="card-header bg-info text-white">
+
+        <strong>
+
+            📍 Delivery Address
+
+        </strong>
+
+    </div>
+
+    <div class="card-body">
+
+        <div id="invAddress" class="border rounded p-3 bg-white">
+
+            -
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Ordered Items -->
+
+<div class="card mb-3 shadow-sm">
+
+    <div class="card-header bg-success text-white">
+
+        <strong>
+
+            🍽 Ordered Items
+
+        </strong>
+
+    </div>
+
+    <div class="card-body p-0">
+
+        <table class="table table-hover table-bordered align-middle mb-0">
+
+            <thead class="table-light">
+
+                <tr>
+
+                    <th>Item</th>
+
+                    <th width="80" class="text-center">Qty</th>
+
+                    <th width="120" class="text-end">Price</th>
+
+                    <th width="120" class="text-end">Amount</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="invoiceItemsBody">
+
+                <tr>
+
+                    <td colspan="4" class="text-center text-muted py-5">
+
+                        Search an invoice to load items
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- Payment Summary -->
+
+<div class="card mb-3 shadow-sm">
+
+    <div class="card-header bg-warning">
+
+        <strong>
+
+            💰 Payment Summary
+
+        </strong>
+
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-borderless mb-0">
+
+            <tr>
+
+                <td>Subtotal</td>
+
+                <td class="text-end fw-bold" id="invSubtotal">
+
+                    ₹0.00
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Delivery Charge</td>
+
+                <td class="text-end fw-bold" id="invDeliveryCharge">
+
+                    ₹0.00
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Discount</td>
+
+                <td class="text-end fw-bold text-danger" id="invDiscount">
+
+                    ₹0.00
+
+                </td>
+
+            </tr>
+
+            <tr class="table-success">
+
+                <th class="fs-5">
+
+                    Grand Total
+
+                </th>
+
+                <th class="text-end fs-4 text-success" id="invGrandTotal">
+
+                    ₹0.00
+
+                </th>
+
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- Payment Information -->
+
+<div class="card mb-3 shadow-sm">
+
+    <div class="card-header bg-secondary text-white">
+
+        <strong>
+
+            💳 Payment Information
+
+        </strong>
+
+    </div>
+
+    <div class="card-body">
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <label class="text-muted">
+
+                    Payment Mode
+
+                </label>
+
+                <h6 id="invPaymentMode2">
+
+                    -
+
+                </h6>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <label class="text-muted">
+
+                    Payment Status
+
+                </label>
+
+                <div id="invPaymentStatus">
+
+                    <span class="badge bg-secondary">
+
+                        -
+
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Special Instructions -->
+
+<div class="card mb-3 shadow-sm">
+
+    <div class="card-header bg-danger text-white">
+
+        <strong>
+
+            📝 Special Instructions
+
+        </strong>
+
+    </div>
+
+    <div class="card-body">
+
+        <div id="invInstructions">
+
+            -
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Footer -->
+
+<div class="text-center mt-4">
+
+    <h5 class="fw-bold text-success">
+
+        ❤️ Thank You For Ordering With Smoky Swaad
+
+    </h5>
+
+    <p class="text-muted mb-4">
+
+        Fresh • Hot • Homemade Food
+
+    </p>
+
+</div>
+
+        </div>
+
+    </div>
+
+    <!-- ==========================
+         PDF CONTENT END
+    =========================== -->
+
+<!-- Action Buttons -->
+
+<div class="d-grid gap-2 d-md-flex justify-content-center mb-3">
+
+    <button class="btn btn-primary">
+
+        🖨 Print Invoice
+
+    </button>
+    
+<button
+    id="btnDownloadPdf"
+    class="btn btn-danger"
+    onclick="downloadInvoicePdf()">
+
+    📄 Download PDF
+    </button>
+
+<button
+    id="btnShareInvoice"
+    class="btn btn-success"
+    onclick="shareInvoiceWhatsApp()">
+
+    📲 Share Invoice
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>

@@ -1,0 +1,275 @@
+
+<script>
+  /**
+ * ==========================================
+ * Initialize Business Costs
+ * ==========================================
+ */
+function initializeBusinessCosts() {
+
+    google.script.run
+
+        .withSuccessHandler(function(response){
+
+            renderBusinessCosts(response);
+
+        })
+
+        .withFailureHandler(function(error){
+
+            console.error(error);
+
+            alert(error);
+
+        })
+
+        .getBusinessCosts();
+
+}
+
+/**
+ * ==========================================
+ * Open Business Cost Modal
+ * ==========================================
+ */
+function openBusinessCostModal() {
+
+    document.getElementById("businessCostModalTitle").innerText =
+        "Add Business Cost";
+
+    document.getElementById("businessCostRow").value = "";
+
+    document.getElementById("costHead").value = "";
+
+    document.getElementById("costAmount").value = "";
+
+    document.getElementById("costUnit").value = "Per Order";
+
+    document.getElementById("costActive").value = "Yes";
+
+    document.getElementById("costRemarks").value = "";
+
+    new bootstrap.Modal(
+        document.getElementById("businessCostModal")
+    ).show();
+
+}
+
+
+
+/**
+ * ==========================================
+ * Render Business Costs
+ * ==========================================
+ */
+function renderBusinessCosts(data) {
+
+    document.getElementById("totalBusinessCost").innerText =
+        "₹" + Number(data.totalBusinessCost).toFixed(2);
+
+    const tbody =
+        document.getElementById("businessCostsTableBody");
+
+    tbody.innerHTML = "";
+
+    if (data.businessCosts.length === 0) {
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td colspan="6"
+                    class="text-center text-muted">
+
+                    No Business Costs Found.
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+    data.businessCosts.forEach(function(cost){
+
+        tbody.innerHTML += `
+
+            <tr>
+
+                <td>${cost.costHead}</td>
+
+                <td class="text-end">
+                    ₹${cost.amount.toFixed(2)}
+                </td>
+
+                <td>${cost.unit}</td>
+
+                <td>${cost.active}</td>
+
+                <td>${cost.remarks || ""}</td>
+
+                <td class="text-center">
+
+<button
+    class="btn btn-sm btn-primary"
+    onclick="editBusinessCost(${cost.rowNumber})">
+
+    ✏️ Edit
+
+</button>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+}
+
+
+
+
+
+/**
+ * ==========================================
+ * Save Business Cost
+ * ==========================================
+ */
+function saveBusinessCost() {
+
+    const cost = {
+
+        rowNumber:
+            document.getElementById("businessCostRow").value,
+
+        costHead:
+            document.getElementById("costHead").value.trim(),
+
+        amount:
+            Number(document.getElementById("costAmount").value),
+
+        unit:
+            document.getElementById("costUnit").value,
+
+        active:
+            document.getElementById("costActive").value,
+
+        remarks:
+            document.getElementById("costRemarks").value.trim()
+
+    };
+
+    // Validation
+
+    if (cost.costHead === "") {
+
+        alert("Please enter Cost Head.");
+
+        return;
+
+    }
+
+    if (isNaN(cost.amount) || cost.amount < 0) {
+
+        alert("Please enter a valid Amount.");
+
+        return;
+
+    }
+
+    google.script.run
+
+        .withSuccessHandler(function(response){
+
+            if (!response.success){
+
+                alert(response.message);
+
+                return;
+
+            }
+
+            bootstrap.Modal
+                .getInstance(
+                    document.getElementById("businessCostModal")
+                )
+                .hide();
+
+            initializeBusinessCosts();
+
+        })
+
+        .withFailureHandler(function(error){
+
+            console.error(error);
+
+            alert(error);
+
+        })
+
+        .saveBusinessCost(cost);
+
+}
+
+
+/**
+ * ==========================================
+ * Edit Business Cost
+ * ==========================================
+ */
+function editBusinessCost(rowNumber) {
+
+    google.script.run
+
+        .withSuccessHandler(function(cost) {
+
+            document.getElementById("businessCostModalTitle").innerText =
+                "Edit Business Cost";
+
+            document.getElementById("businessCostRow").value =
+                cost.rowNumber;
+
+            document.getElementById("costHead").value =
+                cost.costHead;
+
+            document.getElementById("costAmount").value =
+                cost.amount;
+
+            document.getElementById("costUnit").value =
+                cost.unit;
+
+            document.getElementById("costActive").value =
+                cost.active;
+
+            document.getElementById("costRemarks").value =
+                cost.remarks;
+
+            new bootstrap.Modal(
+                document.getElementById("businessCostModal")
+            ).show();
+
+        })
+
+        .withFailureHandler(function(error) {
+
+            console.error(error);
+
+            alert(error);
+
+        })
+
+        .getBusinessCost(rowNumber);
+
+}
+
+
+
+
+
+
+</script>

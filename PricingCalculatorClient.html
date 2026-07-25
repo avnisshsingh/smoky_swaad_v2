@@ -1,0 +1,830 @@
+<script>
+  /**
+ * ==========================================
+ * Pricing Summary
+ * ==========================================
+ */
+window.pricingSummary = {
+
+    ingredientTotal : 0,
+
+    businessCost : 0,
+
+    totalCost : 0,
+
+    sellingPrice : 0,
+
+    profit : 0,
+
+    profitPercentage : 0
+
+};
+
+
+/**
+ * ==========================================
+ * Business Costs Cache
+ * ==========================================
+ */
+window.businessCosts = [];
+
+
+  /**
+    * ==========================================
+    * Add Ingredient Row
+    * ==========================================
+    */
+   function addIngredientRow() {
+      const tbody = document.getElementById("ingredientTableBody");
+
+      // Remove placeholder
+      if (tbody.children.length === 1 && tbody.children[0].cells.length === 1) {
+         tbody.innerHTML = "";
+      }
+
+      const rowCount = tbody.rows.length + 1;
+
+      const row = tbody.insertRow();
+
+      row.innerHTML = `
+
+        <td class="text-center">
+
+            ${rowCount}
+
+        </td>
+
+        <td>
+
+<select
+    class="form-select ingredientName"
+     onchange="ingredientChanged(this)">
+
+    <option value="">
+
+        Select Ingredient
+
+    </option>
+
+  ${(window.ingredients || [])
+     .map(function (item) {
+        return `<option value="${item}">${item}</option>`;
+     })
+     .join("")}
+
+</select>
+
+        </td>
+
+        <td>
+
+<input
+    type="number"
+    class="form-control text-end ingredientQty"
+    value=""
+    min="0"
+    step="0.001"
+    placeholder="Enter Qty"
+    oninput="recalculatePricing()">
+
+        </td>
+
+        <td>
+
+           <select
+    class="form-select ingredientUnit"
+    onchange="recalculatePricing()">
+
+                <option value="Kg">Kg</option>
+                <option value="Gram">Gram</option>
+                <option value="Litre">Litre</option>
+                <option value="ml">ml</option>
+                <option value="Unit">Unit</option>
+
+            </select>
+
+        </td>
+
+<td class="text-end ingredientRate">
+
+    ₹0.00
+
+</td>
+
+<td class="text-end ingredientCost">
+
+    ₹0.00
+
+</td>
+
+        <td class="text-center">
+
+            <button
+                class="btn btn-sm btn-danger"
+                onclick="removeIngredientRow(this)">
+
+                ✖
+
+            </button>
+
+        </td>
+
+    `;
+   }
+
+   /**
+    * ==========================================
+    * Remove Ingredient Row
+    * ==========================================
+    */
+   function removeIngredientRow(button) {
+      const tbody = document.getElementById("ingredientTableBody");
+
+      button.closest("tr").remove();
+
+      // Re-number rows
+
+      Array.from(tbody.rows).forEach(function (row, index) {
+         row.cells[0].innerText = index + 1;
+      });
+
+      if (tbody.rows.length === 0) {
+         tbody.innerHTML = `
+
+            <tr>
+
+                <td colspan="7"
+                    class="text-center text-muted">
+
+                    Click "Add Ingredient" to start.
+
+                </td>
+
+            </tr>
+
+        `;
+      }
+   }
+
+   /**
+    * ==========================================
+    * Convert To Base Unit
+    * ==========================================
+    */
+   function convertToBaseUnit(quantity, unit) {
+      quantity = Number(quantity) || 0;
+
+      switch (String(unit).trim().toUpperCase()) {
+         // Weight
+
+         case "KG":
+            return quantity * 1000;
+
+         case "GRAM":
+         case "G":
+            return quantity;
+
+         // Volume
+
+         case "LITRE":
+         case "LITER":
+         case "L":
+            return quantity * 1000;
+
+         case "ML":
+            return quantity;
+
+         // Count
+
+         case "UNIT":
+         case "NOS":
+         case "NO":
+         case "PCS":
+         case "PIECE":
+            return quantity;
+
+         default:
+            return quantity;
+      }
+   }
+
+   /**
+    * ==========================================
+    * Calculate Rate
+    * ==========================================
+    */
+   function calculateRate(amount, quantity, unit) {
+      const baseQty = convertToBaseUnit(quantity, unit);
+
+      if (baseQty <= 0) {
+         return 0;
+      }
+
+      return amount / baseQty;
+   }
+
+
+
+/**
+ * ==========================================
+ * Calculate Ingredient Costs
+ * ==========================================
+ */
+function calculateIngredientCosts() {
+
+    const rows =
+        document.querySelectorAll("#ingredientTableBody tr");
+
+    rows.forEach(function(row){
+
+        if (row.cells.length < 7) {
+
+            return;
+
+        }
+
+        const qty =
+            Number(
+                row.querySelector(".ingredientQty").value
+            ) || 0;
+
+        const unit =
+            row.querySelector(".ingredientUnit").value;
+
+        const purchaseRate =
+            Number(row.dataset.purchaseRate) || 0;
+
+  const recipeBaseQuantity =
+    convertToBaseUnit(qty, unit);
+
+const ingredientCost =
+    recipeBaseQuantity * purchaseRate;
+
+ row.dataset.ingredientCost =
+    ingredientCost.toFixed(2);
+
+    row.querySelector(".ingredientCost").innerText =
+    "₹" + ingredientCost.toFixed(2);
+
+    });
+
+}
+
+
+/**
+ * ==========================================
+ * Calculate Ingredient Total
+ * ==========================================
+ */
+function calculateIngredientTotal() {
+
+    const rows =
+        document.querySelectorAll("#ingredientTableBody tr");
+
+    let ingredientTotal = 0;
+
+    rows.forEach(function(row){
+
+        if (row.cells.length < 7) {
+
+            return;
+
+        }
+
+        ingredientTotal +=
+            Number(row.dataset.ingredientCost || 0);
+
+    });
+
+    window.pricingSummary.ingredientTotal =
+        ingredientTotal;
+
+}
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Business Costs
+ * ==========================================
+ */
+function calculateBusinessCosts() {
+
+    let businessCost = 0;
+
+    window.businessCosts.forEach(function(cost){
+
+        if (String(cost.active).trim().toUpperCase() !== "YES") {
+
+            return;
+
+        }
+
+        if (cost.unit === "Per Order") {
+
+            businessCost += Number(cost.amount) || 0;
+
+        }
+
+    });
+
+    window.pricingSummary.businessCost = businessCost;
+
+}
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Total Cost
+ * ==========================================
+ */
+function calculateTotalCost() {
+
+    const totalCost =
+
+        window.pricingSummary.ingredientTotal +
+
+        window.pricingSummary.businessCost;
+
+    window.pricingSummary.totalCost = totalCost;
+
+}
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Selling Price
+ * ==========================================
+ */
+function calculateSellingPrice() {
+
+    const sellingPrice =
+
+        Number(
+            document.getElementById("sellingPrice").value
+        ) || 0;
+
+    window.pricingSummary.sellingPrice =
+        sellingPrice;
+
+}
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Profit
+ * ==========================================
+ */
+function calculateProfit() {
+
+    if (window.pricingSummary.sellingPrice <= 0) {
+
+        window.pricingSummary.profit = 0;
+
+        return;
+
+    }
+
+    window.pricingSummary.profit =
+
+        window.pricingSummary.sellingPrice -
+
+        window.pricingSummary.totalCost;
+
+}
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Profit Percentage
+ * ==========================================
+ */
+function calculateProfitPercentage() {
+
+    let profitPercentage = 0;
+
+    if (window.pricingSummary.sellingPrice > 0) {
+
+        profitPercentage =
+
+            (
+                window.pricingSummary.profit /
+
+                window.pricingSummary.sellingPrice
+            ) * 100;
+
+    }
+
+    window.pricingSummary.profitPercentage =
+        profitPercentage;
+
+}
+
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Food Cost Percentage
+ * ==========================================
+ */
+function calculateFoodCostPercentage() {
+
+    let foodCostPercentage = 0;
+
+    if (window.pricingSummary.sellingPrice > 0) {
+
+        foodCostPercentage =
+
+            (
+
+                window.pricingSummary.totalCost /
+
+                window.pricingSummary.sellingPrice
+
+            ) * 100;
+
+    }
+
+    window.pricingSummary.foodCostPercentage =
+        foodCostPercentage;
+
+}
+
+
+
+
+
+/**
+ * ==========================================
+ * Update Food Cost Status
+ * ==========================================
+ */
+function updateFoodCostStatus() {
+
+    const badge =
+        document.getElementById("foodCostStatus");
+
+    const percentage =
+        window.pricingSummary.foodCostPercentage;
+
+    badge.className = "badge";
+
+    if (percentage === 0) {
+
+        badge.classList.add("bg-secondary");
+
+        badge.innerText = "Not Calculated";
+
+    }
+
+    else if (percentage < 30) {
+
+        badge.classList.add("bg-success");
+
+        badge.innerText = "Excellent";
+
+    }
+
+    else if (percentage <= 40) {
+
+        badge.classList.add("bg-primary");
+
+        badge.innerText = "Good";
+
+    }
+
+    else if (percentage <= 50) {
+
+        badge.classList.add("bg-warning", "text-dark");
+
+        badge.innerText = "High";
+
+    }
+
+    else {
+
+        badge.classList.add("bg-danger");
+
+        badge.innerText = "Review Price";
+
+    }
+
+}
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Update Cost Summary
+ * ==========================================
+ */
+function updateSummary() {
+
+    document.getElementById("ingredientTotal").value =
+        "₹" +
+        window.pricingSummary.ingredientTotal.toFixed(2);
+
+    document.getElementById("businessCostTotal").value =
+        "₹" +
+        window.pricingSummary.businessCost.toFixed(2);
+
+    document.getElementById("totalCost").value =
+        "₹" +
+        window.pricingSummary.totalCost.toFixed(2);
+
+        document.getElementById("profit").value =
+        "₹" +
+        window.pricingSummary.profit.toFixed(2);
+
+    document.getElementById("profitPercentage").value =
+        window.pricingSummary.profitPercentage.toFixed(2) + "%";
+
+    document.getElementById("foodCostPercentage").value =
+
+    window.pricingSummary.foodCostPercentage.toFixed(2) + "%";    
+
+
+    updateFoodCostStatus();
+}
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Recalculate Pricing
+ * ==========================================
+ */
+function recalculatePricing() {
+
+    // Row Calculations
+    calculateIngredientCosts();
+
+    // Cost Calculations
+    calculateIngredientTotal();
+
+    calculateBusinessCosts();
+
+    calculateTotalCost();
+
+    // Profit Calculations
+    calculateSellingPrice();
+
+    calculateProfit();
+
+    calculateProfitPercentage();
+
+    calculateFoodCostPercentage();
+
+    // Refresh UI
+    updateSummary();
+
+}
+
+
+
+   /**
+    * ==========================================
+    * Ingredient Changed
+    * ==========================================
+    */
+   function ingredientChanged(select) {
+      const ingredient = select.value;
+
+      if (!ingredient) {
+         return;
+      }
+
+      google.script.run
+
+         .withSuccessHandler(function (data) {
+            if (!data.success) {
+               alert(data.message);
+
+               return;
+            }
+
+            const row = select.closest("tr");
+
+            // Save latest purchase details
+
+            row.dataset.purchaseQuantity = data.quantity;
+
+            row.dataset.purchaseUnit = data.unit;
+
+            row.dataset.purchaseAmount = data.amount;
+
+            // Calculate Rate
+
+            const rate = calculateRate(
+               data.amount,
+
+               data.quantity,
+
+               data.unit,
+            );
+
+           row.dataset.purchaseRate = rate;
+
+            // Show Rate
+
+            row.querySelector(".ingredientRate").innerText =
+               "₹" + rate.toFixed(3);
+
+            // Recipe Quantity should be empty
+
+            row.querySelector(".ingredientQty").value = "";
+
+            // Default recipe unit
+
+            row.querySelector(".ingredientUnit").value = data.unit;
+
+            // Reset Cost
+            
+           row.dataset.ingredientCost = "0.00";
+
+            recalculatePricing();
+         })
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+
+            alert(error);
+         })
+
+         .getLatestPurchase(ingredient);
+   }
+
+   /**
+    * ==========================================
+    * Load Menu Items
+    * ==========================================
+    */
+   function loadMenuItems() {
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            renderMenuItems(response);
+         })
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+
+            alert(error);
+         })
+
+         .getMenuItems();
+   }
+
+   /**
+    * ==========================================
+    * Load Ingredients
+    * ==========================================
+    */
+   function loadIngredients() {
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            console.log("Response =", response);
+
+            window.ingredients = response.ingredients || [];
+
+            console.log("Loaded =", window.ingredients);
+         })
+
+         .withFailureHandler(function (error) {
+            console.error(error);
+
+            alert(error);
+         })
+
+         .getIngredients();
+   }
+
+
+/**
+ * ==========================================
+ * Load Business Costs
+ * ==========================================
+ */
+function loadBusinessCosts() {
+
+    google.script.run
+
+        .withSuccessHandler(function(response){
+
+            if (!response.success){
+
+                alert("Unable to load Business Costs.");
+
+                return;
+
+            }
+
+            window.businessCosts =
+                response.businessCosts || [];
+
+        })
+
+        .withFailureHandler(function(error){
+
+            console.error(error);
+
+            alert(error);
+
+        })
+
+        .getBusinessCosts();
+
+}
+
+
+
+
+
+   /**
+    * ==========================================
+    * Render Menu Items
+    * ==========================================
+    */
+   function renderMenuItems(data) {
+      const menu = document.getElementById("pricingMenuItem");
+
+      menu.innerHTML = `<option value="">Select Menu Item</option>`;
+
+      data.menuItems.forEach(function (item) {
+         menu.innerHTML += `
+
+            <option
+                value="${item.menuItem}"
+                data-category="${item.category}">
+
+                ${item.menuItem}
+
+            </option>
+
+        `;
+      });
+   }
+
+   /**
+    * ==========================================
+    * Menu Item Changed
+    * ==========================================
+    */
+   function menuItemChanged() {
+      const menu = document.getElementById("pricingMenuItem");
+
+      const selected = menu.options[menu.selectedIndex];
+
+      document.getElementById("pricingCategory").value =
+         selected.dataset.category || "";
+   }
+
+
+  /**
+   * ==========================================
+   * Initialize Pricing Calculator
+   * ==========================================
+   */
+  function initializePricingCalculator() {
+
+    console.log("Initializing Pricing Calculator");
+
+    loadMenuItems();
+
+    loadIngredients();
+
+    loadBusinessCosts();
+
+    }
+
+
+
+</script>

@@ -1,0 +1,349 @@
+<div class="container-fluid">
+
+  <!-- ==========================================
+         Header
+    =========================================== -->
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h3 class="mb-0">
+
+      💰 Pricing Calculator
+
+    </h3>
+
+  </div>
+
+</div>
+
+
+
+<!-- ==========================================
+     Menu Information
+========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+  <div class="card-header bg-primary text-white">
+
+    🍽 Menu Information
+
+  </div>
+
+  <div class="card-body">
+
+    <div class="row g-3">
+
+      <!-- Menu Item -->
+
+      <div class="col-md-6">
+
+        <label class="form-label fw-bold">
+
+                    Menu Item
+
+                </label>
+
+        <select
+    id="pricingMenuItem"
+    class="form-select"
+    onchange="menuItemChanged()">
+
+    <option value="">
+
+        Select Menu Item
+
+    </option>
+
+</select>
+
+      </div>
+
+      <!-- Category -->
+
+      <div class="col-md-6">
+
+        <label class="form-label fw-bold">
+
+                    Category
+
+                </label>
+
+        <input
+                    type="text"
+                    id="pricingCategory"
+                    class="form-control"
+                    readonly>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+<!-- ==========================================
+     Ingredients
+========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+  <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+
+    <span>🥣 Ingredients</span>
+
+    <button
+            class="btn btn-light btn-sm"
+            onclick="addIngredientRow()">
+
+            ➕ Add Ingredient
+
+        </button>
+
+  </div>
+
+  <div class="card-body table-responsive">
+
+    <table class="table table-bordered table-hover align-middle">
+
+      <thead class="table-light">
+
+        <tr>
+
+          <th style="width:60px;">#</th>
+
+          <th style="width:260px;">Ingredient</th>
+
+          <th class="text-end">Qty</th>
+          <th style="width:120px;">Unit</th>
+          <th class="text-end">Rate</th>
+          <th class="text-end">Cost</th>
+          <th style="width:80px;">Action</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="ingredientTableBody">
+
+        <tr>
+
+          <td colspan="7" class="text-center text-muted">
+
+            Click "Add Ingredient" to start.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+
+
+
+
+<!-- ==========================================
+     Cost Summary
+========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+  <div class="card-header bg-warning">
+
+    💰 Cost Summary
+
+  </div>
+
+  <div class="card-body">
+
+    <div class="row g-3">
+
+      <div class="col-md-4">
+
+        <label class="form-label fw-bold">
+
+                    Ingredient Cost
+
+                </label>
+
+        <input
+                    type="text"
+                    id="ingredientTotal"
+                    class="form-control text-end"
+                    value="₹0.00"
+                    readonly>
+
+      </div>
+
+      <div class="col-md-4">
+
+        <label class="form-label fw-bold">
+
+                    Business Cost
+
+                </label>
+
+        <input
+                    type="text"
+                    id="businessCostTotal"
+                    class="form-control text-end"
+                    value="₹0.00"
+                    readonly>
+
+      </div>
+
+      <div class="col-md-4">
+
+        <label class="form-label fw-bold">
+
+                    Total Cost
+
+                </label>
+
+        <input
+                    type="text"
+                    id="totalCost"
+                    class="form-control text-end fw-bold"
+                    value="₹0.00"
+                    readonly>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!-- ==========================================
+     Profit Summary
+========================================== -->
+
+<div class="card shadow-sm mb-4">
+
+  <div class="card-header bg-success text-white">
+
+    📈 Profit Summary
+
+  </div>
+
+  <div class="card-body">
+
+    <div class="row g-3">
+
+      <div class="col-md-3">
+
+        <label class="form-label fw-bold">
+
+                    Selling Price
+
+                </label>
+
+        <input
+                    type="number"
+                    id="sellingPrice"
+                    class="form-control text-end"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                    oninput="recalculatePricing()">
+
+      </div>
+
+      <div class="col-md-3">
+
+        <label class="form-label fw-bold">
+
+                    Profit
+
+                </label>
+
+        <input
+                    type="text"
+                    id="profit"
+                    class="form-control text-end"
+                    value="₹0.00"
+                    readonly>
+
+      </div>
+
+      <div class="col-md-3">
+
+        <label class="form-label fw-bold">
+
+                    Profit %
+
+                </label>
+
+        <input
+                    type="text"
+                    id="profitPercentage"
+                    class="form-control text-end"
+                    value="0.00%"
+                    readonly>
+
+      </div>
+
+      <div class="col-md-3">
+
+        <label class="form-label fw-bold">
+
+                    Food Cost %
+
+                </label>
+
+        <input
+                    type="text"
+                    id="foodCostPercentage"
+                    class="form-control text-end"
+                    value="0.00%"
+                    readonly>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+<div class="col-md-3">
+
+    <label class="form-label fw-bold">
+
+        Food Cost Status
+
+    </label>
+
+    <div>
+
+        <span
+            id="foodCostStatus"
+            class="badge bg-secondary">
+
+            Not Calculated
+
+        </span>
+
+    </div>
+
+</div>

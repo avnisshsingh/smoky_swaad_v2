@@ -1,0 +1,486 @@
+<div class="container-fluid">
+
+    <div class="row">
+
+        <!-- ==========================================
+             LEFT PANEL
+        =========================================== -->
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm mb-4">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h4 class="mb-0">
+                        🛒 Purchase Register
+                    </h4>
+
+                </div>
+
+                <div class="card-body">
+
+                    <h5 class="mb-3">
+                        Purchase Information
+                    </h5>
+
+                    <div class="row g-3">
+
+                        <!-- Purchase Date -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Purchase Date
+
+                            </label>
+
+                            <input
+                                type="date"
+                                id="purchaseDate"
+                                class="form-control">
+
+                        </div>
+
+                        <!-- Quantity -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Quantity
+
+                            </label>
+
+                            <input
+                                type="number"
+                                id="quantity"
+                                class="form-control"
+                                placeholder="Enter Quantity">
+
+                        </div>
+
+                        <!-- Unit -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Unit
+
+                            </label>
+
+                            <select
+                                id="unit"
+                                class="form-select">
+
+                                <option value="">
+
+                                    Select Unit
+
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <!-- Payment Type -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Payment Type
+
+                            </label>
+
+                            <select
+                                id="paymentType"
+                                class="form-select">
+
+                                <option value="">
+
+                                    Select Payment Type
+
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <!-- Amount -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Amount
+
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+
+                                    ₹
+
+                                </span>
+
+                                <input
+                                    type="number"
+                                    id="amount"
+                                    class="form-control"
+                                    placeholder="Enter Amount">
+
+                            </div>
+
+                        </div>
+
+                        <!-- Supplier -->
+
+                        <div class="col-md-4">
+
+                            <label class="form-label">
+
+                                Supplier
+
+                            </label>
+
+                            <select
+                                id="supplier"
+                                class="form-select">
+
+                                <option value="">
+
+                                    Select Supplier
+
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Item Search -->
+
+                    <h5 class="mb-3">
+
+                        🔍 Search Item
+
+                    </h5>
+
+                    <div class="position-relative">
+
+                        <input
+                            type="text"
+                            id="itemSearch"
+                            class="form-control form-control-lg"
+                            placeholder="Search Item..."
+                            onkeyup="searchPurchaseItems()">
+
+                        <div
+                            id="itemSuggestions"
+                            class="list-group position-absolute w-100 shadow"
+                            style="z-index:1000; max-height:300px; overflow-y:auto;">
+
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Remarks -->
+
+                    <h5 class="mb-3">
+
+                        Remarks
+
+                    </h5>
+
+                    <textarea
+                        id="remarks"
+                        rows="4"
+                        class="form-control"
+                        placeholder="Enter Remarks (Optional)"></textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             RIGHT PANEL
+        =========================================== -->
+
+        <div class="col-lg-4">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-success text-white">
+
+                    <h5 class="mb-0">
+
+                        Purchase Summary
+
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Purchase Date
+
+                        </strong>
+
+                        <div id="summaryPurchaseDate">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Item Name
+
+                        </strong>
+
+                        <div id="summaryItem">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Quantity
+
+                        </strong>
+
+                        <div id="summaryQuantity">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Unit
+
+                        </strong>
+
+                        <div id="summaryUnit">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Payment Type
+
+                        </strong>
+
+                        <div id="summaryPaymentType">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Amount
+
+                        </strong>
+
+                        <div id="summaryAmount">
+
+                            ₹0
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <strong>
+
+                            Supplier
+
+                        </strong>
+
+                        <div id="summarySupplier">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <strong>
+
+                            Remarks
+
+                        </strong>
+
+                        <div id="summaryRemarks">
+
+                            -
+
+                        </div>
+
+                    </div>
+
+<button
+    id="savePurchaseBtn"
+    type="button"
+    class="btn btn-success btn-lg w-100"
+    onclick="savePurchase()">
+
+    💾 Save Purchase
+
+</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+<script>
+
+/**
+ * ==========================================
+ * PURCHASE MODULE
+ * ==========================================
+ */
+
+let purchaseSettings = {};
+
+let selectedPurchaseItem = null;
+
+
+/**
+ * ==========================================
+ * Initialize Purchase Screen
+ * ==========================================
+ */
+document.addEventListener("DOMContentLoaded", function () {
+
+    initializePurchase();
+
+});
+
+
+function initializePurchase() {
+
+    document.getElementById("purchaseDate").value =
+        new Date().toISOString().split("T")[0];
+
+    loadPurchaseSettings();
+
+}
+
+
+/**
+ * ==========================================
+ * Load Purchase Settings
+ * ==========================================
+ */
+function loadPurchaseSettings() {
+
+    google.script.run
+
+        .withSuccessHandler(function(settings){
+
+            purchaseSettings = settings;
+
+            populateDropdowns();
+
+        })
+
+        .withFailureHandler(function(error){
+
+            alert(error.message);
+
+        })
+
+        .loadPurchaseSettings();
+
+}
+
+
+/**
+ * ==========================================
+ * Populate Dropdowns
+ * ==========================================
+ */
+function populateDropdowns() {
+
+    fillSelect("unit", purchaseSettings.units);
+
+    fillSelect("paymentType", purchaseSettings.paymentTypes);
+
+    fillSelect("supplier", purchaseSettings.suppliers);
+
+}
+
+
+/**
+ * ==========================================
+ * Fill Dropdown
+ * ==========================================
+ */
+function fillSelect(id, values) {
+
+    const select = document.getElementById(id);
+
+    select.innerHTML = '<option value="">Select</option>';
+
+    values.forEach(function(value){
+
+        select.innerHTML += `<option value="${value}">${value}</option>`;
+
+    });
+
+}
+</script>
