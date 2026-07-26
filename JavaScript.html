@@ -37,11 +37,26 @@
 
    document.addEventListener("DOMContentLoaded", initApp);
 
-   function initApp() {
-      console.log("Smoky Swaad ERP Started");
+ function initApp() {
 
-      bindMenuEvents();
-   }
+    console.log("Smoky Swaad ERP Started");
+
+    bindMenuEvents();
+
+    // Load POS automatically on startup
+    const defaultMenu = document.querySelector(
+        '.menu-link[data-screen="POS"]'
+    );
+
+    if (defaultMenu) {
+
+        setActiveMenu(defaultMenu);
+
+    }
+
+    openScreen("POS");
+
+}
 
    /* ==========================================
    Navigation
@@ -261,6 +276,11 @@
 
    function showMenuSuggestions(items) {
       const list = document.getElementById("menuSuggestions");
+
+      if (!list) return;
+
+      list.style.display = "block";
+      list.innerHTML = "";
 
       list.innerHTML = "";
 
@@ -827,15 +847,27 @@
          .saveOrderFromWeb(orderData);
    }
 
-   /* ==========================================
+
+/* ==========================================
    Utility
 ========================================== */
 
-   function clearMenuSuggestions() {
-      const el = document.getElementById("menuSuggestions");
-      if (el) el.innerHTML = "";
-   }
+function clearMenuSuggestions() {
+
+    const el = document.getElementById("menuSuggestions");
+
+    if (!el) return;
+
+    el.innerHTML = "";
+
+    el.style.display = "none";
+
+}
 </script>
+
+
+
+
 
 <script>
   /**
@@ -1266,6 +1298,7 @@
       const customer = document.getElementById("customerName");
       if (customer) customer.focus();
 
+      loadMenuCache();
       console.log("POS Cleared");
    }
 

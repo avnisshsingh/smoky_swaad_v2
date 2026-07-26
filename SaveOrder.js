@@ -48,6 +48,11 @@ function saveOrder() {
 }
 
 
+
+
+
+
+
 /**
  * Generate Order ID
  */
@@ -66,6 +71,11 @@ function generateOrderID() {
   return "SS" + lastNumber.toString().padStart(5, "0");
 
 }
+
+
+
+
+
 
 /**
  * Save Order Header (Optimized)
@@ -102,6 +112,12 @@ function saveOrderHeader(orderID) {
     .setValues(rowData);
 
 }
+
+
+
+
+
+
 
 /**
  * Save Order Items (Optimized)
@@ -153,6 +169,13 @@ function saveOrderItems(orderID) {
   }
 
 }
+
+
+
+
+
+
+
 
 /**
  * Add or Update Customer (Optimized)
@@ -220,6 +243,17 @@ function updateCustomer() {
   ]);
 
 }
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * Clear POS Screen (Optimized)

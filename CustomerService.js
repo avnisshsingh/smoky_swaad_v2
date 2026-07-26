@@ -31,11 +31,11 @@ function saveOrUpdateCustomer(orderData) {
 
   } else {
 
-    updateCustomer(
-      customerSheet,
-      rowNumber,
-      orderData
-    );
+updateExistingCustomer(
+    customerSheet,
+    rowNumber,
+    orderData
+);
 
   }
 
@@ -156,7 +156,7 @@ const orderDate = new Date(
  * Update Customer
  * ==========================================================
  */
-function updateCustomer(customerSheet, rowNumber, orderData) {
+function updateExistingCustomer(customerSheet, rowNumber, orderData) {
 
   const customer = orderData.customer;
 
@@ -180,8 +180,11 @@ function updateCustomer(customerSheet, rowNumber, orderData) {
 
   const totalOrders = Number(row[7]) + 1;
 
-  const lifetimeSpend =
-      Number(row[8]) + Number(orderData.totals.grandTotal);
+const grandTotal =
+    Number(orderData.totals.grandTotal || 0);
+
+const lifetimeSpend =
+    Number(row[8] || 0) + grandTotal;
 
   customerSheet
       .getRange(rowNumber, 1, 1, 9)
