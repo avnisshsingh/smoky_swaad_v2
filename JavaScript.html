@@ -12,6 +12,10 @@
    let deliveryCharge = 0;
    let purchaseSettings = {};
    let selectedPurchaseItem = null;
+   let isSavingOrder = false;
+   let isSavingPurchase = false;
+   let purchaseItemsCache = [];
+
 
    const QUICK_NOTES = [
       "Less Spicy",
@@ -825,28 +829,78 @@
     * ==========================================
     */
    function saveOrder() {
-      const orderData = collectOrderData();
-      console.log("Order Date:", orderData.meta.orderDate);
 
-      console.log(orderData);
+    // Prevent double click
+    if (isSavingOrder) {
+        return;
+    }
 
-      google.script.run
-         .withSuccessHandler(function (response) {
-            if (response.success) {
-               alert(
-                  "Order Saved Successfully\n\nOrder ID : " + response.orderId,
-               );
-               clearPOSForm();
-            } else {
-               alert(response.message);
+    isSavingOrder = true;
+
+    const saveButton = document.getElementById("btnSaveOrder");
+
+    if (saveButton) {
+
+        saveButton.disabled = true;
+
+        saveButton.innerHTML = "Saving...";
+
+    }
+
+    const orderData = collectOrderData();
+
+    console.log(orderData);
+
+    google.script.run
+
+        .withSuccessHandler(function(response){
+
+            isSavingOrder = false;
+
+            if (saveButton) {
+
+                saveButton.disabled = false;
+
+                saveButton.innerHTML = "Save Order";
+
             }
-         })
-         .withFailureHandler(function (error) {
-            alert(error.message);
-         })
-         .saveOrderFromWeb(orderData);
-   }
 
+            if (response.success){
+
+                alert(
+                    "Order Saved Successfully\n\nOrder ID : " +
+                    response.orderId
+                );
+
+                clearPOSForm();
+
+            } else {
+
+                alert(response.message);
+
+            }
+
+        })
+
+        .withFailureHandler(function(error){
+
+            isSavingOrder = false;
+
+            if (saveButton){
+
+                saveButton.disabled = false;
+
+                saveButton.innerHTML = "Save Order";
+
+            }
+
+            alert(error.message || error);
+
+        })
+
+        .saveOrderFromWeb(orderData);
+
+}
 
 /* ==========================================
    Utility
@@ -890,19 +944,39 @@ function clearMenuSuggestions() {
     * initializePurchase
     * ==========================================
     */
-   function initializePurchase() {
-      const purchaseDate = document.getElementById("purchaseDate");
+  function initializePurchase() {
 
-      if (purchaseDate) {
-         purchaseDate.value = new Date().toISOString().split("T")[0];
-      }
+    const purchaseDate = document.getElementById("purchaseDate");
 
-      loadPurchaseSettings();
+    if (purchaseDate && !purchaseDate.value) {
 
-      registerPurchaseEvents();
+        const today = new Date();
 
-      updatePurchaseSummary();
-   }
+        const year = today.getFullYear();
+
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+
+        const day = String(today.getDate()).padStart(2, "0");
+
+        purchaseDate.value = `${year}-${month}-${day}`;
+
+    }
+
+    loadPurchaseSettings();
+
+    registerPurchaseEvents();
+
+    updatePurchaseSummary();
+
+    google.script.run
+        .withSuccessHandler(function (items) {
+
+            purchaseItemsCache = items;
+
+        })
+        .getPurchaseItems();
+
+}
 
    /**
     * ==========================================
@@ -969,86 +1043,118 @@ function clearMenuSuggestions() {
     * ==========================================
     */
    function fillPurchaseSelect(id, values) {
-      const select = document.getElementById(id);
-      if (!select) return;
 
-      select.innerHTML = '<option value="">Select</option>';
+    const select = document.getElementById(id);
 
-      values.forEach(function (value) {
-         select.innerHTML += `<option value="${value}">${value}</option>`;
-      });
-   }
+    if (!select) return;
+
+    let defaultValue = "";
+
+    if (id === "unit") {
+        defaultValue = "Gram";
+    } else if (id === "paymentType") {
+        defaultValue = "PhonePe";
+    } else if (id === "supplier") {
+        defaultValue = "Local Market";
+    }
+
+    let html = "";
+
+    values.forEach(function (value) {
+
+        const selected = value === defaultValue ? "selected" : "";
+
+        html += `
+            <option value="${value}" ${selected}>
+                ${value}
+            </option>
+        `;
+
+    });
+
+    select.innerHTML = html;
+
+}
 
    /**
     * ==========================================
     * Search Purchase Items
     * ==========================================
     */
-   function searchPurchaseItems() {
-      const keyword = document.getElementById("itemSearch").value.trim();
+function searchPurchaseItems() {
 
-      if (keyword.length === 0) {
-         clearPurchaseSuggestions();
+    const keyword = document
+        .getElementById("itemSearch")
+        .value
+        .trim()
+        .toLowerCase();
 
-         return;
-      }
+    if (keyword.length === 0) {
 
-      google.script.run
+        clearPurchaseSuggestions();
 
-         .withSuccessHandler(showPurchaseSuggestions)
+        return;
 
-         .searchPurchaseItems(keyword);
-   }
+    }
+
+const items = purchaseItemsCache
+    .filter(item => item.searchName.includes(keyword))
+    .slice(0, 15);
+
+    showPurchaseSuggestions(items);
+
+}
 
    /**
     * ==========================================
     * Show Purchase Suggestions
     * ==========================================
     */
-   function showPurchaseSuggestions(items) {
-      const keyword = document.getElementById("itemSearch").value.trim();
+function showPurchaseSuggestions(items) {
 
-      const suggestionBox = document.getElementById("itemSuggestions");
-      if (!suggestionBox) return;
-      suggestionBox.innerHTML = "";
+   const keyword = document.getElementById("itemSearch").value.trim();
 
-      // Existing Items
-      items.forEach(function (item) {
-         suggestionBox.innerHTML += `
+   const suggestionBox = document.getElementById("itemSuggestions");
 
-            <button
-                type="button"
-                class="list-group-item list-group-item-action"
-                onclick="selectPurchaseItem('${item.itemName.replace(/'/g, "\\'")}')">
+   if (!suggestionBox) return;
 
-                ${item.itemName}
+   // Build suggestions in memory
+   let html = items.map(item => `
+      <button
+         type="button"
+         class="list-group-item list-group-item-action"
+         onclick="selectPurchaseItem('${item.itemName.replace(/'/g, "\\'")}')">
 
-            </button>
+         ${item.itemName}
 
-        `;
-      });
+      </button>
+   `).join("");
 
-      // Check if exact item already exists
-      const exactMatch = items.some(
-         (item) => item.itemName.toLowerCase() === keyword.toLowerCase(),
-      );
+   // Check if exact item already exists (Case Insensitive)
+   const exactMatch = items.some(item =>
+      item.itemName.toLowerCase() === keyword.toLowerCase()
+   );
 
-      // Show Add Option only if no exact match
-      if (keyword !== "" && !exactMatch) {
-         suggestionBox.innerHTML += `
+   // Show Add New Item option
+   if (keyword !== "" && !exactMatch) {
 
-            <button
-                type="button"
-                class="list-group-item list-group-item-action text-success fw-bold border-top"
-                onclick="addNewPurchaseItem()">
+      html += `
+         <button
+            type="button"
+            class="list-group-item list-group-item-action text-success fw-bold border-top"
+            onclick="addNewPurchaseItem()">
 
-                ➕ Add "${keyword}"
+            ➕ Add "${keyword}"
 
-            </button>
+         </button>
+      `;
 
-        `;
-      }
    }
+
+   // Single DOM update
+   suggestionBox.innerHTML = html;
+
+}
 
    /**
     * ==========================================
@@ -1137,30 +1243,76 @@ function clearMenuSuggestions() {
     * ==========================================
     */
    function savePurchase() {
-      const purchaseData = collectPurchaseData();
 
-      google.script.run
-
-         .withSuccessHandler(function (response) {
-            if (!response.success) {
-               alert(response.message);
-               return;
-            }
-
-            alert(
-               response.message + "\n\nPurchase ID : " + response.purchaseId,
-            );
-
-            clearPurchaseForm();
-         })
-
-         .withFailureHandler(function (error) {
-            alert(error.message);
-         })
-
-         .savePurchaseFromWeb(purchaseData);
+   if (isSavingPurchase) {
+      return;
    }
 
+   isSavingPurchase = true;
+
+   const purchaseData = collectPurchaseData();
+
+   const saveButton = document.getElementById("btnSavePurchase");
+
+   if (saveButton) {
+
+      saveButton.disabled = true;
+
+      saveButton.innerHTML = "Saving...";
+
+   }
+
+   google.script.run
+
+      .withSuccessHandler(function (response) {
+
+         isSavingPurchase = false;
+
+         if (saveButton) {
+
+            saveButton.disabled = false;
+
+            saveButton.innerHTML = "💾 Save Purchase";
+
+         }
+
+         if (!response.success) {
+
+            alert(response.message);
+
+            return;
+
+         }
+
+         alert(
+            response.message +
+            "\n\nPurchase ID : " +
+            response.purchaseId
+         );
+
+         clearPurchaseForm();
+
+      })
+
+      .withFailureHandler(function (error) {
+
+         isSavingPurchase = false;
+
+         if (saveButton) {
+
+            saveButton.disabled = false;
+
+            saveButton.innerHTML = "💾 Save Purchase";
+
+         }
+
+         alert(error.message || error);
+
+      })
+
+      .savePurchaseFromWeb(purchaseData);
+
+}
    /**
     * ==========================================
     * Update Purchase Summary
@@ -1202,17 +1354,26 @@ function clearMenuSuggestions() {
     */
    function clearPurchaseForm() {
       // Today's date
-      document.getElementById("purchaseDate").value = new Date()
-         .toISOString()
-         .split("T")[0];
+const today = new Date();
+
+const year = today.getFullYear();
+
+const month = String(today.getMonth() + 1).padStart(2, "0");
+
+const day = String(today.getDate()).padStart(2, "0");
+
+document.getElementById("purchaseDate").value =
+    `${year}-${month}-${day}`;
+
+
 
       // Clear form fields
       document.getElementById("itemSearch").value = "";
       document.getElementById("quantity").value = "";
-      document.getElementById("unit").selectedIndex = 0;
-      document.getElementById("paymentType").selectedIndex = 0;
+      document.getElementById("unit").value = "Gram";
+      document.getElementById("paymentType").value = "PhonePe";
       document.getElementById("amount").value = "";
-      document.getElementById("supplier").selectedIndex = 0;
+      document.getElementById("supplier").value = "Local Market";
       document.getElementById("remarks").value = "";
 
       // Reset selected item
@@ -2102,4 +2263,43 @@ Thank you for choosing Smoky Swaad.
 
       button.disabled = !(fromDate && toDate);
    }
+
+
+
+
+
+
+let purchaseSearchTimer;
+
+function debouncedPurchaseSearch() {
+
+    clearTimeout(purchaseSearchTimer);
+
+    purchaseSearchTimer = setTimeout(function(){
+
+        searchPurchaseItems();
+
+    },200);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>

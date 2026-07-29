@@ -282,3 +282,25 @@ function savePurchaseEntry(
         .setValues(row);
 
 }
+
+
+
+
+
+
+
+function getPurchaseItems() {
+
+    const sheet = getSheet(SHEETS.SETTINGS);
+
+    return sheet
+        .getRange("X2:X1000")
+        .getValues()
+        .flat()
+        .filter(item => item && String(item).trim() !== "")
+        .map(item => ({
+            itemName: String(item).trim(),
+            searchName: String(item).trim().toLowerCase()
+        }));
+
+}

@@ -61,27 +61,51 @@ function savePurchaseEntry(purchaseID) {
 
   const nextRow = purchaseRegister.getLastRow() + 1;
 
-  const rowData = [[
+const purchaseDate =
+    purchaseEntry.getRange(PURCHASE.PURCHASE_DATE).getValue();
+
+const itemName =
+    purchaseEntry.getRange(PURCHASE.ITEM_NAME).getValue();
+
+const quantity =
+    purchaseEntry.getRange(PURCHASE.QUANTITY).getValue();
+
+const unit =
+    purchaseEntry.getRange(PURCHASE.UNIT).getValue() || "Gram";
+
+const paymentType =
+    purchaseEntry.getRange(PURCHASE.PAYMENT_TYPE).getValue() || "PhonePe";
+
+const amount =
+    purchaseEntry.getRange(PURCHASE.AMOUNT).getValue();
+
+const remarks =
+    purchaseEntry.getRange(PURCHASE.REMARKS).getValue();
+
+const supplier =
+    purchaseEntry.getRange(PURCHASE.SUPPLIER).getValue() || "Local Market";
+
+const rowData = [[
 
     purchaseID,
 
-    purchaseEntry.getRange(PURCHASE.PURCHASE_DATE).getValue(),
+    purchaseDate,
 
-    purchaseEntry.getRange(PURCHASE.ITEM_NAME).getValue(),
+    itemName,
 
-    purchaseEntry.getRange(PURCHASE.QUANTITY).getValue(),
+    quantity,
 
-    purchaseEntry.getRange(PURCHASE.UNIT).getValue(),
+    unit,
 
-    purchaseEntry.getRange(PURCHASE.PAYMENT_TYPE).getValue(),
+    paymentType,
 
-    purchaseEntry.getRange(PURCHASE.AMOUNT).getValue(),
+    amount,
 
-    purchaseEntry.getRange(PURCHASE.REMARKS).getValue(),
+    remarks,
 
-    purchaseEntry.getRange(PURCHASE.SUPPLIER).getValue()
+    supplier
 
-  ]];
+]];
 
   purchaseRegister
     .getRange(nextRow, 1, 1, rowData[0].length)
