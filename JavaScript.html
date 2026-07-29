@@ -1174,31 +1174,52 @@ function showPurchaseSuggestions(items) {
     * Add New Purchase Item
     * ==========================================
     */
-   function addNewPurchaseItem() {
-      const itemName = document.getElementById("itemSearch").value.trim();
+function addNewPurchaseItem() {
 
-      if (!itemName) return;
+    const itemName = document.getElementById("itemSearch").value.trim();
 
-      google.script.run
+    if (!itemName) return;
 
-         .withSuccessHandler(function (response) {
+    google.script.run
+
+        .withSuccessHandler(function (response) {
+
+            // If item already exists or newly created,
+            // make sure it exists in local cache only once.
+            const exists = purchaseItemsCache.some(item =>
+                item.itemName.toLowerCase() === response.itemName.toLowerCase()
+            );
+
+            if (!exists) {
+
+                purchaseItemsCache.push({
+
+                    itemName: response.itemName,
+
+                    searchName: response.itemName.toLowerCase()
+
+                });
+
+            }
+
+            // Select the item
             document.getElementById("itemSearch").value = response.itemName;
 
             clearPurchaseSuggestions();
 
-            // Refresh purchase settings
-            loadPurchaseSettings();
-
-            // Auto-select newly added item
             selectPurchaseItem(response.itemName);
-         })
 
-         .withFailureHandler(function (error) {
-            alert(error.message);
-         })
+        })
 
-         .addPurchaseItem(itemName);
-   }
+        .withFailureHandler(function (error) {
+
+            alert(error.message || error);
+
+        })
+
+        .addPurchaseItem(itemName);
+
+}
 
    /**
     * ==========================================
