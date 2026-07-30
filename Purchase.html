@@ -219,9 +219,7 @@
    });
 
    function initializePurchase() {
-      document.getElementById("purchaseDate").value = new Date()
-         .toISOString()
-         .split("T")[0];
+document.getElementById("purchaseDate").value = getToday();
 
       loadPurchaseSettings();
    }

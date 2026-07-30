@@ -1,8 +1,4 @@
-/**
- * ==========================================
- * Load Purchase Settings
- * ==========================================
- */
+
 /**
  * ==========================================
  * Load Purchase Settings
@@ -71,6 +67,8 @@ function searchPurchaseItems(keyword) {
 }
 
 
+
+
 /**
  * ==========================================
  * Add Purchase Item
@@ -78,66 +76,58 @@ function searchPurchaseItems(keyword) {
  */
 function addPurchaseItem(itemName) {
 
-  itemName = String(itemName).trim();
+    itemName = String(itemName).trim();
 
-  if (!itemName) {
+    if (!itemName) {
+        throw new Error("Item Name is required.");
+    }
 
-    throw new Error("Item Name is required.");
+    const sheet = getSheet(SHEETS.SETTINGS);
 
-  }
+    const values = sheet
+        .getRange("X2:X1000")
+        .getValues();
 
-  const sheet = getSheet(SHEETS.SETTINGS);
+    let nextRow = null;
 
-  const items = sheet
-      .getRange("X2:X1000")
-      .getValues()
-      .flat();
+    for (let i = 0; i < values.length; i++) {
 
-  // Duplicate Check
-  for (let i = 0; i < items.length; i++) {
+        const value = String(values[i][0]).trim();
 
-    if (
-      String(items[i]).trim().toLowerCase() ===
-      itemName.toLowerCase()
-    ) {
+        if (
+            value &&
+            value.toLowerCase() === itemName.toLowerCase()
+        ) {
 
-      return {
+            return {
+                success: true,
+                alreadyExists: true,
+                itemName: value
+            };
 
-        success: true,
+        }
 
-        alreadyExists: true,
-
-        itemName: items[i]
-
-      };
+        if (!value && nextRow === null) {
+            nextRow = i + 2;
+        }
 
     }
 
-  }
+    if (nextRow === null) {
+        nextRow = values.length + 2;
+    }
 
-  // Find first empty row
-  let nextRow = 2;
+    sheet
+        .getRange(nextRow, 24)
+        .setValue(itemName);
 
-  while (sheet.getRange(nextRow, 24).getValue() !== "") {
-
-    nextRow++;
-
-  }
-
-  sheet.getRange(nextRow, 24).setValue(itemName);
-
-  return {
-
-    success: true,
-
-    alreadyExists: false,
-
-    itemName: itemName
-
-  };
+    return {
+        success: true,
+        alreadyExists: false,
+        itemName: itemName
+    };
 
 }
-
 
 
 
@@ -149,51 +139,36 @@ function addPurchaseItem(itemName) {
  */
 function savePurchaseFromWeb(purchaseData) {
 
-  try {
+    try {
 
-    validatePurchaseData(purchaseData);
+        validatePurchaseData(purchaseData);
 
-const db = {
+        const purchaseSheet =
+            getSheet(SHEETS.PURCHASE_REGISTER);
 
-    purchases: getSheet(SHEETS.PURCHASE_REGISTER)
+        const purchaseId =
+            generateNextId(purchaseSheet, "PUR");
 
-};
+        savePurchaseEntry(
+            purchaseSheet,
+            purchaseId,
+            purchaseData
+        );
 
-const purchaseId = generateNextId(
-    db.purchases,
-    "PUR"
-);
+        return {
+            success: true,
+            purchaseId,
+            message: "Purchase Saved Successfully"
+        };
 
-// Save Purchase
-savePurchaseEntry(
-    db.purchases,
-    purchaseId,
-    purchaseData
-);
+    } catch (error) {
 
-return {
+        return {
+            success: false,
+            message: error.message
+        };
 
-    success: true,
-
-    purchaseId: purchaseId,
-
-    message: "Purchase Saved Successfully"
-
-};
-
-  }
-
-  catch (error) {
-
-    return {
-
-      success: false,
-
-      message: error.message
-
-    };
-
-  }
+    }
 
 }
 
@@ -216,11 +191,13 @@ function validatePurchaseData(purchaseData) {
   if (!purchase.quantity || purchase.quantity <= 0)
     throw new Error("Quantity should be greater than zero.");
 
-  if (!purchase.unit)
-    throw new Error("Unit is required.");
+purchase.unit = purchase.unit || "Gram";
 
-  if (!purchase.paymentType)
-    throw new Error("Payment Type is required.");
+purchase.paymentType =
+    purchase.paymentType || "PhonePe";
+
+purchase.supplier =
+    purchase.supplier || "Local Market";
 
   if (!purchase.amount || purchase.amount <= 0)
     throw new Error("Amount should be greater than zero.");
@@ -242,46 +219,27 @@ function savePurchaseEntry(
     purchaseData
 ) {
 
-    const purchase = purchaseData.purchase;
+    const p = purchaseData.purchase;
 
-    const row = [[
-
-        purchaseId,
-
-        Utilities.formatDate(
-            new Date(purchase.purchaseDate),
-            Session.getScriptTimeZone(),
-            "dd/MM/yyyy"
-        ),
-
-        purchase.itemName,
-
-        purchase.quantity,
-
-        purchase.unit,
-
-        purchase.paymentType,
-
-        purchase.amount,
-
-        purchase.supplier,
-
-        purchase.remarks,
-
-        new Date()
-
-    ]];
+    const nextRow = purchaseSheet.getLastRow() + 1;
 
     purchaseSheet
-        .getRange(
-            purchaseSheet.getLastRow() + 1,
-            1,
-            1,
-            row[0].length
-        )
-        .setValues(row);
+        .getRange(nextRow, 1, 1, 10)
+        .setValues([[
+            purchaseId,
+            new Date(p.purchaseDate),
+            p.itemName,
+            Number(p.quantity),
+            p.unit,
+            p.paymentType,
+            Number(p.amount),
+            p.supplier,
+            p.remarks || "",
+            new Date()
+        ]]);
 
 }
+
 
 
 

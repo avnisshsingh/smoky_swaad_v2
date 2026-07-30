@@ -13,21 +13,27 @@
  */
 function getSS() {
 
-  return SpreadsheetApp.getActiveSpreadsheet();
+   return SS;
 
 }
 
 
+
 /**
- * ==========================================================
+ * ==========================================
+ * Spreadsheet Cache
+ * ==========================================
+ */
+const SS = SpreadsheetApp.getActiveSpreadsheet();
+
+/**
+ * ==========================================
  * Get Sheet By Name
- * ==========================================================
+ * ==========================================
  */
 function getSheet(sheetName) {
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet = ss.getSheetByName(sheetName);
+  const sheet = SS.getSheetByName(sheetName);
 
   if (!sheet) {
     throw new Error("Sheet not found: " + sheetName);
@@ -35,6 +41,7 @@ function getSheet(sheetName) {
 
   return sheet;
 }
+
 
 
 /**
@@ -55,29 +62,24 @@ function getNextRow(sheet) {
  * Example:
  * SS00001
  * CUS00001
- * ==========================================================
+ * ==========================================
  */
 function generateNextId(sheet, prefix) {
 
-  const lastRow = sheet.getLastRow();
+    const lastRow = sheet.getLastRow();
 
-  if (lastRow <= 1) {
+    if (lastRow < 2) {
+        return prefix + "00001";
+    }
 
-    return prefix + "00001";
+    const lastId = sheet
+        .getRange(lastRow, 1)
+        .getDisplayValue();
 
-  }
+    const nextNumber =
+        parseInt(lastId.substring(prefix.length), 10) + 1;
 
-  const lastId = String(
-    sheet.getRange(lastRow, 1).getValue()
-  );
-
-  const lastNumber = Number(
-    lastId.replace(prefix, "")
-  );
-
-  const nextNumber = lastNumber + 1;
-
-  return prefix + String(nextNumber).padStart(5, "0");
+    return prefix + String(nextNumber).padStart(5, "0");
 
 }
 

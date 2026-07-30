@@ -248,3 +248,71 @@ function getCustomerByMobileNumber(mobile) {
   };
 
 }
+
+
+
+/**
+ * ==========================================
+ * Load All Customers for POS Cache
+ * ==========================================
+ */
+function getAllCustomers() {
+
+    const sheet = getSheet(SHEETS.CUSTOMERS);
+
+    if (sheet.getLastRow() < 2) {
+        return [];
+    }
+
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+
+    return data.map(row => ({
+        customerName: row[1],
+        mobile: String(row[2]).trim(),
+        deliveryArea: row[3],
+        houseAddress: row[4]
+    }));
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Load All Customers
+ * ==========================================
+ */
+function getAllCustomers() {
+
+    const sheet = getSheet(SHEETS.CUSTOMERS);
+
+    if (sheet.getLastRow() < 2) {
+        return [];
+    }
+
+    return sheet
+        .getRange(2,1,sheet.getLastRow()-1,5)
+        .getValues()
+        .map(r=>({
+
+            customerName:r[1],
+
+            mobile:String(r[2]),
+
+            deliveryArea:r[3],
+
+            houseAddress:r[4]
+
+        }));
+
+}

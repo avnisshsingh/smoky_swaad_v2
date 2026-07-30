@@ -90,3 +90,31 @@ function loadMenu() {
       }));
 
 }
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Load Complete POS Cache
+ * ==========================================
+ */
+function loadPOSCache() {
+
+    return {
+
+        menu: loadMenu(),
+
+        settings: loadAppSettings(),
+
+        customers: getAllCustomers()
+
+    };
+
+}
+
+
+
