@@ -28,7 +28,7 @@ function saveOrderFromWeb(orderData) {
 
       saveOrderHeader(db.orders, orderId, orderData);
       saveOrderItems(db.orderItems, orderId, orderData);
-      saveOrUpdateCustomer(orderData);
+      saveOrUpdateCustomer(orderData, orderId);
 
       return {
         success: true,
@@ -127,7 +127,16 @@ function saveOrderHeader(ordersSheet, orderId, orderData) {
 
   ];
 
-  ordersSheet.appendRow(row);
+const nextRow = ordersSheet.getLastRow() + 1;
+
+ordersSheet
+  .getRange(nextRow, 1, 1, row.length)
+  .setValues([row]);
+
+// Preserve Created At timestamp format
+ordersSheet
+  .getRange(nextRow, 14)
+  .setNumberFormat("dd/MM/yyyy HH:mm:ss");
 
 }
 

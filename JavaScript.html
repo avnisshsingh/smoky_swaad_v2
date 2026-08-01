@@ -965,80 +965,165 @@ function showMenuSuggestions(items) {
       });
    }
 
-   /**
-    * ==========================================
-    * Save Order
-    * ==========================================
-    */
-   function saveOrder() {
 
-    // Prevent double click
+  /**
+ * ==========================================
+ * Save Order
+ * ==========================================
+ */
+function saveOrder() {
+
+    // ------------------------------------------
+    // Prevent Double Click / Duplicate Save
+    // ------------------------------------------
+
     if (isSavingOrder) {
         return;
     }
 
+
+    // ------------------------------------------
+    // Collect Order Data
+    // ------------------------------------------
+
+    const orderData = collectOrderData();
+
+
+    // ------------------------------------------
+    // Lock Save
+    // ------------------------------------------
+
     isSavingOrder = true;
 
-    const saveButton = document.getElementById("btnSaveOrder");
+    const saveButton =
+        document.getElementById("btnSaveOrder");
 
     if (saveButton) {
 
         saveButton.disabled = true;
 
-        saveButton.innerHTML = "Saving...";
+        saveButton.textContent = "Saving...";
 
     }
 
-    const orderData = collectOrderData();
 
-    console.log(orderData);
+    // ------------------------------------------
+    // Send Order To Server
+    // ------------------------------------------
 
     google.script.run
 
-        .withSuccessHandler(function(response){
+        .withSuccessHandler(function(response) {
+
+            // ----------------------------------
+            // Unlock Save
+            // ----------------------------------
 
             isSavingOrder = false;
+
+
+            if (response && response.success) {
+
+                // ----------------------------------
+                // Clear POS Immediately
+                // ----------------------------------
+
+                clearPOSForm();
+
+
+                // ----------------------------------
+                // Restore Save Button
+                // ----------------------------------
+
+                if (saveButton) {
+
+                    saveButton.disabled = false;
+
+                    saveButton.textContent = "Save Order";
+
+                }
+
+
+                // ----------------------------------
+                // Success Message
+                // ----------------------------------
+
+                alert(
+                    "Order Saved Successfully\n\n" +
+                    "Order ID : " +
+                    response.orderId
+                );
+
+            } else {
+
+                // ----------------------------------
+                // Restore Save Button
+                // ----------------------------------
+
+                if (saveButton) {
+
+                    saveButton.disabled = false;
+
+                    saveButton.textContent = "Save Order";
+
+                }
+
+
+                // ----------------------------------
+                // Server Validation / Save Error
+                // ----------------------------------
+
+                alert(
+                    response && response.message
+                        ? response.message
+                        : "Unable to save order."
+                );
+
+            }
+
+        })
+
+
+        .withFailureHandler(function(error) {
+
+            // ----------------------------------
+            // Unlock Save
+            // ----------------------------------
+
+            isSavingOrder = false;
+
+
+            // ----------------------------------
+            // Restore Save Button
+            // ----------------------------------
 
             if (saveButton) {
 
                 saveButton.disabled = false;
 
-                saveButton.innerHTML = "Save Order";
+                saveButton.textContent = "Save Order";
 
             }
 
-            if (response.success){
 
-                alert(
-                    "Order Saved Successfully\n\nOrder ID : " +
-                    response.orderId
-                );
+            // ----------------------------------
+            // Unexpected Server Error
+            // ----------------------------------
 
-                clearPOSForm();
+            console.error(
+                "Save Order Error:",
+                error
+            );
 
-            } else {
 
-                alert(response.message);
-
-            }
+            alert(
+                error && error.message
+                    ? error.message
+                    : "Unable to save order."
+            );
 
         })
 
-        .withFailureHandler(function(error){
-
-            isSavingOrder = false;
-
-            if (saveButton){
-
-                saveButton.disabled = false;
-
-                saveButton.innerHTML = "Save Order";
-
-            }
-
-            alert(error.message || error);
-
-        })
 
         .saveOrderFromWeb(orderData);
 

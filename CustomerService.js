@@ -11,7 +11,7 @@
  * Save Or Update Customer
  * ==========================================================
  */
-function saveOrUpdateCustomer(orderData) {
+function saveOrUpdateCustomer(orderData, orderId) {
 
   const customerSheet = getSheet(SHEETS.CUSTOMERS);
 
@@ -26,16 +26,18 @@ function saveOrUpdateCustomer(orderData) {
 
     createCustomer(
       customerSheet,
-      orderData
+      orderData,
+      orderId
     );
 
   } else {
 
-updateExistingCustomer(
-    customerSheet,
-    rowNumber,
-    orderData
-);
+    updateExistingCustomer(
+      customerSheet,
+      rowNumber,
+      orderData,
+      orderId
+    );
 
   }
 
@@ -75,6 +77,7 @@ function generateCustomerID(customerSheet) {
 /**
  * ==========================================================
  * Find Customer Row By Mobile
+ * Optimized using TextFinder
  * ==========================================================
  */
 function findCustomerRowByMobile(customerSheet, mobile) {
@@ -87,21 +90,27 @@ function findCustomerRowByMobile(customerSheet, mobile) {
 
   }
 
-  const mobiles = customerSheet
-    .getRange(2, 3, lastRow - 1, 1)
-    .getValues();
+  const searchMobile = String(mobile).trim();
 
-  for (let i = 0; i < mobiles.length; i++) {
+  if (!searchMobile) {
 
-    if (String(mobiles[i][0]).trim() === String(mobile).trim()) {
-
-      return i + 2;
-
-    }
+    return -1;
 
   }
 
-  return -1;
+  const match = customerSheet
+    .getRange(2, 3, lastRow - 1, 1)
+    .createTextFinder(searchMobile)
+    .matchEntireCell(true)
+    .findNext();
+
+  if (!match) {
+
+    return -1;
+
+  }
+
+  return match.getRow();
 
 }
 
@@ -111,7 +120,7 @@ function findCustomerRowByMobile(customerSheet, mobile) {
  * Create Customer
  * ==========================================================
  */
-function createCustomer(customerSheet, orderData) {
+function createCustomer(customerSheet, orderData, orderId) {
 
   const customer = orderData.customer;
 
@@ -119,88 +128,139 @@ function createCustomer(customerSheet, orderData) {
 
   const parts = orderData.meta.orderDate.split("-");
 
-const orderDate = new Date(
-    Number(parts[0]),      // Year
-    Number(parts[1]) - 1,  // Month (JavaScript months start from 0)
-    Number(parts[2]),      // Day
-    12, 0, 0               // Noon (avoids timezone shifting)
-);
+  const orderDate = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2]),
+    12,
+    0,
+    0
+  );
 
-  customerSheet.appendRow([
+  const newRow = [[
 
-    customerId,
+    customerId,                                  // A Customer ID
 
-    customer.customerName,
+    customer.customerName,                       // B Customer Name
 
-    customer.mobile,
+    customer.mobile,                             // C Mobile
 
-    customer.deliveryArea,
+    customer.deliveryArea,                       // D Delivery Area
 
-    customer.houseAddress,
+    customer.houseAddress,                       // E House Address
 
-    orderDate,
+    orderDate,                                   // F First Order Date
 
-    orderDate,
+    orderDate,                                   // G Last Order Date
 
-    1,
+    1,                                           // H Total Orders
 
-    orderData.totals.grandTotal
+    Number(orderData.totals.grandTotal) || 0,    // I Lifetime Spend
 
-  ]);
+    orderId                                      // J Last Order ID
+
+  ]];
+
+  const nextRow = customerSheet.getLastRow() + 1;
+
+  customerSheet
+    .getRange(
+      nextRow,
+      1,
+      1,
+      newRow[0].length
+    )
+    .setValues(newRow);
 
 }
 
 
 /**
  * ==========================================================
- * Update Customer
+ * Update Existing Customer
  * ==========================================================
  */
-function updateExistingCustomer(customerSheet, rowNumber, orderData) {
+function updateExistingCustomer(
+  customerSheet,
+  rowNumber,
+  orderData,
+  orderId
+) {
 
   const customer = orderData.customer;
 
-  // Read the existing customer row
+  // Read existing customer data A:J
   const row = customerSheet
-      .getRange(rowNumber, 1, 1, 9)
-      .getValues()[0];
+    .getRange(
+      rowNumber,
+      1,
+      1,
+      10
+    )
+    .getValues()[0];
 
-  // Preserve first order date
+  // Preserve First Order Date
   const firstOrderDate = row[5];
 
-  // Build the new last order date from the business date
+  // Build Last Order Date from business order date
   const parts = orderData.meta.orderDate.split("-");
 
   const lastOrderDate = new Date(
-      Number(parts[0]),
-      Number(parts[1]) - 1,
-      Number(parts[2]),
-      12, 0, 0
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2]),
+    12,
+    0,
+    0
   );
 
-  const totalOrders = Number(row[7]) + 1;
+  // Increment Total Orders
+  const totalOrders =
+    Number(row[7] || 0) + 1;
 
-const grandTotal =
+  // Current Order Total
+  const grandTotal =
     Number(orderData.totals.grandTotal || 0);
 
-const lifetimeSpend =
+  // Update Lifetime Spend
+  const lifetimeSpend =
     Number(row[8] || 0) + grandTotal;
 
+  // Update customer A:J in one batch write
   customerSheet
-      .getRange(rowNumber, 1, 1, 9)
-      .setValues([[
-          row[0],                    // Customer ID
-          customer.customerName,
-          customer.mobile,
-          customer.deliveryArea,
-          customer.houseAddress,
-          firstOrderDate,
-          lastOrderDate,
-          totalOrders,
-          lifetimeSpend
-      ]]);
+    .getRange(
+      rowNumber,
+      1,
+      1,
+      10
+    )
+    .setValues([[
+
+      row[0],                    // A Customer ID
+
+      customer.customerName,     // B Customer Name
+
+      customer.mobile,           // C Mobile
+
+      customer.deliveryArea,     // D Delivery Area
+
+      customer.houseAddress,     // E House Address
+
+      firstOrderDate,            // F First Order Date
+
+      lastOrderDate,             // G Last Order Date
+
+      totalOrders,               // H Total Orders
+
+      lifetimeSpend,             // I Lifetime Spend
+
+      orderId                    // J Last Order ID
+
+    ]]);
 
 }
+
+
 /**
  * ==========================================================
  * Get Customer By Mobile
@@ -222,7 +282,12 @@ function getCustomerByMobileNumber(mobile) {
   }
 
   const row = customerSheet
-    .getRange(rowNumber, 1, 1, 9)
+    .getRange(
+      rowNumber,
+      1,
+      1,
+      10
+    )
     .getValues()[0];
 
   return {
@@ -243,76 +308,51 @@ function getCustomerByMobileNumber(mobile) {
 
     totalOrders: row[7],
 
-    lifetimeSpend: row[8]
+    lifetimeSpend: row[8],
+
+    lastOrderId: row[9]
 
   };
 
 }
 
 
-
 /**
- * ==========================================
+ * ==========================================================
  * Load All Customers for POS Cache
- * ==========================================
+ * ==========================================================
  */
 function getAllCustomers() {
 
-    const sheet = getSheet(SHEETS.CUSTOMERS);
+  const sheet = getSheet(SHEETS.CUSTOMERS);
 
-    if (sheet.getLastRow() < 2) {
-        return [];
-    }
+  const lastRow = sheet.getLastRow();
 
-    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+  if (lastRow < 2) {
 
-    return data.map(row => ({
-        customerName: row[1],
-        mobile: String(row[2]).trim(),
-        deliveryArea: row[3],
-        houseAddress: row[4]
-    }));
+    return [];
 
-}
+  }
 
+  const data = sheet
+    .getRange(
+      2,
+      1,
+      lastRow - 1,
+      5
+    )
+    .getValues();
 
+  return data.map(row => ({
 
+    customerName: row[1],
 
+    mobile: String(row[2]).trim(),
 
+    deliveryArea: row[3],
 
+    houseAddress: row[4]
 
-
-
-
-
-
-
-/**
- * ==========================================
- * Load All Customers
- * ==========================================
- */
-function getAllCustomers() {
-
-    const sheet = getSheet(SHEETS.CUSTOMERS);
-
-    if (sheet.getLastRow() < 2) {
-        return [];
-    }
-
-    return sheet
-        .getRange(2,1,sheet.getLastRow()-1,5)
-        .getValues()
-        .map(r=>({
-
-            customerName:r[1],
-
-            mobile:String(r[2]),
-
-            deliveryArea:r[3],
-
-            houseAddress:r[4]
-
-        }));
+  }));
 
 }
