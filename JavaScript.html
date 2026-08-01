@@ -17,6 +17,7 @@
    let isSavingPurchase = false;
    let purchaseItemsCache = [];
    let menuSearchTimer = null;
+   let customAddons = [];
 
 function getToday() {
 
@@ -211,25 +212,73 @@ if (orderDate) {
    
    
    
-   
-   /**
-    * Fill Customer Details
-    */
-   function fillCustomerForm(customer) {
-      if (!customer) {
-         return;
-      }
+/**
+ * ==========================================
+ * Fill Customer Details
+ * ==========================================
+ */
+function fillCustomerForm(customer) {
 
-      document.getElementById("customerName").value =
-         customer.customerName || "";
+    if (!customer) {
+        return;
+    }
 
-      document.getElementById("houseAddress").value =
-         customer.houseAddress || customer.address || "";
+    const customerName =
+        document.getElementById("customerName");
 
-      document.getElementById("deliveryArea").value =
-         customer.deliveryArea || "";
-   }
+    const houseAddress =
+        document.getElementById("houseAddress");
 
+    const deliveryArea =
+        document.getElementById("deliveryArea");
+
+
+    // ------------------------------------------
+    // Customer Name
+    // ------------------------------------------
+
+    if (customerName) {
+
+        customerName.value =
+            customer.customerName || "";
+
+    }
+
+
+    // ------------------------------------------
+    // House / Flat Address
+    // ------------------------------------------
+
+    if (houseAddress) {
+
+        houseAddress.value =
+            customer.houseAddress ||
+            customer.address ||
+            "";
+
+    }
+
+
+    // ------------------------------------------
+    // Delivery Area
+    // ------------------------------------------
+
+    if (deliveryArea) {
+
+        deliveryArea.value =
+            customer.deliveryArea || "";
+
+    }
+
+
+    // ------------------------------------------
+    // IMPORTANT
+    // Recalculate Delivery Charge
+    // ------------------------------------------
+
+    updateDeliveryCharge();
+
+}
 
 
 /**==========================================
@@ -676,119 +725,413 @@ function showMenuSuggestions(items) {
       renderCart();
    }
 
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Calculate Order Totals
+ * ==========================================
+ */
+function calculateTotals() {
+
+    // ------------------------------------------
+    // Menu Subtotal
+    // ------------------------------------------
+
+    const subTotal = cart.reduce(function(total, item) {
+
+        const price = Number(item.price) || 0;
+        const qty = Number(item.qty) || 0;
+
+        return total + (price * qty);
+
+    }, 0);
+
+
+    // ------------------------------------------
+    // Custom Add-on Total
+    // ------------------------------------------
+
+    const addonTotal = getCustomAddonTotal();
+
+
+    // ------------------------------------------
+    // Discount
+    // ------------------------------------------
+
+    const discountBox =
+        document.getElementById("discount");
+
+    let discount = discountBox
+        ? parseFloat(discountBox.value)
+        : 0;
+
+
+    if (!Number.isFinite(discount) || discount < 0) {
+
+        discount = 0;
+
+    }
+
+
+    /*
+     * Maximum discount is limited to:
+     *
+     * Menu Subtotal + Add-on Total
+     *
+     * Delivery charge is intentionally excluded
+     * from the discountable amount.
+     */
+
+    const discountableAmount =
+        subTotal + addonTotal;
+
+
+    if (discount > discountableAmount) {
+
+        discount = discountableAmount;
+
+        if (discountBox) {
+
+            discountBox.value =
+                discount.toFixed(2);
+
+        }
+
+    }
+
+
+    // ------------------------------------------
+    // Safe Delivery Charge
+    // ------------------------------------------
+
+    const safeDeliveryCharge =
+        Number.isFinite(Number(deliveryCharge))
+            ? Number(deliveryCharge)
+            : 0;
+
+
+    // ------------------------------------------
+    // Grand Total
+    // ------------------------------------------
+
+    const grandTotal =
+        subTotal
+        + addonTotal
+        - discount
+        + safeDeliveryCharge;
+
+
+    // ------------------------------------------
+    // UI Elements
+    // ------------------------------------------
+
+    const subTotalEl =
+        document.getElementById("subTotal");
+
+    const addonTotalEl =
+        document.getElementById("addonTotalDisplay");
+
+    const deliveryEl =
+        document.getElementById("deliveryCharge");
+
+    const grandEl =
+        document.getElementById("grandTotal");
+
+
+    // ------------------------------------------
+    // Update UI
+    // ------------------------------------------
+
+    if (subTotalEl) {
+
+        subTotalEl.innerText =
+            "₹" + subTotal.toFixed(2);
+
+    }
+
+
+    if (addonTotalEl) {
+
+        addonTotalEl.textContent =
+            "₹" + addonTotal.toFixed(2);
+
+    }
+
+
+    if (deliveryEl) {
+
+        deliveryEl.innerText =
+            "₹" + safeDeliveryCharge.toFixed(2);
+
+    }
+
+
+    if (grandEl) {
+
+        grandEl.innerText =
+            "₹" + grandTotal.toFixed(2);
+
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
    /**
-    * Calculate Order Totals
-    */
-   function calculateTotals() {
-      const subTotal = cart.reduce((total, item) => {
-         return total + item.price * item.qty;
-      }, 0);
+ * ==========================================
+ * Collect Complete Order Data
+ * ==========================================
+ */
+function collectOrderData() {
 
-      let discount = parseFloat(document.getElementById("discount")?.value);
+    const getValue = function(id) {
 
-      if (isNaN(discount)) discount = 0;
+        const element =
+            document.getElementById(id);
 
-      if (discount < 0) discount = 0;
+        if (!element) {
 
-      if (discount > subTotal) {
-         discount = subTotal;
-
-         const discountBox = document.getElementById("discount");
-
-         if (discountBox) {
-            discountBox.value = discount;
-         }
-      }
-
-      const grandTotal = subTotal - discount + deliveryCharge;
-
-      const subTotalEl = document.getElementById("subTotal");
-
-      const deliveryEl = document.getElementById("deliveryCharge");
-
-      const grandEl = document.getElementById("grandTotal");
-
-      if (subTotalEl) subTotalEl.innerText = "₹" + subTotal.toFixed(2);
-
-      if (deliveryEl) deliveryEl.innerText = "₹" + deliveryCharge.toFixed(2);
-
-      if (grandEl) grandEl.innerText = "₹" + grandTotal.toFixed(2);
-   }
-
-   /**
-    * Collect Complete Order Data
-    */
-   function collectOrderData() {
-      const getValue = (id) => {
-         const element = document.getElementById(id);
-
-         if (!element) {
             return "";
-         }
 
-         return element.value;
-      };
+        }
 
-      const customer = {
-         customerName: getValue("customerName").trim(),
+        return element.value;
 
-         mobile: getValue("mobile").trim(),
+    };
 
-         deliveryArea: getValue("deliveryArea"),
 
-         houseAddress: getValue("houseAddress").trim(),
+    // ------------------------------------------
+    // Customer
+    // ------------------------------------------
 
-         deliverySlot: getValue("deliverySlot"),
-      };
+    const customer = {
 
-      const order = {
-         orderType: getValue("orderType"),
+        customerName:
+            getValue("customerName").trim(),
 
-         specialInstructions: getValue("specialInstructions").trim(),
-      };
+        mobile:
+            getValue("mobile").trim(),
 
-      const payment = {
-         paymentMode: getValue("paymentMode"),
+        deliveryArea:
+            getValue("deliveryArea"),
 
-         paymentStatus: getValue("paymentStatus") || "Pending",
-      };
+        houseAddress:
+            getValue("houseAddress").trim(),
 
-      const discount = parseFloat(getValue("discount")) || 0;
+        deliverySlot:
+            getValue("deliverySlot")
 
-      const subTotal = cart.reduce((sum, item) => {
-         return sum + item.lineTotal;
-      }, 0);
+    };
 
-      const totals = {
-         subTotal: subTotal,
 
-         discount: discount,
+    // ------------------------------------------
+    // Order
+    // ------------------------------------------
 
-         deliveryCharge: deliveryCharge,
+    const order = {
 
-         grandTotal: subTotal - discount + deliveryCharge,
-      };
+        orderType:
+            getValue("orderType"),
 
-      const meta = {
-         orderDate: getValue("orderDate"),
+        specialInstructions:
+            getValue("specialInstructions").trim()
 
-         source: "WEB",
-      };
+    };
 
-      return {
-         customer,
 
-         order,
+    // ------------------------------------------
+    // Payment
+    // ------------------------------------------
 
-         payment,
+    const payment = {
 
-         totals,
+        paymentMode:
+            getValue("paymentMode"),
 
-         cart: cart.map((item) => ({ ...item })),
+        paymentStatus:
+            getValue("paymentStatus") || "Pending"
 
-         meta,
-      };
-   }
+    };
+
+
+    // ------------------------------------------
+    // Menu Subtotal
+    // ------------------------------------------
+
+    const subTotal = cart.reduce(
+        function(sum, item) {
+
+            const price =
+                Number(item.price) || 0;
+
+            const qty =
+                Number(item.qty) || 0;
+
+            return sum + (price * qty);
+
+        },
+        0
+    );
+
+
+    // ------------------------------------------
+    // Add-on Total
+    // ------------------------------------------
+
+    const addonTotal =
+        getCustomAddonTotal();
+
+
+    // ------------------------------------------
+    // Discount
+    // ------------------------------------------
+
+    let discount =
+        parseFloat(getValue("discount"));
+
+
+    if (
+        !Number.isFinite(discount) ||
+        discount < 0
+    ) {
+
+        discount = 0;
+
+    }
+
+
+    const discountableAmount =
+        subTotal + addonTotal;
+
+
+    if (discount > discountableAmount) {
+
+        discount =
+            discountableAmount;
+
+    }
+
+
+    // ------------------------------------------
+    // Delivery Charge
+    // ------------------------------------------
+
+    const safeDeliveryCharge =
+        Number.isFinite(Number(deliveryCharge))
+            ? Number(deliveryCharge)
+            : 0;
+
+
+    // ------------------------------------------
+    // Grand Total
+    // ------------------------------------------
+
+    const grandTotal =
+        subTotal
+        + addonTotal
+        - discount
+        + safeDeliveryCharge;
+
+
+    // ------------------------------------------
+    // Totals
+    // ------------------------------------------
+
+    const totals = {
+
+        subTotal: subTotal,
+
+        addonTotal: addonTotal,
+
+        discount: discount,
+
+        deliveryCharge:
+            safeDeliveryCharge,
+
+        grandTotal:
+            grandTotal
+
+    };
+
+
+    // ------------------------------------------
+    // Meta
+    // ------------------------------------------
+
+    const meta = {
+
+        orderDate:
+            getValue("orderDate"),
+
+        source: "WEB"
+
+    };
+
+
+    // ------------------------------------------
+    // Final Payload
+    // ------------------------------------------
+
+    return {
+
+        customer: customer,
+
+        order: order,
+
+        payment: payment,
+
+        totals: totals,
+
+        cart: cart.map(function(item) {
+
+            return { ...item };
+
+        }),
+
+        customAddons:
+            customAddons.map(function(addon) {
+
+                return {
+
+                    name:
+                        String(addon.name || "").trim(),
+
+                    price:
+                        Number(addon.price) || 0
+
+                };
+
+            }),
+
+        meta: meta
+
+    };
+
+}
+
+
+
+
+
+
+
+
 
    /**
     * Enable / Disable Discount Field
@@ -1128,6 +1471,7 @@ function saveOrder() {
         .saveOrderFromWeb(orderData);
 
 }
+
 
 /* ==========================================
    Utility
@@ -1638,77 +1982,212 @@ document.getElementById("purchaseDate").value =
    }
 
    /**
-    * ==========================================
-    * Clear POS Form
-    * ==========================================
-    */
-   function clearPOSForm() {
-      console.log("Clearing POS Form...");
+ * ==========================================
+ * Clear POS Form
+ * ==========================================
+ */
+function clearPOSForm() {
 
-      function setValue(id, value) {
-         const el = document.getElementById(id);
-         if (el) el.value = value;
-      }
+    console.log("Clearing POS Form...");
 
-      function resetSelect(id) {
-         const el = document.getElementById(id);
-         if (el) el.selectedIndex = 0;
-      }
 
-      // Customer
-      setValue("customerName", "");
-      setValue("mobile", "");
-      setValue("houseAddress", "");
+    function setValue(id, value) {
 
-      // Today's date
-      setValue("orderDate", getToday());
+        const el =
+            document.getElementById(id);
 
-      // Dropdowns
-      resetSelect("deliveryArea");
-      resetSelect("deliverySlot");
-      resetSelect("orderType");
-      resetSelect("paymentMode");
-      resetSelect("paymentStatus");
+        if (el) {
 
-      // Search
-      setValue("menuSearch", "");
+            el.value = value;
 
-      const suggestionBox = document.getElementById("menuSuggestions");
+        }
 
-      if (suggestionBox) {
-         suggestionBox.innerHTML = "";
-         suggestionBox.style.display = "none";
-      }
+    }
 
-      // Special Instructions
-      setValue("specialInstructions", "");
 
-      // Discount
-      setValue("discount", 0);
+    function resetSelect(id) {
 
-      // Reset cart
-      if (typeof cart !== "undefined") {
-         cart = [];
-      }
+        const el =
+            document.getElementById(id);
 
-      if (typeof deliveryCharge !== "undefined") {
-         deliveryCharge = 0;
-      }
+        if (el) {
 
-      if (typeof renderCart === "function") {
-         renderCart();
-      }
+            el.selectedIndex = 0;
 
-      if (typeof updateOrderSummary === "function") {
-         updateOrderSummary();
-      }
+        }
 
-      // Focus
-      const customer = document.getElementById("customerName");
-      if (customer) customer.focus();
+    }
 
-      console.log("POS Cleared");
-   }
+
+    // ------------------------------------------
+    // Customer
+    // ------------------------------------------
+
+    setValue(
+        "customerName",
+        ""
+    );
+
+    setValue(
+        "mobile",
+        ""
+    );
+
+    setValue(
+        "houseAddress",
+        ""
+    );
+
+
+    // ------------------------------------------
+    // Today's Date
+    // ------------------------------------------
+
+    setValue(
+        "orderDate",
+        getToday()
+    );
+
+
+    // ------------------------------------------
+    // Dropdowns
+    // ------------------------------------------
+
+    resetSelect("deliveryArea");
+
+    resetSelect("deliverySlot");
+
+    resetSelect("orderType");
+
+    resetSelect("paymentMode");
+
+    resetSelect("paymentStatus");
+
+
+    // ------------------------------------------
+    // Menu Search
+    // ------------------------------------------
+
+    setValue(
+        "menuSearch",
+        ""
+    );
+
+
+    const suggestionBox =
+        document.getElementById(
+            "menuSuggestions"
+        );
+
+
+    if (suggestionBox) {
+
+        suggestionBox.innerHTML = "";
+
+        suggestionBox.style.display =
+            "none";
+
+    }
+
+
+    // ------------------------------------------
+    // Special Instructions
+    // ------------------------------------------
+
+    setValue(
+        "specialInstructions",
+        ""
+    );
+
+
+    // ------------------------------------------
+    // Discount
+    // ------------------------------------------
+
+    setValue(
+        "discount",
+        0
+    );
+
+
+    // ------------------------------------------
+    // Reset Menu Cart
+    // ------------------------------------------
+
+    cart = [];
+
+
+    // ------------------------------------------
+    // Reset Custom Add-ons
+    // ------------------------------------------
+
+    customAddons = [];
+
+
+    // Clear Add-on input fields
+
+    setValue(
+        "addonName",
+        ""
+    );
+
+    setValue(
+        "addonPrice",
+        ""
+    );
+
+
+    // ------------------------------------------
+    // Reset Delivery Charge
+    // ------------------------------------------
+
+    deliveryCharge = 0;
+
+
+    // ------------------------------------------
+    // Refresh Add-on UI
+    // ------------------------------------------
+
+    renderCustomAddons();
+
+
+    // ------------------------------------------
+    // Refresh Shopping Cart
+    // ------------------------------------------
+
+    renderCart();
+
+
+    // ------------------------------------------
+    // Final Totals Refresh
+    // ------------------------------------------
+
+    calculateTotals();
+
+
+    // ------------------------------------------
+    // Focus Customer Name
+    // ------------------------------------------
+
+    const customer =
+        document.getElementById(
+            "customerName"
+        );
+
+
+    if (customer) {
+
+        customer.focus();
+
+    }
+
+
+    console.log("POS Cleared");
+
+}
+
+
+
 
    /**
     * ==========================================
@@ -2571,6 +3050,452 @@ function loadPOSCache() {
 
 
 
+
+/**
+ * ==========================================
+ * Delete Order
+ * ==========================================
+ */
+function deleteOrder() {
+
+    const orderIdBox =
+        document.getElementById("deleteOrderId");
+
+    const deleteButton =
+        document.getElementById("btnDeleteOrder");
+
+
+    // ------------------------------------------
+    // Validate Order ID
+    // ------------------------------------------
+
+    if (!orderIdBox) {
+
+        alert("Delete Order field not found.");
+
+        return;
+
+    }
+
+
+    const orderId =
+        String(orderIdBox.value || "")
+            .trim()
+            .toUpperCase();
+
+
+    if (!orderId) {
+
+        alert("Please enter an Order ID.");
+
+        orderIdBox.focus();
+
+        return;
+
+    }
+
+
+    // ------------------------------------------
+    // Confirmation
+    // ------------------------------------------
+
+    const confirmed = confirm(
+
+        "Delete Order " + orderId + "?\n\n" +
+
+        "This will permanently delete the order and its " +
+        "order items and recalculate the customer's order history."
+
+    );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    // ------------------------------------------
+    // Lock Delete Button
+    // ------------------------------------------
+
+    if (deleteButton) {
+
+        deleteButton.disabled = true;
+
+        deleteButton.textContent = "Deleting...";
+
+    }
+
+
+    // ------------------------------------------
+    // Server Request
+    // ------------------------------------------
+
+    google.script.run
+
+        .withSuccessHandler(function(response) {
+
+            if (deleteButton) {
+
+                deleteButton.disabled = false;
+
+                deleteButton.textContent = "Delete Order";
+
+            }
+
+
+            if (response && response.success) {
+
+                orderIdBox.value = "";
+
+                alert(
+                    "Order Deleted Successfully\n\n" +
+                    "Order ID : " + orderId
+                );
+
+            } else {
+
+                alert(
+                    response && response.message
+                        ? response.message
+                        : "Unable to delete order."
+                );
+
+            }
+
+        })
+
+
+        .withFailureHandler(function(error) {
+
+            if (deleteButton) {
+
+                deleteButton.disabled = false;
+
+                deleteButton.textContent = "Delete Order";
+
+            }
+
+
+            console.error(
+                "Delete Order Error:",
+                error
+            );
+
+
+            alert(
+                error && error.message
+                    ? error.message
+                    : "Unable to delete order."
+            );
+
+        })
+
+
+        .deleteOrderFromWeb(orderId);
+
+}
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * ADD CUSTOM ADD-ON
+ * ==========================================================
+ */
+function addCustomAddon() {
+
+    const nameInput =
+        document.getElementById("addonName");
+
+    const priceInput =
+        document.getElementById("addonPrice");
+
+
+    if (!nameInput || !priceInput) {
+
+        console.error(
+            "Add-on input fields not found."
+        );
+
+        return;
+
+    }
+
+
+    const addonName =
+        String(nameInput.value || "")
+            .trim();
+
+
+    const addonPrice =
+        Number(priceInput.value || 0);
+
+
+    // ------------------------------------------
+    // Validation
+    // ------------------------------------------
+
+    if (!addonName) {
+
+        alert("Please enter Add-on Name.");
+
+        nameInput.focus();
+
+        return;
+
+    }
+
+
+    if (
+        !Number.isFinite(addonPrice) ||
+        addonPrice <= 0
+    ) {
+
+        alert(
+            "Please enter a valid Add-on Price."
+        );
+
+        priceInput.focus();
+
+        return;
+
+    }
+
+
+    // ------------------------------------------
+    // Add to separate Add-on array
+    // ------------------------------------------
+
+    customAddons.push({
+
+        name: addonName,
+
+        price: addonPrice
+
+    });
+
+
+    // ------------------------------------------
+    // Clear fields
+    // ------------------------------------------
+
+    nameInput.value = "";
+
+    priceInput.value = "";
+
+
+    // ------------------------------------------
+    // Refresh Add-on display
+    // ------------------------------------------
+
+    renderCustomAddons();
+
+
+    // Keep cursor ready for next Add-on
+    nameInput.focus();
+
+}
+
+
+
+/**
+ * ==========================================================
+ * REMOVE CUSTOM ADD-ON
+ * ==========================================================
+ */
+function removeCustomAddon(index) {
+
+    if (
+        index < 0 ||
+        index >= customAddons.length
+    ) {
+
+        return;
+
+    }
+
+
+    customAddons.splice(
+        index,
+        1
+    );
+
+
+    renderCustomAddons();
+
+}
+
+
+
+/**
+ * ==========================================================
+ * RENDER CUSTOM ADD-ONS
+ * ==========================================================
+ */
+function renderCustomAddons() {
+
+    const list =
+        document.getElementById("addonList");
+
+    const totalDisplay =
+        document.getElementById(
+            "addonTotalDisplay"
+        );
+
+
+    // ------------------------------------------
+    // Calculate Add-on Total
+    // ------------------------------------------
+
+    const addonTotal =
+        getCustomAddonTotal();
+
+
+    // ------------------------------------------
+    // Update Add-on Total Display
+    // ------------------------------------------
+
+    if (totalDisplay) {
+
+        totalDisplay.textContent =
+            "₹" + addonTotal.toFixed(2);
+
+    }
+
+
+    // ------------------------------------------
+    // Render Add-on List
+    // ------------------------------------------
+
+    if (list) {
+
+        if (customAddons.length === 0) {
+
+            list.innerHTML = "";
+
+        } else {
+
+            let html = "";
+
+
+            customAddons.forEach(
+                function(addon, index) {
+
+                    html += `
+
+                        <div
+                            class="d-flex justify-content-between align-items-center py-2 border-bottom">
+
+                            <div class="me-2">
+
+                                <span>
+                                    ${escapeAddonHtml(addon.name)}
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="d-flex align-items-center gap-2">
+
+                                <strong>
+                                    ₹${Number(addon.price || 0).toFixed(2)}
+                                </strong>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="removeCustomAddon(${index})"
+                                    title="Remove Add-on">
+
+                                    ×
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+                }
+            );
+
+
+            list.innerHTML = html;
+
+        }
+
+    }
+
+
+    // ------------------------------------------
+    // IMPORTANT
+    // Recalculate complete order total
+    // ------------------------------------------
+
+    calculateTotals();
+
+}
+
+
+
+
+/**
+ * ==========================================================
+ * GET CUSTOM ADD-ON TOTAL
+ * ==========================================================
+ */
+function getCustomAddonTotal() {
+
+    let total = 0;
+
+
+    customAddons.forEach(function(addon) {
+
+        total +=
+            Number(addon.price || 0);
+
+    });
+
+
+    return total;
+
+}
+
+
+
+/**
+ * ==========================================================
+ * ESCAPE ADD-ON HTML
+ * ==========================================================
+ *
+ * Prevents user-entered Add-on names from being interpreted
+ * as HTML when displayed.
+ * ==========================================================
+ */
+function escapeAddonHtml(value) {
+
+    return String(value || "")
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
 
 
 

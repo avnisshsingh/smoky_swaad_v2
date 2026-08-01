@@ -258,11 +258,118 @@
                   </div>
                </div>
 
-               <div class="d-flex justify-content-between mb-3">
-                  <span>Delivery Charge</span>
+     <!-- ==========================================
+     DELIVERY CHARGE
+========================================== -->
 
-                  <strong id="deliveryCharge"> ₹0 </strong>
-               </div>
+<div class="d-flex justify-content-between mb-3">
+
+    <span>Delivery Charge</span>
+
+    <strong id="deliveryCharge">
+        ₹0
+    </strong>
+
+</div>
+
+
+<!-- ==========================================
+     CUSTOM ADD-ONS
+========================================== -->
+
+<div class="border-top pt-3 mt-2">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+
+        <strong>
+            ➕ Add-on
+        </strong>
+
+        <span
+            id="addonTotalDisplay"
+            class="fw-bold">
+
+            ₹0
+
+        </span>
+
+    </div>
+
+
+    <!-- Add-on Entry -->
+
+    <div class="row g-2">
+
+        <!-- Add-on Name -->
+
+        <div class="col-7">
+
+            <input
+                type="text"
+                id="addonName"
+                class="form-control form-control-sm"
+                placeholder="Add-on name"
+                autocomplete="off">
+
+        </div>
+
+
+        <!-- Add-on Price -->
+
+        <div class="col-3">
+
+            <div class="input-group input-group-sm">
+
+                <span class="input-group-text">
+                    ₹
+                </span>
+
+                <input
+                    type="number"
+                    id="addonPrice"
+                    class="form-control"
+                    placeholder="0"
+                    min="0"
+                    step="1">
+
+            </div>
+
+        </div>
+
+
+        <!-- Add Button -->
+
+        <div class="col-2">
+
+            <button
+                type="button"
+                id="btnAddAddon"
+                class="btn btn-outline-success btn-sm w-100"
+                onclick="addCustomAddon()">
+
+                +
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================
+         ADDED ADD-ONS APPEAR HERE
+    ======================================= -->
+
+    <div
+        id="addonList"
+        class="mt-2">
+
+    </div>
+
+</div>
+
+
+<hr>
 
                <hr />
 
@@ -282,6 +389,65 @@
                </button>
             </div>
          </div>
+
+<!-- ==========================================
+     DELETE ORDER
+========================================== -->
+
+<div class="card shadow-sm mt-3">
+
+    <div class="card-header bg-danger text-white">
+
+        <h5 class="mb-0">
+            🗑 Delete Order
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <label
+            for="deleteOrderId"
+            class="form-label">
+
+            Order ID
+
+        </label>
+
+        <div class="input-group">
+
+            <input
+                type="text"
+                id="deleteOrderId"
+                class="form-control"
+                placeholder="Example: SS00067"
+                autocomplete="off"
+                maxlength="20">
+
+            <button
+                type="button"
+                id="btnDeleteOrder"
+                class="btn btn-danger"
+                onclick="deleteOrder()">
+
+                Delete Order
+
+            </button>
+
+        </div>
+
+        <div class="form-text">
+
+            Deleting an order will also remove its order items
+            and recalculate the customer's order history.
+
+        </div>
+
+    </div>
+
+</div>
+
+
       </div>
    </div>
 </div>

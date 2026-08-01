@@ -189,7 +189,11 @@ function updateExistingCustomer(
 
   const customer = orderData.customer;
 
-  // Read existing customer data A:J
+
+  // ========================================================
+  // READ EXISTING CUSTOMER A:J
+  // ========================================================
+
   const row = customerSheet
     .getRange(
       rowNumber,
@@ -199,34 +203,114 @@ function updateExistingCustomer(
     )
     .getValues()[0];
 
-  // Preserve First Order Date
-  const firstOrderDate = row[5];
 
-  // Build Last Order Date from business order date
-  const parts = orderData.meta.orderDate.split("-");
+  // ========================================================
+  // BUILD CURRENT ORDER DATE
+  // ========================================================
 
-  const lastOrderDate = new Date(
+  const parts =
+    String(orderData.meta.orderDate)
+      .split("-");
+
+
+  if (parts.length !== 3) {
+
+    throw new Error(
+      "Invalid Order Date."
+    );
+
+  }
+
+
+  const currentOrderDate = new Date(
+
     Number(parts[0]),
+
     Number(parts[1]) - 1,
+
     Number(parts[2]),
+
     12,
     0,
     0
+
   );
 
-  // Increment Total Orders
+
+  // ========================================================
+  // FIRST ORDER DATE
+  // ========================================================
+  //
+  // Normal existing customer:
+  // Preserve original First Order Date.
+  //
+  // Customer whose entire order history was deleted:
+  // First Order Date is blank and Total Orders = 0.
+  // Therefore this new order becomes their new First Order.
+  // ========================================================
+
+  const existingTotalOrders =
+    Number(row[7] || 0);
+
+
+  let firstOrderDate =
+    row[5];
+
+
+  if (
+    existingTotalOrders <= 0 ||
+    !firstOrderDate
+  ) {
+
+    firstOrderDate =
+      currentOrderDate;
+
+  }
+
+
+  // ========================================================
+  // LAST ORDER DATE
+  // ========================================================
+
+  const lastOrderDate =
+    currentOrderDate;
+
+
+  // ========================================================
+  // TOTAL ORDERS
+  // ========================================================
+
   const totalOrders =
-    Number(row[7] || 0) + 1;
+    existingTotalOrders + 1;
 
-  // Current Order Total
+
+  // ========================================================
+  // CURRENT ORDER GRAND TOTAL
+  // ========================================================
+
   const grandTotal =
-    Number(orderData.totals.grandTotal || 0);
+    Number(
+      orderData.totals.grandTotal || 0
+    );
 
-  // Update Lifetime Spend
+
+  // ========================================================
+  // LIFETIME SPEND
+  // ========================================================
+
+  const existingLifetimeSpend =
+    Number(row[8] || 0);
+
+
   const lifetimeSpend =
-    Number(row[8] || 0) + grandTotal;
+    existingLifetimeSpend +
+    grandTotal;
 
-  // Update customer A:J in one batch write
+
+  // ========================================================
+  // UPDATE CUSTOMER A:J
+  // ========================================================
+
   customerSheet
     .getRange(
       rowNumber,
@@ -236,29 +320,41 @@ function updateExistingCustomer(
     )
     .setValues([[
 
-      row[0],                    // A Customer ID
+      // A Customer ID
+      row[0],
 
-      customer.customerName,     // B Customer Name
+      // B Customer Name
+      customer.customerName,
 
-      customer.mobile,           // C Mobile
+      // C Mobile Number
+      customer.mobile,
 
-      customer.deliveryArea,     // D Delivery Area
+      // D Delivery Area
+      customer.deliveryArea,
 
-      customer.houseAddress,     // E House Address
+      // E House Address
+      customer.houseAddress,
 
-      firstOrderDate,            // F First Order Date
+      // F First Order Date
+      firstOrderDate,
 
-      lastOrderDate,             // G Last Order Date
+      // G Last Order Date
+      lastOrderDate,
 
-      totalOrders,               // H Total Orders
+      // H Total Orders
+      totalOrders,
 
-      lifetimeSpend,             // I Lifetime Spend
+      // I Lifetime Spend
+      lifetimeSpend,
 
-      orderId                    // J Last Order ID
+      // J Last Order ID
+      orderId
 
     ]]);
 
 }
+
+
 
 
 /**
