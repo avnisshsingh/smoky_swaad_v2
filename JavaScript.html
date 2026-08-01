@@ -16,6 +16,7 @@
    let isSavingOrder = false;
    let isSavingPurchase = false;
    let purchaseItemsCache = [];
+   let menuSearchTimer = null;
 
 function getToday() {
 
@@ -235,17 +236,37 @@ if (orderDate) {
    Menu Cache
 ========================================== */
 
-   function loadMenuCache() {
-      google.script.run
+function loadMenuCache() {
 
-         .withSuccessHandler(function (menu) {
-            menuCache = menu;
+   google.script.run
 
-            console.log("Menu Loaded :", menuCache.length);
-         })
+      .withSuccessHandler(function (menu) {
 
-         .loadMenu();
-   }
+         menuCache = (menu || []).map(function (item) {
+
+            return {
+               ...item,
+
+               searchName: String(item.itemName || "")
+                  .trim()
+                  .toLowerCase()
+            };
+
+         });
+
+         console.log("Menu Loaded :", menuCache.length);
+
+      })
+
+      .withFailureHandler(function (error) {
+
+         console.error("Unable to load menu:", error);
+
+      })
+
+      .loadMenu();
+
+}
 
 
 
@@ -280,6 +301,9 @@ if (orderDate) {
          .withFailureHandler(function (error) {
             console.error(error);
 
+
+
+
             alert("Unable to load application settings.");
          })
 
@@ -287,33 +311,87 @@ if (orderDate) {
    }
 
 
+/**
+ * ==========================================
+ * Debounced Menu Search
+ * ==========================================
+ */
+function debounceMenuSearch() {
 
-/** ==========================================
-   Menu Search (Local Search)
-========================================== */
+   clearTimeout(menuSearchTimer);
 
-   function searchMenuItems() {
-      const keyword = document
-         .getElementById("menuSearch")
-         .value.trim()
-         .toLowerCase();
+   menuSearchTimer = setTimeout(function () {
+      searchMenuItems();
+   }, 120);
 
-      const suggestionBox = document.getElementById("menuSuggestions");
+}
+
+
+
+
+/**
+ * ==========================================
+ * Menu Search - Optimized Local Search
+ * ==========================================
+ */
+function searchMenuItems() {
+
+   const searchBox = document.getElementById("menuSearch");
+   const suggestionBox = document.getElementById("menuSuggestions");
+
+   if (!searchBox || !suggestionBox) {
+      return;
+   }
+
+   const keyword = searchBox.value
+      .trim()
+      .toLowerCase();
+
+   if (keyword.length < 2) {
 
       suggestionBox.innerHTML = "";
+      suggestionBox.style.display = "none";
 
-      if (keyword.length < 2) {
-         return;
+      return;
+   }
+
+   const results = [];
+
+   // Search locally and stop after 8 matches
+   for (let i = 0; i < menuCache.length; i++) {
+
+      const item = menuCache[i];
+
+      if (!item) {
+         continue;
       }
 
-      const results = menuCache
+      // Use precomputed searchName when available.
+      // Fallback protects against old/unprepared cache objects.
+      const searchName =
+         item.searchName ||
+         String(item.itemName || "").trim().toLowerCase();
 
-         .filter((item) => item.itemName.toLowerCase().includes(keyword))
+      if (searchName.includes(keyword)) {
 
-         .slice(0, 8);
+         results.push(item);
 
-      showMenuSuggestions(results);
+         // Stop scanning immediately
+         if (results.length >= 8) {
+            break;
+         }
+
+      }
+
    }
+
+   showMenuSuggestions(results);
+
+}
+
+
+
+
 
 
 

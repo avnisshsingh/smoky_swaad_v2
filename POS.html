@@ -119,14 +119,14 @@
                <h5 class="mb-3">🍽 Search Menu</h5>
 
                <div class="position-relative mb-4">
-                  <input
-                     type="text"
-                     id="menuSearch"
-                     class="form-control form-control-lg"
-                     placeholder="Search menu item..."
-                     autocomplete="off"
-                     onkeyup="searchMenuItems()"
-                  />
+              <input
+                  type="text"
+                   id="menuSearch"
+                   class="form-control form-control-lg"
+                   placeholder="Search menu item..."
+                   autocomplete="off"
+                   oninput="debounceMenuSearch()"
+              />
 
                   <div
                      id="menuSuggestions"
@@ -277,7 +277,6 @@
                   type="button"
                   class="btn btn-success btn-lg w-100"
                   onclick="saveOrder()"
-                  disabled
                >
                   💾 Save Order
                </button>
