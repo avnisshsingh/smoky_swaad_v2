@@ -1418,3 +1418,36 @@
 </div>
 
 </div>
+
+
+<style>
+/* ==========================================================
+   PERSONAL EXPENSES - MOBILE NATIVE SELECT FIX
+   Keeps native dropdown behaviour on Android / iPhone
+========================================================== */
+
+@media (max-width: 767.98px) {
+
+    #personalExpensesScreen select.form-select {
+        position: relative !important;
+        z-index: 2 !important;
+
+        width: 100% !important;
+        min-height: 48px !important;
+
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+
+        opacity: 1 !important;
+        visibility: visible !important;
+
+        -webkit-appearance: menulist !important;
+        appearance: auto !important;
+    }
+
+    #personalExpensesScreen select.form-select:disabled {
+        pointer-events: none !important;
+    }
+
+}
+</style>

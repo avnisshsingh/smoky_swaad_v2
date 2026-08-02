@@ -53,6 +53,426 @@
    Application Startup
 ========================================== */
 
+   // ==========================================
+   // GLOBAL MOBILE SELECT PICKER
+   // ==========================================
+   // Apps Script screens are injected dynamically, therefore
+   // one delegated handler covers every current/future <select>.
+   // Desktop keeps the browser-native select behaviour.
+
+   let mobileSelectPickerTarget = null;
+   let mobilePickerOpeningGuardUntil = 0;
+
+   function shouldUseMobileSelectPicker() {
+      return window.matchMedia("(max-width: 768px), (pointer: coarse)").matches;
+   }
+
+   function ensureMobileSelectPicker() {
+
+      let overlay =
+         document.getElementById("mobileSelectPickerOverlay");
+
+      if (overlay) return overlay;
+
+      overlay = document.createElement("div");
+      overlay.id = "mobileSelectPickerOverlay";
+      overlay.setAttribute("aria-hidden", "true");
+
+      overlay.innerHTML = `
+         <div id="mobileSelectPicker" role="dialog" aria-modal="true">
+            <div class="mobile-select-picker-header">
+               <h2 id="mobileSelectPickerTitle">Select</h2>
+               <button type="button"
+                       id="mobileSelectPickerClose"
+                       class="btn btn-sm btn-outline-secondary">
+                  Close
+               </button>
+            </div>
+            <div id="mobileSelectPickerOptions"></div>
+         </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener("click", function(event) {
+
+         // Ignore only the release/click belonging to the gesture that
+         // opened this picker. Without this guard Android can immediately
+         // close/select against the newly-created overlay.
+         if (Date.now() < mobilePickerOpeningGuardUntil) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+         }
+
+         if (
+            event.target === overlay ||
+            event.target.closest("#mobileSelectPickerClose")
+         ) {
+            closeMobileSelectPicker();
+            return;
+         }
+
+         const optionButton =
+            event.target.closest("[data-mobile-select-index]");
+
+         if (!optionButton || !mobileSelectPickerTarget) return;
+
+         const index = Number(optionButton.dataset.mobileSelectIndex);
+         const option = mobileSelectPickerTarget.options[index];
+
+         if (!option || option.disabled) return;
+
+         mobileSelectPickerTarget.selectedIndex = index;
+
+         // Preserve every module's existing listeners/calculations.
+         mobileSelectPickerTarget.dispatchEvent(
+            new Event("input", { bubbles: true })
+         );
+         mobileSelectPickerTarget.dispatchEvent(
+            new Event("change", { bubbles: true })
+         );
+
+         closeMobileSelectPicker();
+      });
+
+      return overlay;
+   }
+
+   function getMobileSelectTitle(select) {
+
+      if (!select) return "Select";
+
+      if (select.id) {
+         const label = document.querySelector(`label[for="${CSS.escape(select.id)}"]`);
+         if (label && label.textContent.trim()) {
+            return label.textContent.replace("*", "").trim();
+         }
+      }
+
+      return select.getAttribute("aria-label") ||
+             select.getAttribute("name") ||
+             "Select";
+   }
+
+   function openMobileSelectPicker(select) {
+
+      if (!select || select.disabled) return;
+
+      const overlay = ensureMobileSelectPicker();
+      const title = document.getElementById("mobileSelectPickerTitle");
+      const optionsBox = document.getElementById("mobileSelectPickerOptions");
+
+      mobileSelectPickerTarget = select;
+      title.textContent = getMobileSelectTitle(select);
+
+      const html = [];
+
+      for (let i = 0; i < select.options.length; i++) {
+         const option = select.options[i];
+
+         html.push(
+            `<button type="button"
+                     class="mobile-select-picker-option${i === select.selectedIndex ? " is-selected" : ""}"
+                     data-mobile-select-index="${i}"
+                     ${option.disabled ? "disabled" : ""}>
+               ${escapeMobileSelectText(option.textContent)}
+            </button>`
+         );
+      }
+
+      optionsBox.innerHTML = html.join("");
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+
+      requestAnimationFrame(function() {
+         const selected = optionsBox.querySelector(".is-selected");
+         if (selected) {
+            selected.scrollIntoView({ block: "nearest" });
+         }
+      });
+   }
+
+   function closeMobileSelectPicker() {
+
+      const overlay =
+         document.getElementById("mobileSelectPickerOverlay");
+
+      if (overlay) {
+         overlay.classList.remove("is-open");
+         overlay.setAttribute("aria-hidden", "true");
+      }
+
+      mobileSelectPickerTarget = null;
+   }
+
+   function escapeMobileSelectText(value) {
+      const div = document.createElement("div");
+      div.textContent = String(value || "");
+      return div.innerHTML;
+   }
+
+   // ==========================================================
+   // MOBILE SELECT ACTIVATION - ARROW ONLY
+   // ==========================================================
+   // On mobile the native <select> itself is made non-interactive.
+   // A dedicated arrow button is added over the right side of every
+   // dropdown. This gives us three benefits:
+   //   1. only the arrow opens the picker;
+   //   2. scrolling over the field cannot accidentally open it;
+   //   3. the browser's native select UI can never appear.
+   //
+   // Existing <select> values/change events remain the source of truth.
+
+   function syncMobileSelectArrowGeometry(select, button) {
+
+      if (
+         !select ||
+         !button ||
+         !select.parentElement
+      ) {
+         return;
+      }
+
+      const host =
+         select.parentElement;
+
+      const selectRect =
+         select.getBoundingClientRect();
+
+      const hostRect =
+         host.getBoundingClientRect();
+
+      const top =
+         Math.max(
+            0,
+            selectRect.top - hostRect.top
+         );
+
+      button.style.setProperty(
+         "--mobile-select-top",
+         top + "px"
+      );
+
+      button.style.setProperty(
+         "--mobile-select-height",
+         selectRect.height + "px"
+      );
+
+   }
+
+
+   function enhanceMobileSelect(select) {
+
+      if (
+         !select ||
+         select.dataset.mobileArrowReady === "true"
+      ) {
+         return;
+      }
+
+      const host =
+         select.parentElement;
+
+      if (!host) {
+         return;
+      }
+
+      select.dataset.mobileArrowReady = "true";
+      select.classList.add("mobile-arrow-select");
+
+      host.classList.add("mobile-select-arrow-host");
+
+      const button =
+         document.createElement("button");
+
+      button.type = "button";
+      button.className = "mobile-select-arrow-button";
+      button.setAttribute(
+         "aria-label",
+         "Open " +
+         (
+            select.getAttribute("aria-label") ||
+            select.name ||
+            select.id ||
+            "dropdown"
+         )
+      );
+
+      button.innerHTML =
+         '<span aria-hidden="true" class="mobile-select-arrow-chevron"></span>';
+
+      button.addEventListener(
+         "click",
+         function(event) {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (
+               select.disabled ||
+               !select.isConnected
+            ) {
+               return;
+            }
+
+            openMobileSelectPicker(select);
+
+         }
+      );
+
+      host.appendChild(button);
+
+      syncMobileSelectArrowGeometry(
+         select,
+         button
+      );
+
+   }
+
+
+   function enhanceAllMobileSelects(root) {
+
+      if (!shouldUseMobileSelectPicker()) {
+         return;
+      }
+
+      const scope =
+         root && root.querySelectorAll
+            ? root
+            : document;
+
+      if (
+         scope.matches &&
+         scope.matches("select")
+      ) {
+         enhanceMobileSelect(scope);
+      }
+
+      const selects =
+         scope.querySelectorAll("select");
+
+      for (
+         let i = 0;
+         i < selects.length;
+         i++
+      ) {
+         enhanceMobileSelect(selects[i]);
+      }
+
+      // Run once after layout settles so arrows match the exact select
+      // rectangle even when Bootstrap/grid content was just injected.
+      window.requestAnimationFrame(function() {
+
+         for (
+            let i = 0;
+            i < selects.length;
+            i++
+         ) {
+
+            const select =
+               selects[i];
+
+            const host =
+               select.parentElement;
+
+            if (!host) continue;
+
+            const button =
+               host.querySelector(
+                  ".mobile-select-arrow-button"
+               );
+
+            if (button) {
+               syncMobileSelectArrowGeometry(
+                  select,
+                  button
+               );
+            }
+
+         }
+
+      });
+
+   }
+
+
+   function initializeMobileSelectArrows() {
+
+      if (!shouldUseMobileSelectPicker()) {
+         return;
+      }
+
+      enhanceAllMobileSelects(document);
+
+      // Screens are injected dynamically by openScreen(). Observe only
+      // added nodes and enhance their selects once; no polling is used.
+      const content =
+         document.getElementById("content");
+
+      if (
+         !content ||
+         content.dataset.mobileSelectObserverReady === "true"
+      ) {
+         return;
+      }
+
+      content.dataset.mobileSelectObserverReady =
+         "true";
+
+      const observer =
+         new MutationObserver(
+            function(mutations) {
+
+               for (
+                  let i = 0;
+                  i < mutations.length;
+                  i++
+               ) {
+
+                  const added =
+                     mutations[i].addedNodes;
+
+                  for (
+                     let j = 0;
+                     j < added.length;
+                     j++
+                  ) {
+
+                     const node =
+                        added[j];
+
+                     if (
+                        node.nodeType !== 1
+                     ) {
+                        continue;
+                     }
+
+                     enhanceAllMobileSelects(node);
+
+                  }
+
+               }
+
+            }
+         );
+
+      observer.observe(
+         content,
+         {
+            childList: true,
+            subtree: true
+         }
+      );
+
+   }
+
+
+   document.addEventListener(
+      "DOMContentLoaded",
+      initializeMobileSelectArrows
+   );
+
    document.addEventListener("DOMContentLoaded", initApp);
 
    function initApp() {
@@ -104,6 +524,12 @@
             document.getElementById("content").innerHTML = html;
             document.title = "Smoky Swaad ERP - " + screen;
 
+            // Ensure dynamically loaded dropdowns get the standard
+            // mobile arrow-only control immediately.
+            enhanceAllMobileSelects(
+               document.getElementById("content")
+            );
+
             if (screen === "POS") {
                setTimeout(function () {
                   loadPOSCache();
@@ -152,19 +578,69 @@
     * ==========================================
     */
    let personalExpenseDescriptionCache = [];
-   let personalExpenseDescriptionMap = {};
+   let personalExpenseDescriptionMap = Object.create(null);
    let personalExpenseHistoryCache = [];
    let personalExpenseCategoryCache = [];
    let personalExpenseBootstrapLoaded = false;
 
+   // Personal Expenses DOM/cache state.
+   // Rebuilt whenever the screen HTML is loaded.
+   let personalExpenseDom = Object.create(null);
+   let personalExpenseLastHistorySignature = "";
+   let personalExpenseLastDescriptionQuery = "";
+   let personalExpenseLastDescriptionHtml = "";
+   let personalExpenseVisibleDescriptionMatches = [];
+
+   function cachePersonalExpenseDom() {
+
+      const ids = [
+         "personalExpenseDate",
+         "personalExpensePaymentMode",
+         "personalExpenseFor",
+         "personalExpenseNature",
+         "personalExpenseRecurring",
+         "personalExpenseHistoryMonth",
+         "personalExpenseHistoryCategory",
+         "personalExpenseHistorySearch",
+         "personalExpenseUnit",
+         "personalExpenseQuantityList",
+         "personalExpenseDescription",
+         "personalExpenseDescriptionSuggestions",
+         "personalExpenseCategory",
+         "personalExpenseQuantity",
+         "personalExpenseQuickCategoryGrid",
+         "personalExpenseEditingId",
+         "btnSavePersonalExpense"
+      ];
+
+      personalExpenseDom =
+         Object.create(null);
+
+      for (let i = 0; i < ids.length; i++) {
+         personalExpenseDom[ids[i]] =
+            document.getElementById(ids[i]);
+      }
+
+   }
+
+   function peEl(id) {
+      return personalExpenseDom[id] ||
+         document.getElementById(id);
+   }
+
    function initializePersonalExpenses() {
-      console.log("Personal Expenses Module Loaded");
+      cachePersonalExpenseDom();
+
+      personalExpenseLastHistorySignature = "";
+      personalExpenseLastDescriptionQuery = "";
+      personalExpenseLastDescriptionHtml = "";
+      personalExpenseVisibleDescriptionMatches = [];
 
       // ------------------------------------------
       // Set today's date automatically
       // ------------------------------------------
 
-      const dateInput = document.getElementById("personalExpenseDate");
+      const dateInput = peEl("personalExpenseDate");
 
       if (dateInput) {
          dateInput.value = getToday();
@@ -174,7 +650,7 @@
       // Default Payment Mode
       // ------------------------------------------
 
-      const paymentMode = document.getElementById("personalExpensePaymentMode");
+      const paymentMode = peEl("personalExpensePaymentMode");
 
       if (paymentMode) {
          paymentMode.value = "UPI";
@@ -184,7 +660,7 @@
       // Default Expense For
       // ------------------------------------------
 
-      const expenseFor = document.getElementById("personalExpenseFor");
+      const expenseFor = peEl("personalExpenseFor");
 
       if (expenseFor) {
          expenseFor.value = "Self";
@@ -194,7 +670,7 @@
       // Default Nature
       // ------------------------------------------
 
-      const nature = document.getElementById("personalExpenseNature");
+      const nature = peEl("personalExpenseNature");
 
       if (nature) {
          nature.value = "Expense";
@@ -204,7 +680,7 @@
       // Default Recurring
       // ------------------------------------------
 
-      const recurring = document.getElementById("personalExpenseRecurring");
+      const recurring = peEl("personalExpenseRecurring");
 
       if (recurring) {
          recurring.value = "No";
@@ -215,7 +691,7 @@
       // ------------------------------------------
 
       const historyMonth =
-         document.getElementById("personalExpenseHistoryMonth");
+         peEl("personalExpenseHistoryMonth");
 
       if (historyMonth && !historyMonth.value) {
          historyMonth.value = getToday().slice(0, 7);
@@ -287,6 +763,10 @@
 
             preparePersonalExpenseDescriptionSearchCache();
 
+            personalExpenseLastDescriptionQuery = "";
+            personalExpenseLastDescriptionHtml = "";
+            personalExpenseVisibleDescriptionMatches = [];
+
             populatePersonalExpenseQuantitySuggestions();
 
             personalExpenseHistoryCache =
@@ -294,6 +774,52 @@
                   ? response.history
                   : [];
 
+            // Precompute frequently-used filter/search values once.
+            for (
+               let i = 0;
+               i < personalExpenseHistoryCache.length;
+               i++
+            ) {
+
+               const expense =
+                  personalExpenseHistoryCache[i];
+
+               expense._month =
+                  String(
+                     expense.expenseDateKey || ""
+                  ).slice(0, 7);
+
+               expense._category =
+                  String(
+                     expense.category || ""
+                  );
+
+               expense._isExpense =
+                  String(
+                     expense.nature || ""
+                  ).toLowerCase() === "expense";
+
+               expense._amount =
+                  Number(expense.amount || 0);
+
+               expense._search =
+                  [
+                     expense.expenseId,
+                     expense.description,
+                     expense.category,
+                     expense.subcategory,
+                     expense.paidTo,
+                     expense.referenceNo,
+                     expense.remarks,
+                     expense.unit,
+                     expense.quantity
+                  ]
+                  .join(" ")
+                  .toLowerCase();
+
+            }
+
+            personalExpenseLastHistorySignature = "";
             renderPersonalExpenseHistoryFromCache();
 
          })
@@ -369,97 +895,100 @@
          return;
       }
 
+      const monthEl =
+         peEl("personalExpenseHistoryMonth");
+
+      const categoryEl =
+         peEl("personalExpenseHistoryCategory");
+
+      const searchEl =
+         peEl("personalExpenseHistorySearch");
+
       const month =
-         getPersonalExpenseFieldValue(
-            "personalExpenseHistoryMonth"
-         );
+         monthEl
+            ? String(monthEl.value || "")
+            : "";
 
       const category =
-         getPersonalExpenseFieldValue(
-            "personalExpenseHistoryCategory"
-         );
+         categoryEl
+            ? String(categoryEl.value || "")
+            : "";
 
       const search =
-         getPersonalExpenseFieldValue(
-            "personalExpenseHistorySearch"
-         ).toLowerCase();
+         searchEl
+            ? String(searchEl.value || "")
+               .trim()
+               .toLowerCase()
+            : "";
 
+      const signature =
+         month + "\u0001" +
+         category + "\u0001" +
+         search + "\u0001" +
+         personalExpenseHistoryCache.length;
+
+      // Do not rebuild the same history view twice.
+      if (
+         signature ===
+         personalExpenseLastHistorySignature
+      ) {
+         return;
+      }
+
+      personalExpenseLastHistorySignature =
+         signature;
+
+      const filtered = [];
       let total = 0;
-      let count = 0;
 
-      const filtered =
-         personalExpenseHistoryCache
-            .filter(function(expense) {
+      // One pass only:
+      // filter + search + total calculation together.
+      for (
+         let i = 0;
+         i < personalExpenseHistoryCache.length;
+         i++
+      ) {
 
-               if (
-                  month &&
-                  String(
-                     expense.expenseDateKey || ""
-                  ).substring(0, 7) !== month
-               ) {
-                  return false;
-               }
-
-               if (
-                  category &&
-                  String(expense.category || "") !==
-                     category
-               ) {
-                  return false;
-               }
-
-               if (search) {
-
-                  const haystack = [
-                     expense.expenseId,
-                     expense.description,
-                     expense.category,
-                     expense.subcategory,
-                     expense.paidTo,
-                     expense.referenceNo,
-                     expense.remarks,
-                     expense.unit,
-                     expense.quantity
-                  ]
-                  .join(" ")
-                  .toLowerCase();
-
-                  if (
-                     haystack.indexOf(search) === -1
-                  ) {
-                     return false;
-                  }
-
-               }
-
-               return true;
-
-            });
-
-      filtered.forEach(function(expense) {
+         const expense =
+            personalExpenseHistoryCache[i];
 
          if (
-            String(expense.nature || "")
-               .toLowerCase() === "expense"
+            month &&
+            expense._month !== month
          ) {
-            total += Number(expense.amount || 0);
+            continue;
          }
 
-         count++;
+         if (
+            category &&
+            expense._category !== category
+         ) {
+            continue;
+         }
 
-      });
+         if (
+            search &&
+            expense._search.indexOf(search) === -1
+         ) {
+            continue;
+         }
 
-      // Reuse the existing history renderer by supplying
-      // the same response shape it already understands.
+         filtered.push(expense);
+
+         if (expense._isExpense) {
+            total += expense._amount;
+         }
+
+      }
+
       renderPersonalExpenseHistory({
          success: true,
          expenses: filtered,
          total: total,
-         count: count
+         count: filtered.length
       });
 
    }
-
 
    function loadPersonalExpenseSetup() {
 
@@ -483,7 +1012,7 @@
                   ? response.descriptions
                   : [];
 
-            personalExpenseDescriptionMap = {};
+            personalExpenseDescriptionMap = Object.create(null);
 
             personalExpenseDescriptionCache.forEach(function(item) {
 
@@ -577,7 +1106,7 @@
                return item.description !== "";
             });
 
-      personalExpenseDescriptionMap = {};
+      personalExpenseDescriptionMap = Object.create(null);
 
       personalExpenseDescriptionCache.forEach(function(item) {
          personalExpenseDescriptionMap[
@@ -591,46 +1120,53 @@
    function populatePersonalExpenseQuantitySuggestions() {
 
       const list =
-         document.getElementById(
-            "personalExpenseQuantityList"
-         );
+         peEl("personalExpenseQuantityList");
 
       if (!list) return;
 
-      const seen = {};
+      const seen =
+         Object.create(null);
 
-      const values =
-         personalExpenseDescriptionCache
-            .map(function(item) {
-               return String(item.quantity || "").trim();
-            })
-            .filter(function(value) {
+      const html = [];
 
-               if (!value) return false;
+      for (
+         let i = 0;
+         i < personalExpenseDescriptionCache.length;
+         i++
+      ) {
 
-               if (seen[value]) return false;
+         const value =
+            String(
+               personalExpenseDescriptionCache[i]
+                  .quantity || ""
+            ).trim();
 
-               seen[value] = true;
-               return true;
+         if (
+            !value ||
+            seen[value]
+         ) {
+            continue;
+         }
 
-            });
+         seen[value] = true;
+
+         html.push(
+            '<option value="' +
+            escapePersonalExpenseHtml(value) +
+            '"></option>'
+         );
+
+      }
 
       list.innerHTML =
-         values
-            .map(function(value) {
-               return '<option value="' +
-                  escapePersonalExpenseHtml(value) +
-                  '"></option>';
-            })
-            .join("");
+         html.join("");
 
    }
-
 
    function registerPersonalExpenseSmartDescription() {
 
       const input =
-         document.getElementById(
+         peEl(
             "personalExpenseDescription"
          );
 
@@ -690,7 +1226,7 @@
    function showPersonalExpenseDescriptionSuggestions(query) {
 
       const box =
-         document.getElementById(
+         peEl(
             "personalExpenseDescriptionSuggestions"
          );
 
@@ -706,10 +1242,23 @@
          return;
       }
 
-      // Local array only: NO google.script.run while typing.
+      // Avoid repeating identical search/render work.
+      if (
+         search ===
+         personalExpenseLastDescriptionQuery &&
+         box.style.display === "block"
+      ) {
+         return;
+      }
+
+      personalExpenseLastDescriptionQuery =
+         search;
+
       const startsWith = [];
       const contains = [];
 
+      // Search is fully local. Stop collecting once enough
+      // candidates exist for the six visible results.
       for (
          let i = 0;
          i < personalExpenseDescriptionCache.length;
@@ -719,15 +1268,24 @@
          const item =
             personalExpenseDescriptionCache[i];
 
-         if (item.searchText.indexOf(search) === 0) {
-            startsWith.push(item);
+         const position =
+            item.searchText.indexOf(search);
+
+         if (position === 0) {
+
+            if (startsWith.length < 6) {
+               startsWith.push(item);
+            }
+
          } else if (
-            item.searchText.indexOf(search) > 0
+            position > 0 &&
+            contains.length < 6
          ) {
+
             contains.push(item);
+
          }
 
-         // More than enough candidates; rendering is capped below.
          if (
             startsWith.length >= 6 &&
             contains.length >= 6
@@ -737,90 +1295,149 @@
 
       }
 
-      const matches =
-         startsWith
-            .concat(contains)
-            .slice(0, 6);
+      const matches = [];
+
+      for (
+         let i = 0;
+         i < startsWith.length &&
+         matches.length < 6;
+         i++
+      ) {
+         matches.push(startsWith[i]);
+      }
+
+      for (
+         let i = 0;
+         i < contains.length &&
+         matches.length < 6;
+         i++
+      ) {
+         matches.push(contains[i]);
+      }
+
+      personalExpenseVisibleDescriptionMatches =
+         matches;
+
+      let html = "";
 
       if (!matches.length) {
 
-         box.innerHTML =
+         html =
             '<div class="list-group-item text-muted small">' +
             'No previous match — continue typing to add a new description.' +
             '</div>';
 
-         box.style.display = "block";
-         return;
+      } else {
+
+         const parts = [];
+
+         for (
+            let i = 0;
+            i < matches.length;
+            i++
+         ) {
+
+            const item =
+               matches[i];
+
+            let detail = "";
+
+            if (item.category) {
+               detail = item.category;
+            }
+
+            if (item.quantity) {
+
+               const quantityText =
+                  item.quantity +
+                  (
+                     item.unit
+                        ? " " + item.unit
+                        : ""
+                  );
+
+               detail =
+                  detail
+                     ? detail + " • " + quantityText
+                     : quantityText;
+
+            } else if (item.unit) {
+
+               detail =
+                  detail
+                     ? detail + " • " + item.unit
+                     : item.unit;
+
+            }
+
+            parts.push(
+               '<button type="button" ' +
+               'class="list-group-item list-group-item-action pe-description-result" ' +
+               'data-pe-index="' + i + '">' +
+                  '<div class="fw-semibold">' +
+                     escapePersonalExpenseHtml(
+                        item.description
+                     ) +
+                  '</div>' +
+                  (
+                     detail
+                        ? '<div class="small text-muted">' +
+                          escapePersonalExpenseHtml(detail) +
+                          '</div>'
+                        : ''
+                  ) +
+               '</button>'
+            );
+
+         }
+
+         html = parts.join("");
+
       }
 
-      box.innerHTML =
-         matches
-            .map(function(item, index) {
-
-               const detailParts = [];
-
-               if (item.category) {
-                  detailParts.push(item.category);
-               }
-
-               if (item.quantity) {
-                  detailParts.push(
-                     item.quantity +
-                     (item.unit ? " " + item.unit : "")
-                  );
-               } else if (item.unit) {
-                  detailParts.push(item.unit);
-               }
-
-               return (
-                  '<button type="button" ' +
-                  'class="list-group-item list-group-item-action pe-description-result" ' +
-                  'data-pe-index="' + index + '">' +
-
-                     '<div class="fw-semibold">' +
-                        escapePersonalExpenseHtml(
-                           item.description
-                        ) +
-                     '</div>' +
-
-                     (
-                        detailParts.length
-                           ? '<div class="small text-muted">' +
-                             escapePersonalExpenseHtml(
-                                detailParts.join(" • ")
-                             ) +
-                             '</div>'
-                           : ''
-                     ) +
-
-                  '</button>'
-               );
-
-            })
-            .join("");
+      if (
+         html !==
+         personalExpenseLastDescriptionHtml
+      ) {
+         box.innerHTML = html;
+         personalExpenseLastDescriptionHtml = html;
+      }
 
       box.style.display = "block";
 
-      const buttons =
-         box.querySelectorAll(
-            ".pe-description-result"
-         );
+      if (
+         box.dataset.resultDelegateBound !==
+         "true"
+      ) {
 
-      buttons.forEach(function(button) {
+         box.dataset.resultDelegateBound =
+            "true";
 
-         button.addEventListener(
+         box.addEventListener(
             "click",
-            function() {
+            function(event) {
+
+               const button =
+                  event.target.closest(
+                     ".pe-description-result"
+                  );
+
+               if (
+                  !button ||
+                  !box.contains(button)
+               ) {
+                  return;
+               }
 
                const index =
                   Number(
-                     button.getAttribute(
-                        "data-pe-index"
-                     )
+                     button.dataset.peIndex
                   );
 
                const selected =
-                  matches[index];
+                  personalExpenseVisibleDescriptionMatches[
+                     index
+                  ];
 
                if (selected) {
                   selectPersonalExpenseDescription(
@@ -831,15 +1448,14 @@
             }
          );
 
-      });
+      }
 
    }
-
 
    function selectPersonalExpenseDescription(item) {
 
       const description =
-         document.getElementById(
+         peEl(
             "personalExpenseDescription"
          );
 
@@ -849,12 +1465,12 @@
          );
 
       const quantity =
-         document.getElementById(
+         peEl(
             "personalExpenseQuantity"
          );
 
       const unit =
-         document.getElementById(
+         peEl(
             "personalExpenseUnit"
          );
 
@@ -893,14 +1509,14 @@
    function hidePersonalExpenseDescriptionSuggestions() {
 
       const box =
-         document.getElementById(
+         peEl(
             "personalExpenseDescriptionSuggestions"
          );
 
       if (!box) return;
 
       box.style.display = "none";
-      box.innerHTML = "";
+      personalExpenseLastDescriptionQuery = "";
 
    }
 
@@ -908,12 +1524,12 @@
    document.addEventListener("click", function(event) {
 
       const input =
-         document.getElementById(
+         peEl(
             "personalExpenseDescription"
          );
 
       const box =
-         document.getElementById(
+         peEl(
             "personalExpenseDescriptionSuggestions"
          );
 
@@ -932,7 +1548,7 @@
    function applyPersonalExpenseSmartCategory() {
 
       const input =
-         document.getElementById(
+         peEl(
             "personalExpenseDescription"
          );
 
@@ -962,7 +1578,7 @@
       }
 
       const quantity =
-         document.getElementById(
+         peEl(
             "personalExpenseQuantity"
          );
 
@@ -972,7 +1588,7 @@
       }
 
       const unit =
-         document.getElementById(
+         peEl(
             "personalExpenseUnit"
          );
 
@@ -1037,17 +1653,39 @@
 
    function populatePersonalExpenseCategories(categories) {
 
-      const clean =
-         (Array.isArray(categories) ? categories : [])
-            .map(function(value) {
-               return String(value || "").trim();
-            })
-            .filter(function(value, index, array) {
-               if (!value) return false;
-               return array.findIndex(function(item) {
-                  return item.toLowerCase() === value.toLowerCase();
-               }) === index;
-            });
+      const source =
+         Array.isArray(categories)
+            ? categories
+            : [];
+
+      const clean = [];
+      const seenCategories =
+         Object.create(null);
+
+      for (
+         let i = 0;
+         i < source.length;
+         i++
+      ) {
+
+         const value =
+            String(source[i] || "").trim();
+
+         if (!value) {
+            continue;
+         }
+
+         const key =
+            value.toLowerCase();
+
+         if (seenCategories[key]) {
+            continue;
+         }
+
+         seenCategories[key] = true;
+         clean.push(value);
+
+      }
 
       clean.sort(function(a, b) {
          return a.localeCompare(
@@ -1445,8 +2083,6 @@ function savePersonalExpense() {
             "success"
         );
 
-
-        loadPersonalExpenseSetup();
 
         resetPersonalExpenseForm();
 
