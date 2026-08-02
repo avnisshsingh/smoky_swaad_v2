@@ -167,7 +167,13 @@ const response = {
 
     deliveryCharge: Number(orderRow[14]) || 0,
 
-    discount: Number(orderRow[15]) || 0
+    discount: Number(orderRow[15]) || 0,
+
+    // Q - Custom Add-ons
+    addons: String(orderRow[16] || ""),
+
+    // R - Add-on Total
+    addonTotal: Number(orderRow[17]) || 0
 
   },
 
@@ -291,6 +297,74 @@ function generateInvoicePdf(orderId) {
 
       message:err.toString()
 
+    };
+
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Get Smoky Swaad Logo
+ * ==========================================
+ *
+ * Loads the Smoky Swaad logo from Google Drive
+ * and returns it as a Base64 data URL.
+ *
+ * Used by Invoice.html and PDF generation.
+ * ==========================================
+ */
+function getSmokySwaadLogo() {
+
+  try {
+
+    const LOGO_FILE_ID =
+      "19nlgGbhvi8vU3DbE52F8DNlwotcHoPuz";
+
+    const file =
+      DriveApp.getFileById(LOGO_FILE_ID);
+
+    const blob =
+      file.getBlob();
+
+    const contentType =
+      blob.getContentType() || "image/png";
+
+    const base64 =
+      Utilities.base64Encode(
+        blob.getBytes()
+      );
+
+    return {
+      success: true,
+
+      dataUrl:
+        "data:" +
+        contentType +
+        ";base64," +
+        base64
+    };
+
+  } catch (error) {
+
+    Logger.log(
+      "Logo Load Error: " +
+      error.toString()
+    );
+
+    return {
+      success: false,
+      dataUrl: "",
+      message: error.toString()
     };
 
   }

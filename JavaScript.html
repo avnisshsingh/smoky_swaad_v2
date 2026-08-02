@@ -2200,9 +2200,13 @@ function clearPOSForm() {
     * Initialize Invoice Module
     * ==========================================
     */
-   function initializeInvoice() {
-      console.log("Invoice Module Loaded");
-   }
+ function initializeInvoice() {
+
+   console.log("Invoice Module Loaded");
+
+   loadInvoiceCompanyLogo();
+
+}
 
    /**
     * ==========================================
@@ -2210,6 +2214,10 @@ function clearPOSForm() {
     * ==========================================
     */
    function searchInvoice() {
+
+      // Load Smoky Swaad logo
+      loadInvoiceCompanyLogo();
+      
       const orderId = document.getElementById("searchOrderId").value.trim();
 
       if (!orderId) {
@@ -2265,7 +2273,7 @@ function clearPOSForm() {
 
       document.getElementById("invDeliveryArea").innerText = order.deliveryArea;
 
-      document.getElementById("invDeliverySlot").innerText = order.deliverySlot;
+      //document.getElementById("invDeliverySlot").innerText = order.deliverySlot;
 
       document.getElementById("invOrderType").innerText = order.orderType;
 
@@ -2314,22 +2322,77 @@ function clearPOSForm() {
 
       document.getElementById("invoiceItemsBody").innerHTML = rows;
 
-      // ===========================
-      // Totals
-      // ===========================
+// ===========================
+// Totals
+// ===========================
 
-      document.getElementById("invSubtotal").innerText =
-         "₹" + subtotal.toFixed(2);
+document.getElementById("invSubtotal").innerText =
+   "₹" + subtotal.toFixed(2);
 
-      document.getElementById("invDeliveryCharge").innerText =
-         "₹" + Number(order.deliveryCharge || 0).toFixed(2);
 
-      document.getElementById("invDiscount").innerText =
-         "₹" + Number(order.discount || 0).toFixed(2);
+// ===========================
+// Custom Add-ons
+// ===========================
 
-      document.getElementById("invGrandTotal").innerText =
-         "₹" + Number(order.grandTotal).toFixed(2);
+const addonsRow =
+   document.getElementById("invAddonsRow");
+
+const addonsText =
+   document.getElementById("invAddons");
+
+const addonTotalElement =
+   document.getElementById("invAddonTotal");
+
+
+const addons =
+   String(order.addons || "").trim();
+
+const addonTotal =
+   Number(order.addonTotal || 0);
+
+
+if (addons && addonTotal > 0) {
+
+   if (addonsRow) {
+      addonsRow.style.display = "";
    }
+
+   if (addonsText) {
+      addonsText.innerText = addons;
+   }
+
+   if (addonTotalElement) {
+      addonTotalElement.innerText =
+         "₹" + addonTotal.toFixed(2);
+   }
+
+} else {
+
+   if (addonsRow) {
+      addonsRow.style.display = "none";
+   }
+
+   if (addonsText) {
+      addonsText.innerText = "";
+   }
+
+   if (addonTotalElement) {
+      addonTotalElement.innerText = "₹0.00";
+   }
+
+}
+
+
+document.getElementById("invDeliveryCharge").innerText =
+   "₹" + Number(order.deliveryCharge || 0).toFixed(2);
+
+document.getElementById("invDiscount").innerText =
+   "₹" + Number(order.discount || 0).toFixed(2);
+
+document.getElementById("invGrandTotal").innerText =
+   "₹" + Number(order.grandTotal || 0).toFixed(2);
+
+}
 
    /**
     * ==========================================
@@ -2390,123 +2453,747 @@ function clearPOSForm() {
       printWindow.close();
    }
 
-   /**
-    * ==========================================
-    * Download Invoice PDF
-    * ==========================================
-    */
-   function downloadInvoicePdf() {
-      const invoice = document.getElementById("invoicePdfContainer");
+ /**
+ * ==========================================
+ * Download Invoice PDF
+ * Dynamic Multi-Page Safe Version
+ * ==========================================
+ */
+async function downloadInvoicePdf() {
 
-      if (!invoice) {
-         alert("Invoice not found.");
+    const invoice =
+        document.getElementById("invoicePdfContainer");
 
-         return;
-      }
 
-      const orderId = document.getElementById("invOrderId").innerText.trim();
+    if (!invoice) {
 
-      if (!orderId || orderId === "-") {
-         alert("Please search an invoice first.");
+        alert("Invoice not found.");
 
-         return;
-      }
+        return;
 
-      const btn = document.getElementById("btnDownloadPdf");
+    }
 
-      btn.disabled = true;
 
-      btn.innerHTML = "Generating PDF...";
+    const orderId =
+        document
+            .getElementById("invOrderId")
+            .innerText
+            .trim();
 
-      const today = new Date();
 
-      const fileDate =
-         today.getFullYear() +
-         "-" +
-         String(today.getMonth() + 1).padStart(2, "0") +
-         "-" +
-         String(today.getDate()).padStart(2, "0");
+    if (!orderId || orderId === "-") {
 
-      const fileName = orderId + "_" + fileDate + ".pdf";
+        alert("Please search an invoice first.");
 
-      const options = {
-         margin: 10,
+        return;
 
-         filename: fileName,
+    }
 
-         image: {
-            type: "jpeg",
 
-            quality: 1,
-         },
+    const btn =
+        document.getElementById("btnDownloadPdf");
 
-         html2canvas: {
-            scale: 2,
 
-            useCORS: true,
-         },
+    if (btn) {
 
-         jsPDF: {
-            unit: "mm",
+        btn.disabled = true;
 
-            format: "a4",
+        btn.innerHTML =
+            "Generating PDF...";
 
-            orientation: "portrait",
-         },
-      };
+    }
 
-      html2pdf()
-         .set(options)
 
-         .from(invoice)
+    // ==========================================
+    // File Name
+    // ==========================================
 
-         .outputPdf("blob")
+    const today = new Date();
 
-         .then(async function (pdfBlob) {
-            // Download PDF
 
-            await html2pdf()
-               .set(options)
+    const fileDate =
 
-               .from(invoice)
+        today.getFullYear() +
 
-               .save();
+        "-" +
 
-            // Save to Google Drive
+        String(
+            today.getMonth() + 1
+        ).padStart(2, "0") +
 
-            const base64Pdf = await blobToBase64(pdfBlob);
+        "-" +
 
-            google.script.run
+        String(
+            today.getDate()
+        ).padStart(2, "0");
 
-               .withSuccessHandler(function (response) {
-                  console.log("PDF saved to Drive");
 
-                  console.log(response);
-               })
+    const fileName =
 
-               .withFailureHandler(function (error) {
-                  console.error(error);
-               })
+        orderId +
 
-               .savePdf(fileName, base64Pdf);
-         })
+        "_" +
 
-         .then(function () {
-            btn.disabled = false;
+        fileDate +
 
-            btn.innerHTML = "📄 Download PDF";
-         })
+        ".pdf";
 
-         .catch(function (err) {
-            console.error(err);
 
-            btn.disabled = false;
+    // ==========================================
+    // Create PDF Clone
+    // ==========================================
 
-            btn.innerHTML = "📄 Download PDF";
+    const pdfInvoice =
+        invoice.cloneNode(true);
 
-            alert("Unable to generate PDF.");
-         });
-   }
+
+    pdfInvoice.id =
+        "invoicePdfExport";
+
+
+    // ==========================================
+    // Remove Buttons / Non-PDF Controls
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(
+            "button, .btn, .no-print"
+        )
+        .forEach(function(element) {
+
+            element.remove();
+
+        });
+
+
+    // ==========================================
+    // Remove Empty Address Section
+    // ==========================================
+
+    const address =
+        pdfInvoice.querySelector(
+            "#invAddress"
+        );
+
+
+    if (
+        address &&
+        !address.textContent.trim()
+    ) {
+
+        const card =
+            address.closest(".card");
+
+
+        if (card) {
+
+            card.remove();
+
+        }
+
+    }
+
+
+    // ==========================================
+    // Remove Empty Special Instructions
+    // ==========================================
+
+    const instructions =
+        pdfInvoice.querySelector(
+            "#invInstructions"
+        );
+
+
+    if (
+        instructions &&
+        (
+            !instructions.textContent.trim() ||
+            instructions.textContent.trim() === "-"
+        )
+    ) {
+
+        const card =
+            instructions.closest(".card");
+
+
+        if (card) {
+
+            card.remove();
+
+        }
+
+    }
+
+
+    // ==========================================
+    // Base PDF Layout
+    // ==========================================
+
+    pdfInvoice.style.width =
+        "190mm";
+
+    pdfInvoice.style.maxWidth =
+        "190mm";
+
+    pdfInvoice.style.margin =
+        "0";
+
+    pdfInvoice.style.padding =
+        "0";
+
+    pdfInvoice.style.background =
+        "#ffffff";
+
+    pdfInvoice.style.fontFamily =
+        "Arial, sans-serif";
+
+    pdfInvoice.style.fontSize =
+        "10.5px";
+
+    pdfInvoice.style.lineHeight =
+        "1.20";
+
+
+    // ==========================================
+    // Compact Cards
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(".card")
+        .forEach(function(card) {
+
+            card.style.marginBottom =
+                "4px";
+
+            card.style.boxShadow =
+                "none";
+
+            card.style.border =
+                "1px solid #dddddd";
+
+
+            /*
+             * IMPORTANT
+             *
+             * Do NOT force every card to
+             * avoid page breaks.
+             *
+             * Large cards such as Ordered Items
+             * must be allowed to flow naturally.
+             */
+
+            card.style.breakInside =
+                "auto";
+
+            card.style.pageBreakInside =
+                "auto";
+
+        });
+
+
+    // ==========================================
+    // Compact Card Headers
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(".card-header")
+        .forEach(function(header) {
+
+            header.style.padding =
+                "3px 7px";
+
+            header.style.fontSize =
+                "10.5px";
+
+            /*
+             * Keep card heading with
+             * content immediately below it.
+             */
+
+            header.style.breakAfter =
+                "avoid";
+
+            header.style.pageBreakAfter =
+                "avoid";
+
+        });
+
+
+    // ==========================================
+    // Compact Card Bodies
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(".card-body")
+        .forEach(function(body) {
+
+            body.style.padding =
+                "5px 7px";
+
+        });
+
+
+    // ==========================================
+    // Tables
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll("table")
+        .forEach(function(table) {
+
+            table.style.marginBottom =
+                "0";
+
+            table.style.fontSize =
+                "9.5px";
+
+            table.style.width =
+                "100%";
+
+            /*
+             * Tables are allowed to continue
+             * onto another page when necessary.
+             */
+
+            table.style.breakInside =
+                "auto";
+
+            table.style.pageBreakInside =
+                "auto";
+
+        });
+
+
+    // ==========================================
+    // Table Rows
+    //
+    // Individual item rows should NEVER
+    // split between pages.
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll("tr")
+        .forEach(function(row) {
+
+            row.style.breakInside =
+                "avoid";
+
+            row.style.pageBreakInside =
+                "avoid";
+
+        });
+
+
+    // ==========================================
+    // Repeat Table Header
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll("thead")
+        .forEach(function(head) {
+
+            head.style.display =
+                "table-header-group";
+
+        });
+
+
+    // ==========================================
+    // Compact Table Cells
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(
+            "th, td"
+        )
+        .forEach(function(cell) {
+
+            cell.style.padding =
+                "2px 4px";
+
+            cell.style.verticalAlign =
+                "middle";
+
+        });
+
+
+    // ==========================================
+    // Reduce Bootstrap Margins
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(".mb-3")
+        .forEach(function(element) {
+
+            element.style.marginBottom =
+                "4px";
+
+        });
+
+
+    pdfInvoice
+        .querySelectorAll(".mt-3")
+        .forEach(function(element) {
+
+            element.style.marginTop =
+                "4px";
+
+        });
+
+
+    // ==========================================
+    // Compact Headings
+    // ==========================================
+
+    pdfInvoice
+        .querySelectorAll(
+            "h1, h2, h3, h4, h5, h6"
+        )
+        .forEach(function(heading) {
+
+            heading.style.marginTop =
+                "0";
+
+            heading.style.marginBottom =
+                "2px";
+
+        });
+
+
+    // ==========================================
+    // Protect Important Small Sections
+    //
+    // These sections should stay together
+    // because they're normally small.
+    // ==========================================
+
+    const protectedSections = [
+
+        "#invPaymentMode2",
+        "#invInstructions"
+
+    ];
+
+
+    protectedSections.forEach(
+        function(selector) {
+
+            const element =
+                pdfInvoice.querySelector(
+                    selector
+                );
+
+
+            if (!element) {
+
+                return;
+
+            }
+
+
+            const card =
+                element.closest(".card");
+
+
+            if (card) {
+
+                card.style.breakInside =
+                    "avoid";
+
+                card.style.pageBreakInside =
+                    "avoid";
+
+            }
+
+        }
+    );
+
+
+    // ==========================================
+    // Temporary Off-Screen Wrapper
+    // ==========================================
+
+    const wrapper =
+        document.createElement("div");
+
+
+    wrapper.style.position =
+        "fixed";
+
+    wrapper.style.left =
+        "-10000px";
+
+    wrapper.style.top =
+        "0";
+
+    wrapper.style.width =
+        "190mm";
+
+    wrapper.style.background =
+        "#ffffff";
+
+
+    wrapper.appendChild(
+        pdfInvoice
+    );
+
+
+    document.body.appendChild(
+        wrapper
+    );
+
+
+    // ==========================================
+    // PDF Configuration
+    // ==========================================
+
+    const options = {
+
+        margin: [
+            5,
+            5,
+            5,
+            5
+        ],
+
+        filename:
+            fileName,
+
+        image: {
+
+            type:
+                "jpeg",
+
+            quality:
+                0.98
+
+        },
+
+        html2canvas: {
+
+            scale:
+                2,
+
+            useCORS:
+                true,
+
+            logging:
+                false,
+
+            backgroundColor:
+                "#ffffff"
+
+        },
+
+        jsPDF: {
+
+            unit:
+                "mm",
+
+            format:
+                "a4",
+
+            orientation:
+                "portrait"
+
+        },
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Removed "avoid-all".
+         *
+         * CSS controls which elements
+         * may or may not split.
+         */
+
+        pagebreak: {
+
+            mode: [
+                "css",
+                "legacy"
+            ]
+
+        }
+
+    };
+
+
+    try {
+
+
+        // ======================================
+        // Generate PDF
+        // ======================================
+
+        const worker =
+
+            html2pdf()
+
+                .set(options)
+
+                .from(pdfInvoice);
+
+
+        const pdfBlob =
+
+            await worker.outputPdf(
+                "blob"
+            );
+
+
+        // ======================================
+        // Download PDF
+        // ======================================
+
+        const downloadUrl =
+
+            URL.createObjectURL(
+                pdfBlob
+            );
+
+
+        const link =
+
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            downloadUrl;
+
+
+        link.download =
+            fileName;
+
+
+        document.body.appendChild(
+            link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        setTimeout(
+            function() {
+
+                URL.revokeObjectURL(
+                    downloadUrl
+                );
+
+            },
+            1000
+        );
+
+
+        // ======================================
+        // Save Same PDF To Google Drive
+        // ======================================
+
+        const base64Pdf =
+
+            await blobToBase64(
+                pdfBlob
+            );
+
+
+        google.script.run
+
+            .withSuccessHandler(
+                function(response) {
+
+                    console.log(
+                        "PDF saved to Drive"
+                    );
+
+                    console.log(
+                        response
+                    );
+
+                }
+            )
+
+            .withFailureHandler(
+                function(error) {
+
+                    console.error(
+                        "Unable to save PDF to Drive:",
+                        error
+                    );
+
+                }
+            )
+
+            .savePdf(
+                fileName,
+                base64Pdf
+            );
+
+
+    } catch (err) {
+
+
+        console.error(
+            "Invoice PDF Error:",
+            err
+        );
+
+
+        alert(
+            "Unable to generate PDF."
+        );
+
+
+    } finally {
+
+
+        // ======================================
+        // Remove Temporary DOM
+        // ======================================
+
+        if (
+            wrapper &&
+            wrapper.parentNode
+        ) {
+
+            wrapper.parentNode.removeChild(
+                wrapper
+            );
+
+        }
+
+
+        // ======================================
+        // Restore Button
+        // ======================================
+
+        if (btn) {
+
+            btn.disabled =
+                false;
+
+            btn.innerHTML =
+                "📄 Download PDF";
+
+        }
+
+    }
+
+}
+
+
+
+
+
+
+
+
 
    /**
     * ==========================================
@@ -3494,6 +4181,87 @@ function escapeAddonHtml(value) {
         .replace(/"/g, "&quot;")
 
         .replace(/'/g, "&#039;");
+
+}
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Load Smoky Swaad Logo
+ * ==========================================
+ */
+function loadInvoiceCompanyLogo() {
+
+    const logo =
+        document.getElementById(
+            "invoiceCompanyLogo"
+        );
+
+
+    if (!logo) {
+
+        return;
+
+    }
+
+
+    // Already loaded
+    if (logo.dataset.loaded === "true") {
+
+        return;
+
+    }
+
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    response &&
+                    response.success &&
+                    response.dataUrl
+                ) {
+
+                    logo.src =
+                        response.dataUrl;
+
+
+                    logo.style.display =
+                        "block";
+
+
+                    logo.dataset.loaded =
+                        "true";
+
+                } else {
+
+                    console.warn(
+                        "Invoice logo could not be loaded."
+                    );
+
+                }
+
+            }
+        )
+
+        .withFailureHandler(
+            function(error) {
+
+                console.error(
+                    "Invoice Logo Error:",
+                    error
+                );
+
+            }
+        )
+
+        .getSmokySwaadLogo();
 
 }
 
