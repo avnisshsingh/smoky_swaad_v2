@@ -151,6 +151,12 @@
     * Initialize Personal Expenses Screen
     * ==========================================
     */
+   let personalExpenseDescriptionCache = [];
+   let personalExpenseDescriptionMap = {};
+   let personalExpenseHistoryCache = [];
+   let personalExpenseCategoryCache = [];
+   let personalExpenseBootstrapLoaded = false;
+
    function initializePersonalExpenses() {
       console.log("Personal Expenses Module Loaded");
 
@@ -205,11 +211,1081 @@
       }
 
       // ------------------------------------------
-      // Load Summary + Recent Expenses
+      // Load Summary + Expense History
       // ------------------------------------------
 
-      loadPersonalExpenses();
+      const historyMonth =
+         document.getElementById("personalExpenseHistoryMonth");
+
+      if (historyMonth && !historyMonth.value) {
+         historyMonth.value = getToday().slice(0, 7);
+      }
+
+      registerPersonalExpenseSmartDescription();
+      registerPersonalExpenseLocalHistoryFilters();
+      loadPersonalExpenseBootstrap();
    }
+
+
+   /**
+    * ==========================================
+    * PERSONAL EXPENSE SETUP
+    * Units + remembered descriptions
+    * ==========================================
+    */
+
+   /**
+    * ==========================================
+    * PERSONAL EXPENSE HIGH-PERFORMANCE BOOTSTRAP
+    * One server call for dashboard + history +
+    * units + smart descriptions.
+    * ==========================================
+    */
+   function loadPersonalExpenseBootstrap(forceRefresh) {
+
+      google.script.run
+         .withSuccessHandler(function(response) {
+
+            if (
+               !response ||
+               response.success !== true
+            ) {
+
+               console.error(
+                  "Expense bootstrap failed:",
+                  response && response.message
+                     ? response.message
+                     : "Unknown error"
+               );
+
+               return;
+            }
+
+            personalExpenseBootstrapLoaded = true;
+
+            updatePersonalExpenseSummary(
+               response.summary || {}
+            );
+
+            populatePersonalExpenseUnits(
+               response.units || []
+            );
+
+            personalExpenseCategoryCache =
+               Array.isArray(response.categories)
+                  ? response.categories
+                  : [];
+
+            populatePersonalExpenseCategories(
+               personalExpenseCategoryCache
+            );
+
+            personalExpenseDescriptionCache =
+               Array.isArray(response.descriptions)
+                  ? response.descriptions
+                  : [];
+
+            preparePersonalExpenseDescriptionSearchCache();
+
+            populatePersonalExpenseQuantitySuggestions();
+
+            personalExpenseHistoryCache =
+               Array.isArray(response.history)
+                  ? response.history
+                  : [];
+
+            renderPersonalExpenseHistoryFromCache();
+
+         })
+         .withFailureHandler(function(error) {
+
+            console.error(
+               "Expense bootstrap server failure:",
+               error
+            );
+
+         })
+         .getPersonalExpenseBootstrapData();
+
+   }
+
+
+   function registerPersonalExpenseLocalHistoryFilters() {
+
+      const ids = [
+         "personalExpenseHistoryMonth",
+         "personalExpenseHistoryCategory",
+         "personalExpenseHistorySearch"
+      ];
+
+      ids.forEach(function(id) {
+
+         const element =
+            document.getElementById(id);
+
+         if (!element) return;
+
+         if (
+            element.dataset.localFilterBound ===
+            "true"
+         ) {
+            return;
+         }
+
+         element.dataset.localFilterBound =
+            "true";
+
+         const eventName =
+            element.tagName === "INPUT"
+               ? "input"
+               : "change";
+
+         let timer = null;
+
+         element.addEventListener(
+            eventName,
+            function() {
+
+               if (timer) {
+                  clearTimeout(timer);
+               }
+
+               timer =
+                  setTimeout(function() {
+                     renderPersonalExpenseHistoryFromCache();
+                  }, 80);
+
+            }
+         );
+
+      });
+
+   }
+
+
+   function renderPersonalExpenseHistoryFromCache() {
+
+      if (!personalExpenseBootstrapLoaded) {
+         return;
+      }
+
+      const month =
+         getPersonalExpenseFieldValue(
+            "personalExpenseHistoryMonth"
+         );
+
+      const category =
+         getPersonalExpenseFieldValue(
+            "personalExpenseHistoryCategory"
+         );
+
+      const search =
+         getPersonalExpenseFieldValue(
+            "personalExpenseHistorySearch"
+         ).toLowerCase();
+
+      let total = 0;
+      let count = 0;
+
+      const filtered =
+         personalExpenseHistoryCache
+            .filter(function(expense) {
+
+               if (
+                  month &&
+                  String(
+                     expense.expenseDateKey || ""
+                  ).substring(0, 7) !== month
+               ) {
+                  return false;
+               }
+
+               if (
+                  category &&
+                  String(expense.category || "") !==
+                     category
+               ) {
+                  return false;
+               }
+
+               if (search) {
+
+                  const haystack = [
+                     expense.expenseId,
+                     expense.description,
+                     expense.category,
+                     expense.subcategory,
+                     expense.paidTo,
+                     expense.referenceNo,
+                     expense.remarks,
+                     expense.unit,
+                     expense.quantity
+                  ]
+                  .join(" ")
+                  .toLowerCase();
+
+                  if (
+                     haystack.indexOf(search) === -1
+                  ) {
+                     return false;
+                  }
+
+               }
+
+               return true;
+
+            });
+
+      filtered.forEach(function(expense) {
+
+         if (
+            String(expense.nature || "")
+               .toLowerCase() === "expense"
+         ) {
+            total += Number(expense.amount || 0);
+         }
+
+         count++;
+
+      });
+
+      // Reuse the existing history renderer by supplying
+      // the same response shape it already understands.
+      renderPersonalExpenseHistory({
+         success: true,
+         expenses: filtered,
+         total: total,
+         count: count
+      });
+
+   }
+
+
+   function loadPersonalExpenseSetup() {
+
+      google.script.run
+         .withSuccessHandler(function(response) {
+
+            if (!response || response.success !== true) {
+               console.error(
+                  "Unable to load expense setup:",
+                  response && response.message
+                     ? response.message
+                     : "Unknown error"
+               );
+               return;
+            }
+
+            populatePersonalExpenseUnits(response.units || []);
+
+            personalExpenseDescriptionCache =
+               Array.isArray(response.descriptions)
+                  ? response.descriptions
+                  : [];
+
+            personalExpenseDescriptionMap = {};
+
+            personalExpenseDescriptionCache.forEach(function(item) {
+
+               const description =
+                  String(item.description || "").trim();
+
+               if (!description) return;
+
+               personalExpenseDescriptionMap[
+                  description.toLowerCase()
+               ] = item;
+
+            });
+
+            preparePersonalExpenseDescriptionSearchCache();
+            populatePersonalExpenseQuantitySuggestions();
+
+         })
+         .withFailureHandler(function(error) {
+            console.error("Expense setup load failed:", error);
+         })
+         .getPersonalExpenseSetupData();
+
+   }
+
+
+   function populatePersonalExpenseUnits(units) {
+
+      const select =
+         document.getElementById("personalExpenseUnit");
+
+      if (!select) return;
+
+      const currentValue =
+         String(select.value || "").trim();
+
+      let html =
+         '<option value="">Select Unit</option>';
+
+      (Array.isArray(units) ? units : [])
+         .forEach(function(unit) {
+
+            unit = String(unit || "").trim();
+
+            if (!unit) return;
+
+            html +=
+               '<option value="' +
+               escapePersonalExpenseHtml(unit) +
+               '">' +
+               escapePersonalExpenseHtml(unit) +
+               '</option>';
+
+         });
+
+      select.innerHTML = html;
+
+      if (currentValue) {
+         select.value = currentValue;
+      }
+
+   }
+
+
+   function preparePersonalExpenseDescriptionSearchCache() {
+
+      personalExpenseDescriptionCache =
+         personalExpenseDescriptionCache
+            .map(function(item) {
+
+               const description =
+                  String(item.description || "").trim();
+
+               return {
+                  description: description,
+                  category: String(item.category || "").trim(),
+                  quantity:
+                     item.quantity === null ||
+                     item.quantity === undefined
+                        ? ""
+                        : String(item.quantity).trim(),
+                  unit: String(item.unit || "").trim(),
+
+                  // Pre-computed once for fast mobile searches.
+                  searchText:
+                     description.toLowerCase()
+               };
+
+            })
+            .filter(function(item) {
+               return item.description !== "";
+            });
+
+      personalExpenseDescriptionMap = {};
+
+      personalExpenseDescriptionCache.forEach(function(item) {
+         personalExpenseDescriptionMap[
+            item.description.toLowerCase()
+         ] = item;
+      });
+
+   }
+
+
+   function populatePersonalExpenseQuantitySuggestions() {
+
+      const list =
+         document.getElementById(
+            "personalExpenseQuantityList"
+         );
+
+      if (!list) return;
+
+      const seen = {};
+
+      const values =
+         personalExpenseDescriptionCache
+            .map(function(item) {
+               return String(item.quantity || "").trim();
+            })
+            .filter(function(value) {
+
+               if (!value) return false;
+
+               if (seen[value]) return false;
+
+               seen[value] = true;
+               return true;
+
+            });
+
+      list.innerHTML =
+         values
+            .map(function(value) {
+               return '<option value="' +
+                  escapePersonalExpenseHtml(value) +
+                  '"></option>';
+            })
+            .join("");
+
+   }
+
+
+   function registerPersonalExpenseSmartDescription() {
+
+      const input =
+         document.getElementById(
+            "personalExpenseDescription"
+         );
+
+      if (!input) return;
+
+      if (input.dataset.smartSearchBound === "true") {
+         return;
+      }
+
+      input.dataset.smartSearchBound = "true";
+
+      let searchTimer = null;
+
+      input.addEventListener("input", function() {
+
+         if (searchTimer) {
+            clearTimeout(searchTimer);
+         }
+
+         // Small debounce keeps typing smooth on mobile.
+         searchTimer =
+            setTimeout(function() {
+
+               showPersonalExpenseDescriptionSuggestions(
+                  input.value
+               );
+
+               applyPersonalExpenseSmartCategory();
+
+            }, 80);
+
+      });
+
+      input.addEventListener("focus", function() {
+
+         if (
+            String(input.value || "").trim().length >= 2
+         ) {
+            showPersonalExpenseDescriptionSuggestions(
+               input.value
+            );
+         }
+
+      });
+
+      input.addEventListener("keydown", function(event) {
+
+         if (event.key === "Escape") {
+            hidePersonalExpenseDescriptionSuggestions();
+         }
+
+      });
+
+   }
+
+
+   function showPersonalExpenseDescriptionSuggestions(query) {
+
+      const box =
+         document.getElementById(
+            "personalExpenseDescriptionSuggestions"
+         );
+
+      if (!box) return;
+
+      const search =
+         String(query || "")
+            .trim()
+            .toLowerCase();
+
+      if (search.length < 2) {
+         hidePersonalExpenseDescriptionSuggestions();
+         return;
+      }
+
+      // Local array only: NO google.script.run while typing.
+      const startsWith = [];
+      const contains = [];
+
+      for (
+         let i = 0;
+         i < personalExpenseDescriptionCache.length;
+         i++
+      ) {
+
+         const item =
+            personalExpenseDescriptionCache[i];
+
+         if (item.searchText.indexOf(search) === 0) {
+            startsWith.push(item);
+         } else if (
+            item.searchText.indexOf(search) > 0
+         ) {
+            contains.push(item);
+         }
+
+         // More than enough candidates; rendering is capped below.
+         if (
+            startsWith.length >= 6 &&
+            contains.length >= 6
+         ) {
+            break;
+         }
+
+      }
+
+      const matches =
+         startsWith
+            .concat(contains)
+            .slice(0, 6);
+
+      if (!matches.length) {
+
+         box.innerHTML =
+            '<div class="list-group-item text-muted small">' +
+            'No previous match — continue typing to add a new description.' +
+            '</div>';
+
+         box.style.display = "block";
+         return;
+      }
+
+      box.innerHTML =
+         matches
+            .map(function(item, index) {
+
+               const detailParts = [];
+
+               if (item.category) {
+                  detailParts.push(item.category);
+               }
+
+               if (item.quantity) {
+                  detailParts.push(
+                     item.quantity +
+                     (item.unit ? " " + item.unit : "")
+                  );
+               } else if (item.unit) {
+                  detailParts.push(item.unit);
+               }
+
+               return (
+                  '<button type="button" ' +
+                  'class="list-group-item list-group-item-action pe-description-result" ' +
+                  'data-pe-index="' + index + '">' +
+
+                     '<div class="fw-semibold">' +
+                        escapePersonalExpenseHtml(
+                           item.description
+                        ) +
+                     '</div>' +
+
+                     (
+                        detailParts.length
+                           ? '<div class="small text-muted">' +
+                             escapePersonalExpenseHtml(
+                                detailParts.join(" • ")
+                             ) +
+                             '</div>'
+                           : ''
+                     ) +
+
+                  '</button>'
+               );
+
+            })
+            .join("");
+
+      box.style.display = "block";
+
+      const buttons =
+         box.querySelectorAll(
+            ".pe-description-result"
+         );
+
+      buttons.forEach(function(button) {
+
+         button.addEventListener(
+            "click",
+            function() {
+
+               const index =
+                  Number(
+                     button.getAttribute(
+                        "data-pe-index"
+                     )
+                  );
+
+               const selected =
+                  matches[index];
+
+               if (selected) {
+                  selectPersonalExpenseDescription(
+                     selected
+                  );
+               }
+
+            }
+         );
+
+      });
+
+   }
+
+
+   function selectPersonalExpenseDescription(item) {
+
+      const description =
+         document.getElementById(
+            "personalExpenseDescription"
+         );
+
+      const category =
+         document.getElementById(
+            "personalExpenseCategory"
+         );
+
+      const quantity =
+         document.getElementById(
+            "personalExpenseQuantity"
+         );
+
+      const unit =
+         document.getElementById(
+            "personalExpenseUnit"
+         );
+
+      if (description) {
+         description.value =
+            item.description || "";
+      }
+
+      if (
+         category &&
+         item.category
+      ) {
+         category.value =
+            item.category;
+      }
+
+      if (quantity) {
+         quantity.value =
+            item.quantity || "";
+      }
+
+      if (unit) {
+         unit.value =
+            item.unit || "";
+      }
+
+      hidePersonalExpenseDescriptionSuggestions();
+
+      if (quantity) {
+         quantity.focus();
+      }
+
+   }
+
+
+   function hidePersonalExpenseDescriptionSuggestions() {
+
+      const box =
+         document.getElementById(
+            "personalExpenseDescriptionSuggestions"
+         );
+
+      if (!box) return;
+
+      box.style.display = "none";
+      box.innerHTML = "";
+
+   }
+
+
+   document.addEventListener("click", function(event) {
+
+      const input =
+         document.getElementById(
+            "personalExpenseDescription"
+         );
+
+      const box =
+         document.getElementById(
+            "personalExpenseDescriptionSuggestions"
+         );
+
+      if (!input || !box) return;
+
+      if (
+         event.target !== input &&
+         !box.contains(event.target)
+      ) {
+         hidePersonalExpenseDescriptionSuggestions();
+      }
+
+   });
+
+
+   function applyPersonalExpenseSmartCategory() {
+
+      const input =
+         document.getElementById(
+            "personalExpenseDescription"
+         );
+
+      const category =
+         document.getElementById(
+            "personalExpenseCategory"
+         );
+
+      if (!input || !category) return;
+
+      const key =
+         String(input.value || "")
+            .trim()
+            .toLowerCase();
+
+      if (!key) return;
+
+      const remembered =
+         personalExpenseDescriptionMap[key];
+
+      if (!remembered) {
+         return;
+      }
+
+      if (remembered.category) {
+         category.value = remembered.category;
+      }
+
+      const quantity =
+         document.getElementById(
+            "personalExpenseQuantity"
+         );
+
+      if (quantity) {
+         quantity.value =
+            remembered.quantity || "";
+      }
+
+      const unit =
+         document.getElementById(
+            "personalExpenseUnit"
+         );
+
+      if (unit) {
+         unit.value =
+            remembered.unit || "";
+      }
+
+   }
+
+
+
+   /**
+    * ==========================================
+    * PERSONAL EXPENSE CATEGORIES
+    * One cached list drives:
+    * - Quick Categories
+    * - Category dropdown
+    * - History filter
+    * ==========================================
+    */
+   const PERSONAL_EXPENSE_CATEGORY_ICONS = Object.freeze({
+      "atm cash": "🏧",
+      "baby": "👶",
+      "baby / kids": "👶",
+      "bills": "💡",
+      "education": "🎓",
+      "entertainment": "🎬",
+      "food": "🍽️",
+      "fruits": "🍎",
+      "fuel": "⛽",
+      "grocery": "🛒",
+      "house": "🏠",
+      "maintenance": "🛠️",
+      "medical": "💊",
+      "milk": "🥛",
+      "naasta": "🥪",
+      "recharge": "📱",
+      "shopping": "🛍️",
+      "staff": "👤",
+      "staff / help": "👤",
+      "tea": "☕",
+      "transfer": "💸",
+      "vegetables": "🥬",
+      "vehicle": "🚗",
+      "xerox": "📄",
+      "other": "📌"
+   });
+
+
+   function getPersonalExpenseCategoryIcon(category) {
+
+      const key =
+         String(category || "")
+            .trim()
+            .toLowerCase();
+
+      return PERSONAL_EXPENSE_CATEGORY_ICONS[key] || "📌";
+
+   }
+
+
+   function populatePersonalExpenseCategories(categories) {
+
+      const clean =
+         (Array.isArray(categories) ? categories : [])
+            .map(function(value) {
+               return String(value || "").trim();
+            })
+            .filter(function(value, index, array) {
+               if (!value) return false;
+               return array.findIndex(function(item) {
+                  return item.toLowerCase() === value.toLowerCase();
+               }) === index;
+            });
+
+      clean.sort(function(a, b) {
+         return a.localeCompare(
+            b,
+            undefined,
+            {
+               sensitivity: "base",
+               numeric: true
+            }
+         );
+      });
+
+      personalExpenseCategoryCache = clean;
+
+      const categorySelect =
+         document.getElementById("personalExpenseCategory");
+
+      const historySelect =
+         document.getElementById("personalExpenseHistoryCategory");
+
+      const currentCategory =
+         categorySelect
+            ? String(categorySelect.value || "")
+            : "";
+
+      const currentHistory =
+         historySelect
+            ? String(historySelect.value || "")
+            : "";
+
+      const options =
+         clean.map(function(category) {
+
+            const icon =
+               getPersonalExpenseCategoryIcon(
+                  category
+               );
+
+            return '<option value="' +
+               escapePersonalExpenseHtml(category) +
+               '">' +
+               icon + ' ' +
+               escapePersonalExpenseHtml(category) +
+               '</option>';
+
+         }).join("");
+
+      if (categorySelect) {
+         categorySelect.innerHTML =
+            '<option value="">Select Category</option>' +
+            options;
+
+         if (currentCategory) {
+            categorySelect.value = currentCategory;
+         }
+      }
+
+      if (historySelect) {
+         historySelect.innerHTML =
+            '<option value="">All Categories</option>' +
+            options;
+
+         if (currentHistory) {
+            historySelect.value = currentHistory;
+         }
+      }
+
+      const grid =
+         document.getElementById(
+            "personalExpenseQuickCategoryGrid"
+         );
+
+      if (grid) {
+
+         grid.innerHTML =
+            clean.map(function(category) {
+
+               const icon =
+                  getPersonalExpenseCategoryIcon(
+                     category
+                  );
+
+               return (
+                  '<button type="button" ' +
+                  'class="btn btn-outline-secondary pe-quick-btn" ' +
+                  'data-pe-category="' +
+                  escapePersonalExpenseHtml(category) +
+                  '" title="' +
+                  escapePersonalExpenseHtml(category) +
+                  '">' +
+                     '<span class="pe-category-icon" aria-hidden="true">' +
+                        icon +
+                     '</span>' +
+                     '<span class="pe-category-name">' +
+                        escapePersonalExpenseHtml(category) +
+                     '</span>' +
+                  '</button>'
+               );
+
+            }).join("");
+
+         if (
+            grid.dataset.categoryDelegateBound !==
+            "true"
+         ) {
+
+            grid.dataset.categoryDelegateBound =
+               "true";
+
+            grid.addEventListener(
+               "click",
+               function(event) {
+
+                  const button =
+                     event.target.closest(
+                        "[data-pe-category]"
+                     );
+
+                  if (
+                     !button ||
+                     !grid.contains(button)
+                  ) {
+                     return;
+                  }
+
+                  selectPersonalExpenseCategory(
+                     button.getAttribute(
+                        "data-pe-category"
+                     )
+                  );
+
+               }
+            );
+
+         }
+
+      }
+
+   }
+
+
+   function showAddPersonalExpenseCategory() {
+
+      const value =
+         window.prompt(
+            "Enter new expense category:"
+         );
+
+      if (value === null) {
+         return;
+      }
+
+      const category =
+         String(value || "")
+            .trim()
+            .replace(/\s+/g, " ");
+
+      if (!category) {
+         return;
+      }
+
+      const duplicate =
+         personalExpenseCategoryCache.some(
+            function(item) {
+               return item.toLowerCase() ===
+                  category.toLowerCase();
+            }
+         );
+
+      if (duplicate) {
+
+         selectPersonalExpenseCategory(
+            personalExpenseCategoryCache.find(
+               function(item) {
+                  return item.toLowerCase() ===
+                     category.toLowerCase();
+               }
+            )
+         );
+
+         showPersonalExpenseMessage(
+            "Category already exists.",
+            "info"
+         );
+
+         return;
+      }
+
+      google.script.run
+         .withSuccessHandler(function(response) {
+
+            if (
+               !response ||
+               response.success !== true
+            ) {
+
+               showPersonalExpenseMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to add category.",
+                  "danger"
+               );
+
+               return;
+            }
+
+            // Update browser cache immediately.
+            personalExpenseCategoryCache =
+               response.categories || [];
+
+            populatePersonalExpenseCategories(
+               personalExpenseCategoryCache
+            );
+
+            selectPersonalExpenseCategory(
+               response.category
+            );
+
+            showPersonalExpenseMessage(
+               "Category added.",
+               "success"
+            );
+
+         })
+         .withFailureHandler(function(error) {
+
+            showPersonalExpenseMessage(
+               error && error.message
+                  ? error.message
+                  : String(error),
+               "danger"
+            );
+
+         })
+         .addPersonalExpenseCategory(category);
+
+   }
+
 
    /**
     * ==========================================
@@ -370,6 +1446,8 @@ function savePersonalExpense() {
         );
 
 
+        loadPersonalExpenseSetup();
+
         resetPersonalExpenseForm();
 
 
@@ -381,7 +1459,7 @@ function savePersonalExpense() {
         }
 
 
-        loadPersonalExpenses();
+        loadPersonalExpenseBootstrap(true);
 
     }
 
@@ -533,6 +1611,18 @@ function editPersonalExpense(
     setPersonalExpenseValue(
         "personalExpenseDescription",
         expense.description
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseUnit",
+        expense.unit || ""
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseQuantity",
+        expense.quantity || ""
     );
 
 
@@ -770,6 +1860,7 @@ function deletePersonalExpense(
 
 
                 loadPersonalExpenses();
+                loadPersonalExpenseHistory();
 
             }
         )
@@ -1059,6 +2150,7 @@ function restorePersonalExpense(
 
 
                 loadPersonalExpenses();
+                loadPersonalExpenseHistory();
 
                 loadDeletedPersonalExpenses();
 
@@ -1160,6 +2252,16 @@ function collectPersonalExpenseData() {
         description:
             getPersonalExpenseFieldValue(
                 "personalExpenseDescription"
+            ),
+
+        unit:
+            getPersonalExpenseFieldValue(
+                "personalExpenseUnit"
+            ),
+
+        quantity:
+            getPersonalExpenseFieldValue(
+                "personalExpenseQuantity"
             ),
 
         amount:
@@ -1555,6 +2657,34 @@ function resetPersonalExpenseForm() {
 
 
     // ------------------------------------------
+    // Unit
+    // ------------------------------------------
+
+    const unit =
+        document.getElementById(
+            "personalExpenseUnit"
+        );
+
+    if (unit) {
+        unit.value = "";
+    }
+
+
+    // ------------------------------------------
+    // Quantity
+    // ------------------------------------------
+
+    const quantity =
+        document.getElementById(
+            "personalExpenseQuantity"
+        );
+
+    if (quantity) {
+        quantity.value = "";
+    }
+
+
+    // ------------------------------------------
     // Amount
     // ------------------------------------------
 
@@ -1934,9 +3064,7 @@ function updatePersonalExpenseSummary(
         document.getElementById(
             "personalExpenseTransactionCount"
         );
-
-
-    if (today) {
+if (today) {
 
         today.textContent =
             formatPersonalExpenseCurrency(
@@ -1964,6 +3092,9 @@ function updatePersonalExpenseSummary(
             );
 
     }
+
+
+
 
 }
 
@@ -2285,6 +3416,175 @@ function renderPersonalExpenseMobileCards(expenses) {
 
     list.innerHTML =
         html;
+
+}
+
+
+
+/**
+ * ==========================================================
+ * PERSONAL EXPENSE HISTORY
+ * Simple filters: Month + Category + Search
+ * ==========================================================
+ */
+function loadPersonalExpenseHistory() {
+
+    const month =
+        getPersonalExpenseFieldValue(
+            "personalExpenseHistoryMonth"
+        );
+
+    const category =
+        getPersonalExpenseFieldValue(
+            "personalExpenseHistoryCategory"
+        );
+
+    const search =
+        getPersonalExpenseFieldValue(
+            "personalExpenseHistorySearch"
+        );
+
+    const desktopBody =
+        document.getElementById(
+            "personalExpenseTableBody"
+        );
+
+    const mobileList =
+        document.getElementById(
+            "personalExpenseMobileList"
+        );
+
+    const info =
+        document.getElementById(
+            "personalExpenseHistoryInfo"
+        );
+
+    if (desktopBody) {
+        desktopBody.innerHTML = `
+            <tr>
+                <td colspan="7"
+                    class="text-center text-muted py-4">
+                    Loading history...
+                </td>
+            </tr>
+        `;
+    }
+
+    if (mobileList) {
+        mobileList.innerHTML = `
+            <div class="text-center text-muted py-4">
+                Loading history...
+            </div>
+        `;
+    }
+
+    if (info) {
+        info.textContent = "";
+    }
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    showPersonalExpenseMessage(
+                        response && response.message
+                            ? response.message
+                            : "Unable to load expense history.",
+                        "danger"
+                    );
+
+                    return;
+                }
+
+                renderPersonalExpenses(
+                    response.expenses || []
+                );
+
+                if (info) {
+
+                    const count =
+                        Number(response.count || 0);
+
+                    const total =
+                        Number(response.total || 0);
+
+                    info.textContent =
+                        count +
+                        (count === 1
+                            ? " transaction"
+                            : " transactions") +
+                        " • Total " +
+                        formatPersonalExpenseCurrency(total);
+
+                }
+
+            }
+        )
+
+        .withFailureHandler(
+            function(error) {
+
+                showPersonalExpenseMessage(
+                    error && error.message
+                        ? error.message
+                        : String(error),
+                    "danger"
+                );
+
+            }
+        )
+
+        .getPersonalExpenseHistory({
+            month: month,
+            category: category,
+            search: search
+        });
+
+}
+
+
+/**
+ * ==========================================================
+ * CLEAR PERSONAL EXPENSE HISTORY FILTERS
+ * ==========================================================
+ */
+function clearPersonalExpenseHistoryFilters() {
+
+    const month =
+        document.getElementById(
+            "personalExpenseHistoryMonth"
+        );
+
+    const category =
+        document.getElementById(
+            "personalExpenseHistoryCategory"
+        );
+
+    const search =
+        document.getElementById(
+            "personalExpenseHistorySearch"
+        );
+
+    if (month) {
+        month.value =
+            getToday().slice(0, 7);
+    }
+
+    if (category) {
+        category.value = "";
+    }
+
+    if (search) {
+        search.value = "";
+    }
+
+    loadPersonalExpenseHistory();
 
 }
 

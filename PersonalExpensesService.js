@@ -25,6 +25,8 @@
  * N  Created At
  * O  Updated At
  * P  Status
+ * Q  Unit
+ * R  Quantity
  *
  * ==========================================================
  */
@@ -35,6 +37,504 @@
  * SAVE PERSONAL EXPENSE
  * ==========================================================
  */
+
+/**
+ * ==========================================================
+ * PERSONAL EXPENSE PERFORMANCE CACHE
+ * ==========================================================
+ */
+const PERSONAL_EXPENSE_CACHE_KEY = "PERSONAL_EXPENSE_BOOTSTRAP_V4";
+const PERSONAL_EXPENSE_CACHE_SECONDS = 300;
+
+
+function clearPersonalExpenseCache_() {
+
+  try {
+    CacheService
+      .getScriptCache()
+      .remove(
+        PERSONAL_EXPENSE_CACHE_KEY
+      );
+  } catch (error) {
+    console.warn(
+      "Personal Expense cache clear warning:",
+      error
+    );
+  }
+
+}
+
+
+/**
+ * ==========================================================
+ * GET PERSONAL EXPENSE BOOTSTRAP DATA
+ * ==========================================================
+ * One call supplies:
+ * - dashboard summary
+ * - active history
+ * - units
+ * - smart description memory
+ *
+ * Script Cache avoids repeated Sheet reads when reopening
+ * the screen. Cache is invalidated after mutations.
+ * ==========================================================
+ */
+function getPersonalExpenseBootstrapData() {
+
+  try {
+
+    const cache =
+      CacheService.getScriptCache();
+
+    const cached =
+      cache.get(
+        PERSONAL_EXPENSE_CACHE_KEY
+      );
+
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const expenseSheet =
+      getSheet(
+        SHEETS.PERSONAL_EXPENSES
+      );
+
+    const settingsSheet =
+      getSheet(
+        SHEETS.SETTINGS
+      );
+
+    const expenseLastRow =
+      expenseSheet.getLastRow();
+
+    const rows =
+      expenseLastRow >= 2
+        ? expenseSheet
+            .getRange(
+              2,
+              1,
+              expenseLastRow - 1,
+              18
+            )
+            .getValues()
+        : [];
+
+    // One Settings Q:S read supplies Personal Expense Categories + Units.
+    const settingsLastRow =
+      settingsSheet.getLastRow();
+
+    let categories = [];
+    let units = [];
+
+    if (settingsLastRow >= 2) {
+
+      const settingsData =
+        settingsSheet
+          .getRange(
+            2,
+            17,
+            settingsLastRow - 1,
+            3
+          )
+          .getValues();
+
+      const seenCategories = {};
+      const seenUnits = {};
+
+      settingsData.forEach(function(row) {
+
+        const category =
+          String(row[0] || "").trim();
+
+        const unit =
+          String(row[2] || "").trim();
+
+        if (category) {
+
+          const categoryKey =
+            category.toLowerCase();
+
+          if (!seenCategories[categoryKey]) {
+            seenCategories[categoryKey] = true;
+            categories.push(category);
+          }
+
+        }
+
+        if (unit) {
+
+          const unitKey =
+            unit.toLowerCase();
+
+          if (!seenUnits[unitKey]) {
+            seenUnits[unitKey] = true;
+            units.push(unit);
+          }
+
+        }
+
+      });
+
+    }
+
+    // Essential defaults are merged in-memory so older Settings
+    // sheets still expose the complete requested category list.
+    const defaultCategories = [
+      "Grocery",
+      "Fuel",
+      "Baby",
+      "Shopping",
+      "Recharge",
+      "House",
+      "Food",
+      "Medical",
+      "Vehicle",
+      "Bills",
+      "Staff",
+      "Transfer",
+      "Education",
+      "Entertainment",
+      "ATM Cash",
+      "Maintenance",
+      "Naasta",
+      "Vegetables",
+      "Tea",
+      "Xerox",
+      "Fruits",
+      "Milk"
+    ];
+
+    const categorySeen = {};
+
+    categories.forEach(function(category) {
+      categorySeen[
+        category.toLowerCase()
+      ] = true;
+    });
+
+    defaultCategories.forEach(function(category) {
+
+      const key =
+        category.toLowerCase();
+
+      if (!categorySeen[key]) {
+        categorySeen[key] = true;
+        categories.push(category);
+      }
+
+    });
+
+    categories.sort(function(a, b) {
+      return a.localeCompare(
+        b,
+        undefined,
+        {
+          sensitivity: "base",
+          numeric: true
+        }
+      );
+    });
+
+    const now =
+      new Date();
+
+    const todayKey =
+      Utilities.formatDate(
+        now,
+        Session.getScriptTimeZone(),
+        "yyyy-MM-dd"
+      );
+
+    const monthKey =
+      Utilities.formatDate(
+        now,
+        Session.getScriptTimeZone(),
+        "yyyy-MM"
+      );
+
+    let todayTotal = 0;
+    let monthTotal = 0;
+    let monthCount = 0;
+
+    const history = [];
+    const latestByDescription = {};
+
+    rows.forEach(function(row, index) {
+
+      const status =
+        String(row[15] || "").trim();
+
+      if (
+        status.toLowerCase() !== "active"
+      ) {
+        return;
+      }
+
+      const date =
+        row[1] instanceof Date
+          ? row[1]
+          : new Date(row[1]);
+
+      const validDate =
+        !isNaN(date.getTime());
+
+      const dateKey =
+        validDate
+          ? Utilities.formatDate(
+              date,
+              Session.getScriptTimeZone(),
+              "yyyy-MM-dd"
+            )
+          : "";
+
+      const rowMonthKey =
+        dateKey
+          ? dateKey.substring(0, 7)
+          : "";
+
+      const amount =
+        Number(row[5]) || 0;
+
+      const nature =
+        String(row[9] || "").trim();
+
+      if (
+        nature.toLowerCase() === "expense"
+      ) {
+
+        if (dateKey === todayKey) {
+          todayTotal += amount;
+        }
+
+        if (rowMonthKey === monthKey) {
+          monthTotal += amount;
+          monthCount++;
+        }
+
+      }
+
+      const description =
+        String(row[4] || "").trim();
+
+      const category =
+        String(row[2] || "").trim();
+
+      const unit =
+        String(row[16] || "").trim();
+
+      const quantity =
+        row[17] === null ||
+        row[17] === undefined
+          ? ""
+          : String(row[17]).trim();
+
+      const updatedAt =
+        row[14] instanceof Date &&
+        !isNaN(row[14].getTime())
+          ? row[14].getTime()
+          : 0;
+
+      const createdAt =
+        row[13] instanceof Date &&
+        !isNaN(row[13].getTime())
+          ? row[13].getTime()
+          : 0;
+
+      const lastUsed =
+        updatedAt ||
+        createdAt ||
+        index;
+
+      if (
+        description &&
+        category
+      ) {
+
+        const key =
+          description.toLowerCase();
+
+        const existing =
+          latestByDescription[key];
+
+        if (
+          !existing ||
+          lastUsed > existing.lastUsed ||
+          (
+            lastUsed === existing.lastUsed &&
+            index > existing.rowIndex
+          )
+        ) {
+
+          latestByDescription[key] = {
+            description: description,
+            category: category,
+            unit: unit,
+            quantity: quantity,
+            lastUsed: lastUsed,
+            rowIndex: index
+          };
+
+        }
+
+      }
+
+      history.push({
+        expenseId:
+          String(row[0] || ""),
+        expenseDate:
+          validDate
+            ? Utilities.formatDate(
+                date,
+                Session.getScriptTimeZone(),
+                "dd-MM-yyyy"
+              )
+            : "",
+        expenseDateKey:
+          dateKey,
+        category:
+          category,
+        subcategory:
+          String(row[3] || ""),
+        description:
+          description,
+        unit:
+          unit,
+        quantity:
+          quantity,
+        amount:
+          amount,
+        paymentMode:
+          String(row[6] || ""),
+        paidTo:
+          String(row[7] || ""),
+        expenseFor:
+          String(row[8] || ""),
+        nature:
+          nature,
+        recurring:
+          String(row[10] || ""),
+        referenceNo:
+          String(row[11] || ""),
+        remarks:
+          String(row[12] || ""),
+        createdAt:
+          row[13] instanceof Date
+            ? Utilities.formatDate(
+                row[13],
+                Session.getScriptTimeZone(),
+                "dd-MM-yyyy HH:mm:ss"
+              )
+            : String(row[13] || ""),
+        updatedAt:
+          row[14] instanceof Date
+            ? Utilities.formatDate(
+                row[14],
+                Session.getScriptTimeZone(),
+                "dd-MM-yyyy HH:mm:ss"
+              )
+            : String(row[14] || ""),
+        status:
+          status
+      });
+
+    });
+
+    history.sort(function(a, b) {
+
+      return String(b.expenseDateKey || "")
+        .localeCompare(
+          String(a.expenseDateKey || "")
+        );
+
+    });
+
+    const descriptions =
+      Object.keys(latestByDescription)
+        .map(function(key) {
+
+          const item =
+            latestByDescription[key];
+
+          return {
+            description:
+              item.description,
+            category:
+              item.category,
+            unit:
+              item.unit,
+            quantity:
+              item.quantity,
+            lastUsed:
+              item.lastUsed
+          };
+
+        })
+        .sort(function(a, b) {
+
+          return Number(b.lastUsed || 0) -
+                 Number(a.lastUsed || 0);
+
+        });
+
+    const response = {
+      success: true,
+      summary: {
+        today: todayTotal,
+        thisMonth: monthTotal,
+        transactionCount: monthCount
+      },
+      history: history,
+      categories: categories,
+      units: units,
+      descriptions: descriptions
+    };
+
+    // Cache only if payload is within CacheService practical limits.
+    try {
+
+      const json =
+        JSON.stringify(response);
+
+      if (json.length < 90000) {
+
+        cache.put(
+          PERSONAL_EXPENSE_CACHE_KEY,
+          json,
+          PERSONAL_EXPENSE_CACHE_SECONDS
+        );
+
+      }
+
+    } catch (cacheError) {
+      console.warn(
+        "Personal Expense cache write warning:",
+        cacheError
+      );
+    }
+
+    return response;
+
+  } catch (error) {
+
+    console.error(
+      "Personal Expense Bootstrap Error:",
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        error && error.message
+          ? error.message
+          : String(error)
+    };
+
+  }
+
+}
+
+
 function savePersonalExpenseFromWeb(expenseData) {
 
   try {
@@ -80,7 +580,7 @@ function savePersonalExpenseFromWeb(expenseData) {
 
 
     // ------------------------------------------
-    // Prepare row A:P
+    // Prepare row A:R
     // ------------------------------------------
 
     const row = [[
@@ -135,7 +635,15 @@ function savePersonalExpenseFromWeb(expenseData) {
 
       now,                                    // O Updated At
 
-      "Active"                                // P Status
+      "Active",                               // P Status
+
+      cleanPersonalExpenseText(
+        expenseData.unit
+      ),                                       // Q Unit
+
+      cleanPersonalExpenseQuantity(
+        expenseData.quantity
+      )                                        // R Quantity
 
     ]];
 
@@ -153,7 +661,7 @@ function savePersonalExpenseFromWeb(expenseData) {
         nextRow,
         1,
         1,
-        16
+        18
       )
       .setValues(row);
 
@@ -182,6 +690,8 @@ function savePersonalExpenseFromWeb(expenseData) {
     // ------------------------------------------
     // Success
     // ------------------------------------------
+
+    clearPersonalExpenseCache_();
 
     return {
 
@@ -759,8 +1269,7 @@ function getPersonalExpensesDashboardData() {
     // ------------------------------------------
 
     if (lastRow <= 1) {
-
-      return {
+return {
 
         success: true,
 
@@ -768,7 +1277,7 @@ function getPersonalExpensesDashboardData() {
           today: 0,
           thisMonth: 0,
           transactionCount: 0
-        },
+      },
 
         expenses: []
 
@@ -787,7 +1296,7 @@ function getPersonalExpensesDashboardData() {
           2,
           1,
           lastRow - 1,
-          16
+          18
         )
         .getValues();
 
@@ -868,6 +1377,15 @@ function getPersonalExpensesDashboardData() {
 
       const status =
         String(row[15] || "").trim();
+
+      const unit =
+        String(row[16] || "").trim();
+
+      const quantity =
+        row[17] === null ||
+        row[17] === undefined
+          ? ""
+          : String(row[17]).trim();
 
 
       // ------------------------------------------
@@ -1000,6 +1518,12 @@ function getPersonalExpensesDashboardData() {
 
         description:
           description,
+
+        unit:
+          unit,
+
+        quantity:
+          quantity,
 
         amount:
           amount,
@@ -1208,7 +1732,7 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
 
 
     // ------------------------------------------
-    // Read existing A:P
+    // Read existing A:R
     // ------------------------------------------
 
     const existingRow =
@@ -1217,7 +1741,7 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
           rowNumber,
           1,
           1,
-          16
+          18
         )
         .getValues()[0];
 
@@ -1259,7 +1783,7 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
 
 
     // ------------------------------------------
-    // Build complete replacement A:P
+    // Build complete replacement A:R
     // ------------------------------------------
 
     const updatedRow = [[
@@ -1316,7 +1840,15 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
 
       now,                                    // O
 
-      "Active"                                // P
+      "Active",                               // P
+
+      cleanPersonalExpenseText(
+        expenseData.unit
+      ),                                       // Q
+
+      cleanPersonalExpenseQuantity(
+        expenseData.quantity
+      )                                        // R
 
     ]];
 
@@ -1326,7 +1858,7 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
         rowNumber,
         1,
         1,
-        16
+        18
       )
       .setValues(
         updatedRow
@@ -1364,6 +1896,8 @@ function updatePersonalExpenseFromWeb(expenseId, expenseData) {
         "dd/MM/yyyy HH:mm:ss"
       );
 
+
+    clearPersonalExpenseCache_();
 
     return {
 
@@ -1524,6 +2058,8 @@ function deletePersonalExpenseFromWeb(
       );
 
 
+    clearPersonalExpenseCache_();
+
     return {
 
       success: true,
@@ -1672,6 +2208,8 @@ function restorePersonalExpenseFromWeb(
       );
 
 
+    clearPersonalExpenseCache_();
+
     return {
 
       success: true,
@@ -1748,7 +2286,7 @@ function getDeletedPersonalExpenses() {
           2,
           1,
           lastRow - 1,
-          16
+          18
         )
         .getValues();
 
@@ -1824,6 +2362,17 @@ function getDeletedPersonalExpenses() {
             String(
               row[4] || ""
             ),
+
+          unit:
+            String(
+              row[16] || ""
+            ),
+
+          quantity:
+            row[17] === null ||
+            row[17] === undefined
+              ? ""
+              : String(row[17]).trim(),
 
           amount:
             Number(
@@ -1904,3 +2453,673 @@ function getDeletedPersonalExpenses() {
   }
 
 }
+
+
+/**
+ * ==========================================================
+ * GET PERSONAL EXPENSE HISTORY
+ * ==========================================================
+ *
+ * Simple household-expense history.
+ * Filters:
+ * - month: YYYY-MM
+ * - category
+ * - search: description / paid to / reference / expense ID
+ *
+ * Only Active records are returned.
+ * Maximum 100 matching rows are sent to the UI.
+ * ==========================================================
+ */
+function getPersonalExpenseHistory(filters) {
+
+  try {
+
+    filters = filters || {};
+
+    const monthFilter =
+      String(filters.month || "").trim();
+
+    const categoryFilter =
+      String(filters.category || "").trim().toLowerCase();
+
+    const searchFilter =
+      String(filters.search || "").trim().toLowerCase();
+
+    const sheet =
+      getSheet(SHEETS.PERSONAL_EXPENSES);
+
+    const lastRow =
+      sheet.getLastRow();
+
+    if (lastRow <= 1) {
+
+      return {
+        success: true,
+        expenses: [],
+        count: 0,
+        total: 0
+      };
+
+    }
+
+    const data =
+      sheet
+        .getRange(
+          2,
+          1,
+          lastRow - 1,
+          18
+        )
+        .getValues();
+
+    const matches = [];
+    let total = 0;
+
+    data.forEach(function(row) {
+
+      const expenseId =
+        String(row[0] || "").trim();
+
+      const expenseDate =
+        row[1];
+
+      const category =
+        String(row[2] || "").trim();
+
+      const subcategory =
+        String(row[3] || "").trim();
+
+      const description =
+        String(row[4] || "").trim();
+
+      const amount =
+        Number(row[5]) || 0;
+
+      const paymentMode =
+        String(row[6] || "").trim();
+
+      const paidTo =
+        String(row[7] || "").trim();
+
+      const expenseFor =
+        String(row[8] || "").trim();
+
+      const nature =
+        String(row[9] || "").trim();
+
+      const recurring =
+        String(row[10] || "").trim();
+
+      const referenceNo =
+        String(row[11] || "").trim();
+
+      const remarks =
+        String(row[12] || "").trim();
+
+      const createdAt =
+        row[13];
+
+      const updatedAt =
+        row[14];
+
+      const status =
+        String(row[15] || "").trim();
+
+      const unit =
+        String(row[16] || "").trim();
+
+      const quantity =
+        row[17] === null ||
+        row[17] === undefined
+          ? ""
+          : String(row[17]).trim();
+
+      if (
+        !expenseId ||
+        status.toLowerCase() !== "active"
+      ) {
+        return;
+      }
+
+      const dateObject =
+        expenseDate instanceof Date
+          ? expenseDate
+          : new Date(expenseDate);
+
+      if (isNaN(dateObject.getTime())) {
+        return;
+      }
+
+      const rawDate =
+        Utilities.formatDate(
+          dateObject,
+          Session.getScriptTimeZone(),
+          "yyyy-MM-dd"
+        );
+
+      if (
+        monthFilter &&
+        rawDate.slice(0, 7) !== monthFilter
+      ) {
+        return;
+      }
+
+      if (
+        categoryFilter &&
+        category.toLowerCase() !== categoryFilter
+      ) {
+        return;
+      }
+
+      if (searchFilter) {
+
+        const searchableText = [
+          expenseId,
+          description,
+          paidTo,
+          referenceNo,
+          subcategory
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        if (
+          searchableText.indexOf(searchFilter) === -1
+        ) {
+          return;
+        }
+
+      }
+
+      /*
+       * Total represents actual spending only.
+       * Transfers / refunds remain visible in history
+       * but do not inflate household spend.
+       */
+      if (
+        nature.toLowerCase() === "expense"
+      ) {
+        total += amount;
+      }
+
+      matches.push({
+
+        expenseId: expenseId,
+
+        expenseDate:
+          Utilities.formatDate(
+            dateObject,
+            Session.getScriptTimeZone(),
+            "dd/MM/yyyy"
+          ),
+
+        expenseDateRaw: rawDate,
+
+        category: category,
+        subcategory: subcategory,
+        description: description,
+        unit: unit,
+        quantity: quantity,
+        amount: amount,
+        paymentMode: paymentMode,
+        paidTo: paidTo,
+        expenseFor: expenseFor,
+        nature: nature,
+        recurring: recurring,
+        referenceNo: referenceNo,
+        remarks: remarks,
+
+        createdAt:
+          createdAt
+            ? Utilities.formatDate(
+                new Date(createdAt),
+                Session.getScriptTimeZone(),
+                "dd/MM/yyyy HH:mm:ss"
+              )
+            : "",
+
+        updatedAt:
+          updatedAt
+            ? Utilities.formatDate(
+                new Date(updatedAt),
+                Session.getScriptTimeZone(),
+                "dd/MM/yyyy HH:mm:ss"
+              )
+            : "",
+
+        status: status
+
+      });
+
+    });
+
+    matches.sort(function(a, b) {
+
+      if (
+        a.expenseDateRaw !== b.expenseDateRaw
+      ) {
+        return a.expenseDateRaw < b.expenseDateRaw
+          ? 1
+          : -1;
+      }
+
+      return a.expenseId < b.expenseId
+        ? 1
+        : -1;
+
+    });
+
+    const count =
+      matches.length;
+
+    return {
+
+      success: true,
+
+      expenses:
+        matches.slice(0, 100),
+
+      count: count,
+
+      total: total
+
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Get Personal Expense History Error:",
+      error
+    );
+
+    return {
+
+      success: false,
+
+      message:
+        error && error.message
+          ? error.message
+          : String(error)
+
+    };
+
+  }
+
+}
+
+
+
+/**
+ * ==========================================================
+ * CLEAN PERSONAL EXPENSE QUANTITY
+ * Optional, numeric and non-negative
+ * ==========================================================
+ */
+function cleanPersonalExpenseQuantity(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    String(value).trim() === ""
+  ) {
+    return "";
+  }
+
+  const quantity =
+    Number(value);
+
+  if (
+    !isFinite(quantity) ||
+    quantity < 0
+  ) {
+    throw new Error(
+      "Quantity must be a valid non-negative number."
+    );
+  }
+
+  return quantity;
+
+}
+
+
+/**
+ * ==========================================================
+ * GET PERSONAL EXPENSE SETUP DATA
+ * ==========================================================
+ * Units: Settings column S
+ * Smart Description: most recent Category + Quantity + Unit wins
+ * Performance: loaded once; client searches locally while typing
+ * ==========================================================
+ */
+function getPersonalExpenseSetupData() {
+
+  try {
+
+    const settingsSheet =
+      getSheet(SHEETS.SETTINGS);
+
+    const expenseSheet =
+      getSheet(SHEETS.PERSONAL_EXPENSES);
+
+    // Units from Settings!S2:S
+    const settingsLastRow =
+      settingsSheet.getLastRow();
+
+    let units = [];
+
+    if (settingsLastRow >= 2) {
+
+      units =
+        settingsSheet
+          .getRange(
+            2,
+            19,
+            settingsLastRow - 1,
+            1
+          )
+          .getValues()
+          .flat()
+          .map(function(value) {
+            return String(value || "").trim();
+          })
+          .filter(function(value) {
+            return value !== "";
+          });
+
+      const seenUnits = {};
+
+      units =
+        units.filter(function(unit) {
+
+          const key =
+            unit.toLowerCase();
+
+          if (seenUnits[key]) {
+            return false;
+          }
+
+          seenUnits[key] = true;
+          return true;
+
+        });
+
+    }
+
+    // Learn Description -> latest Category from Active records.
+    const expenseLastRow =
+      expenseSheet.getLastRow();
+
+    const latestByDescription = {};
+
+    if (expenseLastRow >= 2) {
+
+      const rows =
+        expenseSheet
+          .getRange(
+            2,
+            1,
+            expenseLastRow - 1,
+            18
+          )
+          .getValues();
+
+      rows.forEach(function(row, index) {
+
+        const description =
+          String(row[4] || "").trim();
+
+        const category =
+          String(row[2] || "").trim();
+
+        const status =
+          String(row[15] || "")
+            .trim()
+            .toLowerCase();
+
+        if (
+          !description ||
+          !category ||
+          status !== "active"
+        ) {
+          return;
+        }
+
+        const updatedAt =
+          row[14] instanceof Date &&
+          !isNaN(row[14].getTime())
+            ? row[14].getTime()
+            : 0;
+
+        const createdAt =
+          row[13] instanceof Date &&
+          !isNaN(row[13].getTime())
+            ? row[13].getTime()
+            : 0;
+
+        const time =
+          updatedAt || createdAt || 0;
+
+        const key =
+          description.toLowerCase();
+
+        const existing =
+          latestByDescription[key];
+
+        if (
+          !existing ||
+          time > existing.time ||
+          (
+            time === existing.time &&
+            index > existing.rowIndex
+          )
+        ) {
+
+          latestByDescription[key] = {
+            description: description,
+            category: category,
+            unit: String(row[16] || "").trim(),
+            quantity:
+              row[17] === null ||
+              row[17] === undefined
+                ? ""
+                : String(row[17]).trim(),
+            time: time,
+            rowIndex: index
+          };
+
+        }
+
+      });
+
+    }
+
+    const descriptions =
+      Object.keys(latestByDescription)
+        .map(function(key) {
+
+          return {
+            description:
+              latestByDescription[key].description,
+            category:
+              latestByDescription[key].category,
+            unit:
+              latestByDescription[key].unit,
+            quantity:
+              latestByDescription[key].quantity,
+            lastUsed:
+              latestByDescription[key].time
+          };
+
+        })
+        .sort(function(a, b) {
+
+          return Number(b.lastUsed || 0) -
+                 Number(a.lastUsed || 0);
+
+        });
+
+    return {
+      success: true,
+      units: units,
+      descriptions: descriptions
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Get Personal Expense Setup Error:",
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        error && error.message
+          ? error.message
+          : String(error)
+    };
+
+  }
+
+}
+
+/**
+ * ==========================================================
+ * ADD PERSONAL EXPENSE CATEGORY
+ * ==========================================================
+ * Persists a user-created category in Settings column Q.
+ * Uses LockService to avoid duplicate concurrent writes.
+ * ==========================================================
+ */
+function addPersonalExpenseCategory(category) {
+
+  const lock =
+    LockService.getScriptLock();
+
+  try {
+
+    lock.waitLock(5000);
+
+    category =
+      String(category || "")
+        .trim()
+        .replace(/\s+/g, " ");
+
+    if (!category) {
+      return {
+        success: false,
+        message: "Category is required."
+      };
+    }
+
+    if (category.length > 50) {
+      return {
+        success: false,
+        message: "Category is too long."
+      };
+    }
+
+    const sheet =
+      getSheet(SHEETS.SETTINGS);
+
+    const lastRow =
+      Math.max(
+        sheet.getLastRow(),
+        2
+      );
+
+    const values =
+      sheet
+        .getRange(
+          2,
+          17,
+          Math.max(lastRow - 1, 1),
+          1
+        )
+        .getValues();
+
+    let firstBlankRow = -1;
+    let existingCategory = "";
+
+    for (
+      let i = 0;
+      i < values.length;
+      i++
+    ) {
+
+      const current =
+        String(values[i][0] || "").trim();
+
+      if (
+        !current &&
+        firstBlankRow === -1
+      ) {
+        firstBlankRow = i + 2;
+      }
+
+      if (
+        current &&
+        current.toLowerCase() ===
+          category.toLowerCase()
+      ) {
+        existingCategory = current;
+        break;
+      }
+
+    }
+
+    if (!existingCategory) {
+
+      const targetRow =
+        firstBlankRow !== -1
+          ? firstBlankRow
+          : lastRow + 1;
+
+      sheet
+        .getRange(
+          targetRow,
+          17
+        )
+        .setValue(category);
+
+    } else {
+
+      category =
+        existingCategory;
+
+    }
+
+    clearPersonalExpenseCache_();
+
+    // Return the fresh merged list from bootstrap.
+    const bootstrap =
+      getPersonalExpenseBootstrapData();
+
+    return {
+      success: true,
+      category: category,
+      categories:
+        bootstrap.categories || []
+    };
+
+  } catch (error) {
+
+    return {
+      success: false,
+      message:
+        error && error.message
+          ? error.message
+          : String(error)
+    };
+
+  } finally {
+
+    try {
+      lock.releaseLock();
+    } catch (ignore) {}
+
+  }
+
+}
+
+

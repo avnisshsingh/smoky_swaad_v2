@@ -25,13 +25,21 @@
     #personalExpensesScreen .pe-summary-card {
         border: 0;
         border-radius: 12px;
-        min-height: 88px;
+        min-height: 52px;
+    }
+
+    #personalExpensesScreen .pe-summary-card .card-body {
+        min-height: 52px;
+        padding: 7px 14px !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     #personalExpensesScreen .pe-summary-label {
         font-size: 12px;
         color: #6c757d;
-        margin-bottom: 4px;
+        margin-bottom: 1px;
     }
 
     #personalExpensesScreen .pe-summary-value {
@@ -48,24 +56,24 @@
     #personalExpensesScreen .pe-quick-grid {
         display: grid;
         grid-template-columns:
-            repeat(3, minmax(0, 1fr));
-        gap: 8px;
+            repeat(4, minmax(0, 1fr));
+        gap: 6px;
     }
 
     #personalExpensesScreen .pe-quick-btn {
-        min-height: 58px;
-        border-radius: 10px;
-        font-size: 14px;
+        min-height: 48px;
+        border-radius: 9px;
+        font-size: 13px;
         font-weight: 600;
-        padding: 8px 5px;
+        padding: 5px 4px;
         white-space: normal;
         line-height: 1.15;
     }
 
     #personalExpensesScreen .pe-quick-icon {
         display: block;
-        font-size: 20px;
-        margin-bottom: 3px;
+        font-size: 17px;
+        margin-bottom: 1px;
     }
 
 
@@ -173,7 +181,16 @@
         }
 
         #personalExpensesScreen .pe-summary-card {
-            min-height: 78px;
+            min-height: 50px;
+        }
+
+        #personalExpensesScreen .pe-summary-card .card-body {
+            min-height: 50px;
+            padding: 6px 10px !important;
+        }
+
+        #personalExpensesScreen .pe-quick-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         #personalExpensesScreen .pe-summary-value {
@@ -241,6 +258,216 @@
 
 </style>
 
+
+
+<style>
+/* ==========================================================
+   PERSONAL EXPENSES - SUMMARY TILE FINAL FIX
+   1. Identical alignment in all 3 tiles
+   2. Approximately half-height compact summary cards
+========================================================== */
+
+#personalExpensesScreen .pe-summary-card {
+    height: 48px !important;
+    min-height: 48px !important;
+}
+
+#personalExpensesScreen .pe-summary-card .card-body {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 5px 14px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+#personalExpensesScreen .pe-summary-card .card-body > div:first-child {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+}
+
+#personalExpensesScreen .pe-summary-label {
+    margin: 0 0 1px 0 !important;
+    line-height: 1 !important;
+    font-size: 11px !important;
+}
+
+#personalExpensesScreen .pe-summary-value {
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-size: 18px !important;
+}
+
+@media (max-width: 767.98px) {
+    #personalExpensesScreen .pe-summary-card,
+    #personalExpensesScreen .pe-summary-card .card-body {
+        height: 46px !important;
+        min-height: 46px !important;
+    }
+
+    #personalExpensesScreen .pe-summary-card .card-body {
+        padding: 5px 10px !important;
+    }
+
+    #personalExpensesScreen .pe-summary-value {
+        font-size: 17px !important;
+    }
+}
+</style>
+
+
+
+<style>
+/* ==========================================================
+   PERSONAL EXPENSES - FINAL UI TUNING
+========================================================== */
+
+/* Summary tiles: same alignment, no receipt icon */
+#personalExpensesScreen .pe-summary-card {
+    height: 48px !important;
+    min-height: 48px !important;
+}
+
+#personalExpensesScreen .pe-summary-card .card-body {
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 5px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+}
+
+#personalExpensesScreen .pe-summary-label {
+    margin: 0 0 2px 0 !important;
+    line-height: 1 !important;
+    font-size: 11px !important;
+}
+
+#personalExpensesScreen .pe-summary-value {
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-size: 18px !important;
+}
+
+/* 15 quick categories in exactly the same category-panel footprint:
+   desktop = 5 x 3 */
+#personalExpensesScreen .pe-quick-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+}
+
+#personalExpensesScreen .pe-quick-btn {
+    min-height: 48px !important;
+    padding: 4px 3px !important;
+    font-size: 12px !important;
+}
+
+#personalExpensesScreen .pe-quick-icon {
+    font-size: 16px !important;
+    margin-bottom: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+    #personalExpensesScreen .pe-summary-card,
+    #personalExpensesScreen .pe-summary-card .card-body {
+        height: 46px !important;
+        min-height: 46px !important;
+    }
+
+    #personalExpensesScreen .pe-summary-card .card-body {
+        padding: 5px 10px !important;
+    }
+
+    #personalExpensesScreen .pe-quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 380px) {
+    #personalExpensesScreen .pe-quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    #personalExpensesScreen .pe-quick-btn {
+        font-size: 11px !important;
+        min-height: 46px !important;
+    }
+}
+</style>
+
+
+<style>
+#personalExpensesScreen .pe-quick-grid {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+}
+
+#personalExpensesScreen .pe-quick-btn {
+    min-width: 0;
+    min-height: 44px !important;
+    padding: 5px 7px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    touch-action: manipulation;
+}
+
+#personalExpensesScreen .pe-category-icon {
+    flex: 0 0 auto;
+    font-size: 15px;
+    line-height: 1;
+}
+
+#personalExpensesScreen .pe-category-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 767.98px) {
+    #personalExpensesScreen .pe-quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 5px !important;
+    }
+
+    #personalExpensesScreen .pe-quick-btn {
+        min-height: 46px !important;
+        padding: 5px 4px !important;
+        gap: 4px;
+        font-size: 11px !important;
+    }
+
+    #personalExpensesScreen .pe-category-icon {
+        font-size: 14px;
+    }
+
+    #personalExpensesScreen .pe-add-category-row {
+        justify-content: stretch !important;
+    }
+
+    #personalExpensesScreen .pe-add-category-row .btn {
+        width: 100%;
+        min-height: 42px;
+    }
+}
+
+@media (max-width: 380px) {
+    #personalExpensesScreen .pe-quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+</style>
 
 <div
     id="personalExpensesScreen"
@@ -344,7 +571,7 @@
                 class="card shadow-sm pe-summary-card h-100">
 
                 <div
-                    class="card-body p-3 d-flex align-items-center justify-content-between">
+                    class="card-body p-3">
 
                     <div>
 
@@ -364,12 +591,6 @@
 
                     </div>
 
-                    <div style="font-size:26px;">
-
-                        🧾
-
-                    </div>
-
                 </div>
 
             </div>
@@ -377,6 +598,7 @@
         </div>
 
     </div>
+
 
 
     <!-- ======================================
@@ -413,93 +635,16 @@
                 </label>
 
 
-                <div class="pe-quick-grid">
-
-
+                <div id="personalExpenseQuickCategoryGrid" class="pe-quick-grid">
+                    <div class="text-muted small">Loading categories...</div>
+                </div>
+                <div class="mt-2 d-flex justify-content-end pe-add-category-row">
                     <button
                         type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('Grocery')">
-
-                        <span class="pe-quick-icon">
-                            🛒
-                        </span>
-
-                        Grocery
-
+                        class="btn btn-sm btn-outline-primary"
+                        onclick="showAddPersonalExpenseCategory()">
+                        + Add Category
                     </button>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('Fuel')">
-
-                        <span class="pe-quick-icon">
-                            ⛽
-                        </span>
-
-                        Fuel
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('Baby / Kids')">
-
-                        <span class="pe-quick-icon">
-                            👶
-                        </span>
-
-                        Baby / Kids
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('Online Shopping')">
-
-                        <span class="pe-quick-icon">
-                            🛍️
-                        </span>
-
-                        Shopping
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('Mobile / Internet')">
-
-                        <span class="pe-quick-icon">
-                            📱
-                        </span>
-
-                        Recharge
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-outline-secondary pe-quick-btn"
-                        onclick="selectPersonalExpenseCategory('House Maintenance')">
-
-                        <span class="pe-quick-icon">
-                            🏠
-                        </span>
-
-                        House
-
-                    </button>
-
-
                 </div>
 
             </div>
@@ -554,126 +699,98 @@
                     <select
                         id="personalExpenseCategory"
                         class="form-select form-select-lg pe-main-input">
-
-                        <option value="">
-                            Select Category
-                        </option>
-
-                        <option value="Online Shopping">
-                            Online Shopping
-                        </option>
-
-                        <option value="Grocery">
-                            Grocery
-                        </option>
-
-                        <option value="Baby / Kids">
-                            Baby / Kids
-                        </option>
-
-                        <option value="Fuel">
-                            Fuel
-                        </option>
-
-                        <option value="Mobile / Internet">
-                            Mobile / Internet
-                        </option>
-
-                        <option value="Money Transfer">
-                            Money Transfer
-                        </option>
-
-                        <option value="House Maintenance">
-                            House Maintenance
-                        </option>
-
-                        <option value="Staff / Helper">
-                            Staff / Helper
-                        </option>
-
-                        <option value="Vehicle">
-                            Vehicle
-                        </option>
-
-                        <option value="Utilities">
-                            Utilities
-                        </option>
-
-                        <option value="Medical">
-                            Medical
-                        </option>
-
-                        <option value="Food / Dining">
-                            Food / Dining
-                        </option>
-
-                        <option value="Travel">
-                            Travel
-                        </option>
-
-                        <option value="Education">
-                            Education
-                        </option>
-
-                        <option value="EMI / Loan">
-                            EMI / Loan
-                        </option>
-
-                        <option value="Insurance">
-                            Insurance
-                        </option>
-
-                        <option value="Clothing">
-                            Clothing
-                        </option>
-
-                        <option value="Entertainment">
-                            Entertainment
-                        </option>
-
-                        <option value="Gifts">
-                            Gifts
-                        </option>
-
-                        <option value="Personal Care">
-                            Personal Care
-                        </option>
-
-                        <option value="Other">
-                            Other
-                        </option>
-
+                        <option value="">Select Category</option>
                     </select>
 
                 </div>
 
-
                 <!-- DESCRIPTION -->
 
-                <div class="col-12">
+                <div class="col-12 col-md-6">
 
-                    <label
-                        for="personalExpenseDescription"
-                        class="form-label pe-label">
-
-                        Description
+                    <label for="personalExpenseDescription"
+                           class="form-label pe-label">
+                        🔍 Search Description
                         <span class="pe-required">*</span>
-
                     </label>
 
+                    <div class="position-relative">
 
-                    <input
-                        type="text"
-                        id="personalExpenseDescription"
-                        class="form-control form-control-lg pe-main-input"
-                        maxlength="150"
-                        autocomplete="off"
-                        placeholder="Baby diapers, petrol, Amazon order...">
+                        <input
+                            type="text"
+                            id="personalExpenseDescription"
+                            class="form-control form-control-lg pe-main-input"
+                            maxlength="150"
+                            autocomplete="off"
+                            placeholder="Type at least 2 characters...">
+
+                        <div
+                            id="personalExpenseDescriptionSuggestions"
+                            class="list-group position-absolute w-100 shadow-sm"
+                            style="
+                                display:none;
+                                z-index:1050;
+                                max-height:260px;
+                                overflow-y:auto;
+                                contain:layout paint;
+                                left:0;
+                                right:0;
+                                top:100%;
+                            ">
+                        </div>
+
+                    </div>
+
+                    <div class="form-text">
+                        Search previous expenses or type a new description.
+                    </div>
 
                 </div>
 
 
-                <!-- AMOUNT -->
+                <!-- QUANTITY -->
+
+                <div class="col-6 col-md-3">
+
+                    <label for="personalExpenseQuantity"
+                           class="form-label pe-label">
+                        Quantity
+                    </label>
+
+                    <input
+                        type="number"
+                        id="personalExpenseQuantity"
+                        class="form-control form-control-lg pe-main-input"
+                        min="0"
+                        step="any"
+                        inputmode="decimal"
+                        list="personalExpenseQuantityList"
+                        placeholder="Optional">
+
+                    <datalist id="personalExpenseQuantityList"></datalist>
+
+                </div>
+
+
+                <!-- UNIT -->
+
+                <div class="col-6 col-md-3">
+
+                    <label for="personalExpenseUnit"
+                           class="form-label pe-label">
+                        Unit
+                    </label>
+
+                    <select
+                        id="personalExpenseUnit"
+                        class="form-select form-select-lg pe-main-input">
+
+                        <option value="">Select Unit</option>
+
+                    </select>
+
+                </div>
+<!-- AMOUNT -->
 
                 <div class="col-12 col-md-6">
 
@@ -1075,7 +1192,7 @@
 
                 <strong>
 
-                    🕘 Recent Expenses
+                    🕘 Expense History
 
                 </strong>
 
@@ -1083,7 +1200,7 @@
                 <button
                     type="button"
                     class="btn btn-sm btn-outline-light"
-                    onclick="loadPersonalExpenses()">
+                    onclick="loadPersonalExpenseHistory()">
 
                     ↻ Refresh
 
@@ -1095,6 +1212,68 @@
 
 
         <div class="card-body p-0">
+
+            <!-- ==================================
+                 SIMPLE HISTORY FILTERS
+            =================================== -->
+
+            <div class="p-2 p-md-3 border-bottom bg-light">
+
+                <div class="row g-2">
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small fw-semibold mb-1">
+                            Month
+                        </label>
+                        <input
+                            type="month"
+                            id="personalExpenseHistoryMonth"
+                            class="form-control"
+                            onchange="loadPersonalExpenseHistory()">
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small fw-semibold mb-1">
+                            Category
+                        </label>
+                        <select
+                            id="personalExpenseHistoryCategory"
+                            class="form-select"
+                            onchange="loadPersonalExpenseHistory()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+
+                    <div class="col-9 col-md-4">
+                        <label class="form-label small fw-semibold mb-1">
+                            Search
+                        </label>
+                        <input
+                            type="search"
+                            id="personalExpenseHistorySearch"
+                            class="form-control"
+                            maxlength="80"
+                            placeholder="Description, paid to, reference..."
+                            onkeydown="if(event.key==='Enter'){loadPersonalExpenseHistory();}">
+                    </div>
+
+                    <div class="col-3 col-md-2 d-flex align-items-end">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary w-100"
+                            onclick="clearPersonalExpenseHistoryFilters()">
+                            Clear
+                        </button>
+                    </div>
+
+                </div>
+
+                <div
+                    id="personalExpenseHistoryInfo"
+                    class="small text-muted mt-2">
+                </div>
+
+            </div>
 
 
             <!-- ==================================
