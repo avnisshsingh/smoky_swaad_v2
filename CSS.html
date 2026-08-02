@@ -406,3 +406,273 @@ h5{
 }
 
 </style>
+<style>
+/* ==========================================================
+   GLOBAL MOBILE UX OPTIMIZATION V1
+   Applies only to phones/tablets. Desktop layout is preserved.
+========================================================== */
+@media (max-width: 768px), (pointer: coarse) {
+  :root {
+    --mobile-gap: 10px;
+    --mobile-control-height: 48px;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body { overscroll-behavior-y: none; }
+
+  /* Header */
+  .navbar {
+    min-height: 60px;
+    height: 60px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .navbar .container-fluid { padding-left: 4px; padding-right: 4px; }
+  .navbar-brand {
+    max-width: calc(100vw - 82px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.12rem;
+  }
+  .navbar-toggler {
+    min-width: 46px;
+    min-height: 44px;
+    padding: 6px 9px;
+  }
+
+  /* App shell */
+  #sidebar { max-height: none; }
+  #sidebar-menu {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 8px !important;
+  }
+  #sidebar-menu h5 { display: none; }
+  #sidebar .list-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  #sidebar .list-group-item {
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #main-content { padding: 8px !important; }
+  #content > .container-fluid,
+  #personalExpensesScreen.container-fluid {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Cards */
+  .card {
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .card-header { padding: 10px 12px; }
+  .card-header h4 { font-size: 1.15rem; }
+  .card-header h5 { font-size: 1rem; }
+  .card-body { padding: 12px !important; }
+
+  /* Forms: large enough for touch and no iOS zoom */
+  .form-control,
+  .form-select,
+  .input-group-text {
+    min-height: var(--mobile-control-height);
+    font-size: 16px !important;
+  }
+  textarea.form-control { min-height: 84px; }
+  .form-label {
+    font-size: 13px;
+    margin-bottom: 5px;
+  }
+  .row.g-3 { --bs-gutter-x: 10px; --bs-gutter-y: 10px; }
+
+  /* Action buttons */
+  .btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .btn-sm { min-height: 38px; }
+  .btn-lg { min-height: 52px; }
+
+  /* Search suggestion lists */
+  .position-relative > .list-group.position-absolute {
+    max-height: min(42vh, 300px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .position-relative > .list-group.position-absolute .list-group-item {
+    min-height: 46px;
+    padding: 10px 12px;
+  }
+
+  /* Tables: predictable horizontal scrolling without breaking columns */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-bottom: 2px;
+  }
+  .table-responsive > .table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+  }
+  .table th,
+  .table td {
+    white-space: nowrap;
+    padding: 9px 10px;
+    vertical-align: middle;
+  }
+
+  /* Modals */
+  .modal-dialog {
+    margin: 8px;
+    max-width: calc(100vw - 16px);
+  }
+  .modal-content { border-radius: 12px; }
+  .modal-body { padding: 12px; }
+  .modal-footer {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .modal-footer .btn { flex: 1 1 auto; }
+
+  /* POS/Purchase: stacked panels need no extra desktop gutter */
+  #content > .container-fluid > .row > [class*="col-lg-"] {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  /* Reports KPI cards: compact two-column cards where possible */
+  #reportContent .card-body h3,
+  #todaySales,
+  #todayOrders,
+  #todayProfit {
+    font-size: 1.35rem;
+    margin-bottom: 0;
+  }
+
+  /* Invoice screen: prevent inline desktop content from forcing viewport width */
+  #invoicePdfContainer {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #invoicePdfContainer img { max-width: 100%; height: auto; }
+
+  /* Pricing and cost tables */
+  #pricingIngredientsTable,
+  #businessCostsTableBody {
+    font-size: 13px;
+  }
+
+  /* Keep alert/status feedback visible and readable */
+  .alert { padding: 10px 12px; margin-bottom: 10px; }
+}
+
+@media (max-width: 420px) {
+  #sidebar .list-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card-body { padding: 10px !important; }
+  #main-content { padding: 6px !important; }
+}
+
+/* ==========================================
+   MOBILE SCROLL HOTFIX
+   Restores normal page scrolling on phones.
+========================================== */
+@media (max-width:768px), (pointer:coarse){
+
+    html{
+        height:auto !important;
+        min-height:100% !important;
+        overflow-x:hidden !important;
+        overflow-y:auto !important;
+        overscroll-behavior-y:auto !important;
+    }
+
+    body{
+        height:auto !important;
+        min-height:100vh !important;
+        overflow-x:hidden !important;
+        overflow-y:auto !important;
+        -webkit-overflow-scrolling:touch !important;
+        overscroll-behavior-y:auto !important;
+    }
+
+    #main-content{
+        height:auto !important;
+        min-height:calc(100vh - 60px) !important;
+        max-height:none !important;
+        overflow:visible !important;
+        -webkit-overflow-scrolling:auto !important;
+    }
+
+    #content{
+        height:auto !important;
+        min-height:0 !important;
+        max-height:none !important;
+        overflow:visible !important;
+    }
+
+    /* Cards/screens must grow with their content instead of becoming
+       accidental nested scroll containers. */
+    #content > *,
+    #personalExpensesScreen{
+        max-height:none !important;
+    }
+}
+
+/* ==========================================
+   MOBILE HEADER / NAVIGATION FIX V2
+========================================== */
+@media (max-width:768px), (pointer:coarse){
+
+    /* Header is fixed at 60px. The sidebar is now part of normal mobile
+       document flow, so reserve exactly that space above it. Without this,
+       the first menu row (POS + Purchase) sits underneath the fixed navbar. */
+    #sidebar{
+        margin-top:60px !important;
+        top:auto !important;
+    }
+
+    /* Keep the module grid immediately below the header. */
+    #sidebar-menu{
+        margin-top:0 !important;
+    }
+
+    /* "Smoky Swaad" inside the hamburger menu duplicates the permanent
+       navbar brand. Hide only that redundant first mobile nav item.
+       The user item remains available. */
+    #navbarMenu .navbar-nav .nav-item:first-child{
+        display:none !important;
+    }
+
+    /* Keep the expanded hamburger area compact and right aligned. */
+    #navbarMenu{
+        background:#212529;
+        padding:6px 4px 8px !important;
+    }
+
+    #navbarMenu .navbar-nav{
+        align-items:flex-end;
+    }
+
+    #navbarMenu .nav-link{
+        padding:6px 4px !important;
+    }
+}
+
+
+</style>

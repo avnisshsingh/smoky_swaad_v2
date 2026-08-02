@@ -530,6 +530,15 @@
                document.getElementById("content")
             );
 
+            optimizeMobileControls(
+               document.getElementById("content")
+            );
+
+            if (window.matchMedia("(max-width: 768px), (pointer: coarse)").matches) {
+               document.getElementById("main-content").scrollTop = 0;
+               window.scrollTo(0, 0);
+            }
+
             if (screen === "POS") {
                setTimeout(function () {
                   loadPOSCache();
@@ -7482,4 +7491,49 @@ Thank you for choosing Smoky Swaad.
 
          .getSmokySwaadLogo();
    }
+
+
+   /* ==========================================================
+      GLOBAL MOBILE UX HELPERS
+   ========================================================== */
+   function optimizeMobileControls(root) {
+      if (!window.matchMedia("(max-width: 768px), (pointer: coarse)").matches) return;
+
+      const scope = root && root.querySelectorAll ? root : document;
+      const inputs = scope.querySelectorAll('input');
+
+      for (let i = 0; i < inputs.length; i++) {
+         const input = inputs[i];
+         const type = String(input.type || '').toLowerCase();
+
+         if (type === 'number' && !input.hasAttribute('inputmode')) {
+            input.setAttribute('inputmode', 'decimal');
+         } else if (type === 'tel' && !input.hasAttribute('inputmode')) {
+            input.setAttribute('inputmode', 'tel');
+         }
+      }
+   }
+
+   let mobileGeometryTimer = 0;
+   function refreshMobileSelectArrowGeometry() {
+      if (!shouldUseMobileSelectPicker()) return;
+      window.clearTimeout(mobileGeometryTimer);
+      mobileGeometryTimer = window.setTimeout(function () {
+         const selects = document.querySelectorAll('select.mobile-arrow-select');
+         for (let i = 0; i < selects.length; i++) {
+            const select = selects[i];
+            const host = select.parentElement;
+            if (!host) continue;
+            const button = host.querySelector('.mobile-select-arrow-button');
+            if (button) syncMobileSelectArrowGeometry(select, button);
+         }
+      }, 80);
+   }
+
+   window.addEventListener('resize', refreshMobileSelectArrowGeometry, { passive: true });
+   window.addEventListener('orientationchange', refreshMobileSelectArrowGeometry, { passive: true });
+
+   document.addEventListener('DOMContentLoaded', function () {
+      optimizeMobileControls(document);
+   });
 </script>
