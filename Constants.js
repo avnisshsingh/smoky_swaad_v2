@@ -14,6 +14,10 @@ const SHEETS = {
   CUSTOMERS: "Customers",
   MENU: "Menu",
   SETTINGS: "Settings",
+
+  // Personal Expense Tracking
+  PERSONAL_EXPENSES: "PersonalExpenses",
+
   PURCHASE_REGISTER: "Purchase Register",
   RECIPE: "Recipe Master",
   DASHBOARD: "Dashboard",
@@ -21,6 +25,7 @@ const SHEETS = {
   CONFIG: "Config"
 
 };
+
 
 // POS Cell References
 const POS = {

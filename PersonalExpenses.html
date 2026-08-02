@@ -1,0 +1,1241 @@
+<!-- ==========================================
+     SMOKY SWAAD ERP
+     PERSONAL EXPENSES
+     MOBILE-FIRST RESPONSIVE SCREEN
+=========================================== -->
+
+<style>
+
+    /* ==========================================
+       PERSONAL EXPENSES - BASE
+    ========================================== */
+
+    #personalExpensesScreen {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    #personalExpensesScreen .pe-card {
+        border: 0;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    #personalExpensesScreen .pe-summary-card {
+        border: 0;
+        border-radius: 12px;
+        min-height: 88px;
+    }
+
+    #personalExpensesScreen .pe-summary-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+
+    #personalExpensesScreen .pe-summary-value {
+        font-size: 21px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+
+    /* ==========================================
+       QUICK CATEGORY BUTTONS
+    ========================================== */
+
+    #personalExpensesScreen .pe-quick-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    #personalExpensesScreen .pe-quick-btn {
+        min-height: 58px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 8px 5px;
+        white-space: normal;
+        line-height: 1.15;
+    }
+
+    #personalExpensesScreen .pe-quick-icon {
+        display: block;
+        font-size: 20px;
+        margin-bottom: 3px;
+    }
+
+
+    /* ==========================================
+       FORM
+    ========================================== */
+
+    #personalExpensesScreen .pe-label {
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    #personalExpensesScreen .pe-required {
+        color: #dc3545;
+    }
+
+    #personalExpensesScreen .pe-main-input {
+        min-height: 48px;
+    }
+
+    #personalExpensesScreen .pe-more-details {
+        border-radius: 10px;
+    }
+
+
+    /* ==========================================
+       SAVE AREA
+    ========================================== */
+
+    #personalExpensesScreen .pe-save-area {
+        margin-top: 20px;
+    }
+
+    #personalExpensesScreen .pe-save-button {
+        min-height: 52px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+
+    /* ==========================================
+       MOBILE EXPENSE CARDS
+    ========================================== */
+
+    #personalExpensesScreen .pe-mobile-expense-card {
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        background: #ffffff;
+    }
+
+    #personalExpensesScreen .pe-mobile-category {
+        font-weight: 700;
+        font-size: 15px;
+    }
+
+    #personalExpensesScreen .pe-mobile-amount {
+        font-weight: 700;
+        font-size: 17px;
+    }
+
+    #personalExpensesScreen .pe-mobile-description {
+        margin-top: 5px;
+        font-size: 14px;
+    }
+
+    #personalExpensesScreen .pe-mobile-meta {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+
+    #personalExpensesScreen .pe-mobile-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    #personalExpensesScreen .pe-mobile-actions button {
+        min-width: 75px;
+        min-height: 38px;
+    }
+
+
+    /* ==========================================
+       MOBILE
+    ========================================== */
+
+    @media (max-width: 767.98px) {
+
+        #personalExpensesScreen {
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+
+        #personalExpensesScreen .pe-page-title {
+            font-size: 20px;
+        }
+
+        #personalExpensesScreen .pe-page-subtitle {
+            font-size: 12px;
+        }
+
+        #personalExpensesScreen .pe-summary-card {
+            min-height: 78px;
+        }
+
+        #personalExpensesScreen .pe-summary-value {
+            font-size: 18px;
+        }
+
+        #personalExpensesScreen .pe-card-header {
+            padding: 10px 12px;
+        }
+
+        #personalExpensesScreen .pe-card-body {
+            padding: 12px;
+        }
+
+        #personalExpensesScreen .form-control,
+        #personalExpensesScreen .form-select {
+            font-size: 16px;
+        }
+
+        /*
+         * Prevent iPhone browsers from zooming
+         * automatically when an input is focused.
+         */
+
+        #personalExpensesScreen input,
+        #personalExpensesScreen select,
+        #personalExpensesScreen textarea {
+            font-size: 16px !important;
+        }
+
+        #personalExpensesScreen .pe-save-area {
+            position: sticky;
+            bottom: 0;
+            z-index: 20;
+
+            background: rgba(255,255,255,0.96);
+
+            padding:
+                10px 0
+                calc(10px + env(safe-area-inset-bottom));
+
+            border-top: 1px solid #e9ecef;
+        }
+
+        #personalExpensesScreen .pe-save-button {
+            min-height: 54px;
+            font-size: 17px;
+        }
+
+    }
+
+
+    /* ==========================================
+       VERY SMALL MOBILE
+    ========================================== */
+
+    @media (max-width: 380px) {
+
+        #personalExpensesScreen .pe-quick-grid {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+        }
+
+    }
+
+</style>
+
+
+<div
+    id="personalExpensesScreen"
+    class="container-fluid px-1 px-md-3">
+
+
+    <!-- ======================================
+         PAGE HEADER
+    ======================================= -->
+
+    <div class="mb-3">
+
+        <h4 class="pe-page-title fw-bold mb-0">
+
+            💳 Personal Expenses
+
+        </h4>
+
+        <div
+            class="pe-page-subtitle text-muted">
+
+            Track personal & household spending
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================
+         SUMMARY
+    ======================================= -->
+
+    <div class="row g-2 mb-3">
+
+
+        <!-- TODAY -->
+
+        <div class="col-6 col-lg-4">
+
+            <div
+                class="card shadow-sm pe-summary-card h-100">
+
+                <div class="card-body p-3">
+
+                    <div class="pe-summary-label">
+
+                        Today
+
+                    </div>
+
+                    <div
+                        id="personalExpenseToday"
+                        class="pe-summary-value">
+
+                        ₹0.00
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- THIS MONTH -->
+
+        <div class="col-6 col-lg-4">
+
+            <div
+                class="card shadow-sm pe-summary-card h-100">
+
+                <div class="card-body p-3">
+
+                    <div class="pe-summary-label">
+
+                        This Month
+
+                    </div>
+
+                    <div
+                        id="personalExpenseMonth"
+                        class="pe-summary-value">
+
+                        ₹0.00
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- TRANSACTION COUNT -->
+
+        <div class="col-12 col-lg-4">
+
+            <div
+                class="card shadow-sm pe-summary-card h-100">
+
+                <div
+                    class="card-body p-3 d-flex align-items-center justify-content-between">
+
+                    <div>
+
+                        <div class="pe-summary-label">
+
+                            Transactions This Month
+
+                        </div>
+
+                        <div
+                            id="personalExpenseTransactionCount"
+                            class="pe-summary-value">
+
+                            0
+
+                        </div>
+
+                    </div>
+
+                    <div style="font-size:26px;">
+
+                        🧾
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================
+         ADD EXPENSE
+    ======================================= -->
+
+    <div
+        class="card shadow-sm pe-card mb-3">
+
+
+        <div
+            class="card-header bg-primary text-white pe-card-header">
+
+            <strong>
+                ➕ Add Expense
+            </strong>
+
+        </div>
+
+
+        <div class="card-body pe-card-body">
+
+
+            <!-- ==================================
+                 QUICK ADD
+            =================================== -->
+
+            <div class="mb-3">
+
+                <label class="pe-label">
+
+                    Quick Category
+
+                </label>
+
+
+                <div class="pe-quick-grid">
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('Grocery')">
+
+                        <span class="pe-quick-icon">
+                            🛒
+                        </span>
+
+                        Grocery
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('Fuel')">
+
+                        <span class="pe-quick-icon">
+                            ⛽
+                        </span>
+
+                        Fuel
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('Baby / Kids')">
+
+                        <span class="pe-quick-icon">
+                            👶
+                        </span>
+
+                        Baby / Kids
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('Online Shopping')">
+
+                        <span class="pe-quick-icon">
+                            🛍️
+                        </span>
+
+                        Shopping
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('Mobile / Internet')">
+
+                        <span class="pe-quick-icon">
+                            📱
+                        </span>
+
+                        Recharge
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary pe-quick-btn"
+                        onclick="selectPersonalExpenseCategory('House Maintenance')">
+
+                        <span class="pe-quick-icon">
+                            🏠
+                        </span>
+
+                        House
+
+                    </button>
+
+
+                </div>
+
+            </div>
+
+
+            <hr>
+
+
+            <!-- ==================================
+                 ESSENTIAL FIELDS
+            =================================== -->
+
+            <div class="row g-3">
+
+
+                <!-- DATE -->
+
+                <div class="col-12 col-md-6">
+
+                    <label
+                        for="personalExpenseDate"
+                        class="form-label pe-label">
+
+                        Expense Date
+                        <span class="pe-required">*</span>
+
+                    </label>
+
+
+                    <input
+                        type="date"
+                        id="personalExpenseDate"
+                        class="form-control form-control-lg pe-main-input">
+
+                </div>
+
+
+                <!-- CATEGORY -->
+
+                <div class="col-12 col-md-6">
+
+                    <label
+                        for="personalExpenseCategory"
+                        class="form-label pe-label">
+
+                        Category
+                        <span class="pe-required">*</span>
+
+                    </label>
+
+
+                    <select
+                        id="personalExpenseCategory"
+                        class="form-select form-select-lg pe-main-input">
+
+                        <option value="">
+                            Select Category
+                        </option>
+
+                        <option value="Online Shopping">
+                            Online Shopping
+                        </option>
+
+                        <option value="Grocery">
+                            Grocery
+                        </option>
+
+                        <option value="Baby / Kids">
+                            Baby / Kids
+                        </option>
+
+                        <option value="Fuel">
+                            Fuel
+                        </option>
+
+                        <option value="Mobile / Internet">
+                            Mobile / Internet
+                        </option>
+
+                        <option value="Money Transfer">
+                            Money Transfer
+                        </option>
+
+                        <option value="House Maintenance">
+                            House Maintenance
+                        </option>
+
+                        <option value="Staff / Helper">
+                            Staff / Helper
+                        </option>
+
+                        <option value="Vehicle">
+                            Vehicle
+                        </option>
+
+                        <option value="Utilities">
+                            Utilities
+                        </option>
+
+                        <option value="Medical">
+                            Medical
+                        </option>
+
+                        <option value="Food / Dining">
+                            Food / Dining
+                        </option>
+
+                        <option value="Travel">
+                            Travel
+                        </option>
+
+                        <option value="Education">
+                            Education
+                        </option>
+
+                        <option value="EMI / Loan">
+                            EMI / Loan
+                        </option>
+
+                        <option value="Insurance">
+                            Insurance
+                        </option>
+
+                        <option value="Clothing">
+                            Clothing
+                        </option>
+
+                        <option value="Entertainment">
+                            Entertainment
+                        </option>
+
+                        <option value="Gifts">
+                            Gifts
+                        </option>
+
+                        <option value="Personal Care">
+                            Personal Care
+                        </option>
+
+                        <option value="Other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="col-12">
+
+                    <label
+                        for="personalExpenseDescription"
+                        class="form-label pe-label">
+
+                        Description
+                        <span class="pe-required">*</span>
+
+                    </label>
+
+
+                    <input
+                        type="text"
+                        id="personalExpenseDescription"
+                        class="form-control form-control-lg pe-main-input"
+                        maxlength="150"
+                        autocomplete="off"
+                        placeholder="Baby diapers, petrol, Amazon order...">
+
+                </div>
+
+
+                <!-- AMOUNT -->
+
+                <div class="col-12 col-md-6">
+
+                    <label
+                        for="personalExpenseAmount"
+                        class="form-label pe-label">
+
+                        Amount
+                        <span class="pe-required">*</span>
+
+                    </label>
+
+
+                    <div class="input-group input-group-lg">
+
+                        <span class="input-group-text">
+
+                            ₹
+
+                        </span>
+
+
+                        <input
+                            type="number"
+                            id="personalExpenseAmount"
+                            class="form-control pe-main-input"
+                            min="0.01"
+                            step="0.01"
+                            inputmode="decimal"
+                            autocomplete="off"
+                            placeholder="0.00">
+
+                    </div>
+
+                </div>
+
+
+                <!-- PAYMENT MODE -->
+
+                <div class="col-12 col-md-6">
+
+                    <label
+                        for="personalExpensePaymentMode"
+                        class="form-label pe-label">
+
+                        Payment Mode
+                        <span class="pe-required">*</span>
+
+                    </label>
+
+
+                    <select
+                        id="personalExpensePaymentMode"
+                        class="form-select form-select-lg pe-main-input">
+
+                        <option value="UPI">
+                            UPI
+                        </option>
+
+                        <option value="Cash">
+                            Cash
+                        </option>
+
+                        <option value="Credit Card">
+                            Credit Card
+                        </option>
+
+                        <option value="Debit Card">
+                            Debit Card
+                        </option>
+
+                        <option value="Bank Transfer">
+                            Bank Transfer
+                        </option>
+
+                        <option value="Wallet">
+                            Wallet
+                        </option>
+
+                        <option value="Other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- ==================================
+                 MORE DETAILS BUTTON
+            =================================== -->
+
+            <div class="mt-3">
+
+                <button
+                    type="button"
+                    class="btn btn-light border w-100 py-2"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#personalExpenseMoreDetails"
+                    aria-expanded="false"
+                    aria-controls="personalExpenseMoreDetails">
+
+                    ⚙️ More Details
+
+                </button>
+
+            </div>
+
+
+            <!-- ==================================
+                 MORE DETAILS
+            =================================== -->
+
+            <div
+                class="collapse mt-3"
+                id="personalExpenseMoreDetails">
+
+
+                <div
+                    class="border bg-light p-3 pe-more-details">
+
+
+                    <div class="row g-3">
+
+
+                        <!-- SUBCATEGORY -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpenseSubcategory"
+                                class="form-label">
+
+                                Subcategory
+
+                            </label>
+
+
+                            <input
+                                type="text"
+                                id="personalExpenseSubcategory"
+                                class="form-control"
+                                maxlength="100"
+                                autocomplete="off"
+                                placeholder="Diapers, Petrol, Recharge...">
+
+                        </div>
+
+
+                        <!-- PAID TO -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpensePaidTo"
+                                class="form-label">
+
+                                Paid To
+
+                            </label>
+
+
+                            <input
+                                type="text"
+                                id="personalExpensePaidTo"
+                                class="form-control"
+                                maxlength="100"
+                                autocomplete="off"
+                                placeholder="Amazon, Flipkart, Friend...">
+
+                        </div>
+
+
+                        <!-- EXPENSE FOR -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpenseFor"
+                                class="form-label">
+
+                                Expense For
+
+                            </label>
+
+
+                            <select
+                                id="personalExpenseFor"
+                                class="form-select">
+
+                                <option value="Self">
+                                    Self
+                                </option>
+
+                                <option value="Home">
+                                    Home
+                                </option>
+
+                                <option value="Family">
+                                    Family
+                                </option>
+
+                                <option value="Baby / Kids">
+                                    Baby / Kids
+                                </option>
+
+                                <option value="Vehicle">
+                                    Vehicle
+                                </option>
+
+                                <option value="Staff">
+                                    Staff
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- NATURE -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpenseNature"
+                                class="form-label">
+
+                                Nature
+
+                            </label>
+
+
+                            <select
+                                id="personalExpenseNature"
+                                class="form-select">
+
+                                <option value="Expense">
+                                    Expense
+                                </option>
+
+                                <option value="Transfer">
+                                    Transfer
+                                </option>
+
+                                <option value="Refund">
+                                    Refund
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- RECURRING -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpenseRecurring"
+                                class="form-label">
+
+                                Recurring
+
+                            </label>
+
+
+                            <select
+                                id="personalExpenseRecurring"
+                                class="form-select">
+
+                                <option value="No">
+                                    No
+                                </option>
+
+                                <option value="Yes">
+                                    Yes
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- REFERENCE -->
+
+                        <div class="col-12 col-md-6">
+
+                            <label
+                                for="personalExpenseReference"
+                                class="form-label">
+
+                                Reference / Order / UTR No.
+
+                            </label>
+
+
+                            <input
+                                type="text"
+                                id="personalExpenseReference"
+                                class="form-control"
+                                maxlength="100"
+                                autocomplete="off"
+                                placeholder="Optional">
+
+                        </div>
+
+
+                        <!-- REMARKS -->
+
+                        <div class="col-12">
+
+                            <label
+                                for="personalExpenseRemarks"
+                                class="form-label">
+
+                                Remarks
+
+                            </label>
+
+
+                            <textarea
+                                id="personalExpenseRemarks"
+                                class="form-control"
+                                rows="2"
+                                maxlength="300"
+                                placeholder="Optional notes"></textarea>
+
+                        </div>
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================
+                 SAVE AREA
+            =================================== -->
+
+            <div class="pe-save-area">
+
+                <div class="d-grid">
+
+                    <button
+                        type="button"
+                        id="btnSavePersonalExpense"
+                        class="btn btn-success btn-lg pe-save-button"
+                        onclick="savePersonalExpense()">
+
+                        💾 Save Expense
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- MESSAGE -->
+
+            <div
+                id="personalExpenseMessage"
+                class="mt-2"
+                style="display:none;">
+            </div>
+
+            <input
+              type="hidden"
+              id="personalExpenseEditingId"
+              value="">
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================
+         RECENT EXPENSES
+    ======================================= -->
+
+    <div
+        class="card shadow-sm pe-card mb-4">
+
+
+        <div
+            class="card-header bg-dark text-white pe-card-header">
+
+            <div
+                class="d-flex justify-content-between align-items-center">
+
+                <strong>
+
+                    🕘 Recent Expenses
+
+                </strong>
+
+
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-light"
+                    onclick="loadPersonalExpenses()">
+
+                    ↻ Refresh
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+
+            <!-- ==================================
+                 DESKTOP / TABLET TABLE
+            =================================== -->
+
+            <div
+                class="table-responsive d-none d-md-block">
+
+
+                <table
+                    class="table table-hover align-middle mb-0">
+
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Category
+                            </th>
+
+                            <th>
+                                Description
+                            </th>
+
+                            <th>
+                                Paid To
+                            </th>
+
+                            <th>
+                                Payment
+                            </th>
+
+                            <th class="text-end">
+                                Amount
+                            </th>
+
+                            <th class="text-center">
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="personalExpenseTableBody">
+
+
+                        <tr>
+
+                            <td
+                                colspan="7"
+                                class="text-center text-muted py-4">
+
+                                No expenses loaded.
+
+                            </td>
+
+                        </tr>
+
+
+                    </tbody>
+
+
+                </table>
+
+            </div>
+
+
+            <!-- ==================================
+                 MOBILE CARD LIST
+            =================================== -->
+
+            <div
+                id="personalExpenseMobileList"
+                class="d-md-none p-2">
+
+
+                <div
+                    class="text-center text-muted py-4">
+
+                    No expenses loaded.
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+<!-- ======================================
+     DELETED EXPENSES
+======================================= -->
+
+<div class="card shadow-sm pe-card mb-4">
+
+    <div class="card-header bg-secondary text-white pe-card-header">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <strong>
+                🗑️ Deleted Expenses
+            </strong>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-light"
+                onclick="loadDeletedPersonalExpenses()">
+
+                View Deleted
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <div
+        id="personalExpenseDeletedList"
+        class="card-body"
+        style="display:none;">
+
+        <div class="text-center text-muted py-3">
+
+            Tap "View Deleted" to load deleted transactions.
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>

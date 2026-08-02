@@ -2,7 +2,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  /* ==========================================
+   /* ==========================================
    Global Variables
 ========================================== */
 
@@ -19,23 +19,17 @@
    let menuSearchTimer = null;
    let customAddons = [];
 
-function getToday() {
+   function getToday() {
+      const today = new Date();
 
-    const today = new Date();
+      const year = today.getFullYear();
 
-    const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
 
-    const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
 
-    const day = String(today.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-
-}
-
-
-
-
+      return `${year}-${month}-${day}`;
+   }
 
    const QUICK_NOTES = [
       "Less Spicy",
@@ -61,26 +55,22 @@ function getToday() {
 
    document.addEventListener("DOMContentLoaded", initApp);
 
- function initApp() {
+   function initApp() {
+      console.log("Smoky Swaad ERP Started");
 
-    console.log("Smoky Swaad ERP Started");
+      bindMenuEvents();
 
-    bindMenuEvents();
+      // Load POS automatically on startup
+      const defaultMenu = document.querySelector(
+         '.menu-link[data-screen="POS"]',
+      );
 
-    // Load POS automatically on startup
-    const defaultMenu = document.querySelector(
-        '.menu-link[data-screen="POS"]'
-    );
+      if (defaultMenu) {
+         setActiveMenu(defaultMenu);
+      }
 
-    if (defaultMenu) {
-
-        setActiveMenu(defaultMenu);
-
-    }
-
-    openScreen("POS");
-
-}
+      openScreen("POS");
+   }
 
    /* ==========================================
    Navigation
@@ -114,23 +104,17 @@ function getToday() {
             document.getElementById("content").innerHTML = html;
             document.title = "Smoky Swaad ERP - " + screen;
 
-if (screen === "POS") {
+            if (screen === "POS") {
+               setTimeout(function () {
+                  loadPOSCache();
 
-    setTimeout(function () {
+                  const orderDate = document.getElementById("orderDate");
 
-        loadPOSCache();
-
-        const orderDate = document.getElementById("orderDate");
-
-if (orderDate) {
-
-    orderDate.value = getToday();
-
-}
-
-    }, 100);
-
-} else if (screen === "Purchase") {
+                  if (orderDate) {
+                     orderDate.value = getToday();
+                  }
+               }, 100);
+            } else if (screen === "Purchase") {
                setTimeout(function () {
                   if (document.getElementById("purchaseDate")) {
                      initializePurchase();
@@ -143,26 +127,2257 @@ if (orderDate) {
             } else if (screen === "Reports") {
                setTimeout(function () {
                   initializeReports();
-               }, 100); 
-            }
-              else if (screen === "BusinessCosts") {
-                    setTimeout(function () {
+               }, 100);
+            } else if (screen === "BusinessCosts") {
+               setTimeout(function () {
                   initializeBusinessCosts();
-               }, 100); 
+               }, 100);
+            } else if (screen === "PricingCalculator") {
+               setTimeout(function () {
+                  initializePricingCalculator();
+               }, 100);
+            } else if (screen === "PersonalExpenses") {
+               setTimeout(function () {
+                  initializePersonalExpenses();
+               }, 100);
             }
-              else if (screen === "PricingCalculator") {
-
-    setTimeout(function () {
-
-        initializePricingCalculator();
-
-    }, 100);
-
-}
-
          })
          .loadScreen(screen);
    }
+
+   /**
+    * ==========================================
+    * PERSONAL EXPENSES
+    * Initialize Personal Expenses Screen
+    * ==========================================
+    */
+   function initializePersonalExpenses() {
+      console.log("Personal Expenses Module Loaded");
+
+      // ------------------------------------------
+      // Set today's date automatically
+      // ------------------------------------------
+
+      const dateInput = document.getElementById("personalExpenseDate");
+
+      if (dateInput) {
+         dateInput.value = getToday();
+      }
+
+      // ------------------------------------------
+      // Default Payment Mode
+      // ------------------------------------------
+
+      const paymentMode = document.getElementById("personalExpensePaymentMode");
+
+      if (paymentMode) {
+         paymentMode.value = "UPI";
+      }
+
+      // ------------------------------------------
+      // Default Expense For
+      // ------------------------------------------
+
+      const expenseFor = document.getElementById("personalExpenseFor");
+
+      if (expenseFor) {
+         expenseFor.value = "Self";
+      }
+
+      // ------------------------------------------
+      // Default Nature
+      // ------------------------------------------
+
+      const nature = document.getElementById("personalExpenseNature");
+
+      if (nature) {
+         nature.value = "Expense";
+      }
+
+      // ------------------------------------------
+      // Default Recurring
+      // ------------------------------------------
+
+      const recurring = document.getElementById("personalExpenseRecurring");
+
+      if (recurring) {
+         recurring.value = "No";
+      }
+
+      // ------------------------------------------
+      // Load Summary + Recent Expenses
+      // ------------------------------------------
+
+      loadPersonalExpenses();
+   }
+
+   /**
+    * ==========================================
+    * PERSONAL EXPENSES
+    * Quick Category Selection
+    * ==========================================
+    */
+   function selectPersonalExpenseCategory(category) {
+      const categorySelect = document.getElementById("personalExpenseCategory");
+
+      if (!categorySelect) {
+         console.error("Personal Expense Category field not found.");
+
+         return;
+      }
+
+      categorySelect.value = category;
+   }
+
+
+
+
+
+/**
+ * ==========================================================
+ * PERSONAL EXPENSES
+ * CLIENT-SIDE SAVE FUNCTIONS
+ * ==========================================================
+ */
+
+
+/**
+ * Prevent accidental double-save
+ */
+let isSavingPersonalExpense = false;
+
+
+function savePersonalExpense() {
+
+    if (isSavingPersonalExpense) {
+        return;
+    }
+
+
+    const expenseData =
+        collectPersonalExpenseData();
+
+
+    const validation =
+        validatePersonalExpenseForm(
+            expenseData
+        );
+
+
+    if (!validation.success) {
+
+        showPersonalExpenseMessage(
+            validation.message,
+            "danger"
+        );
+
+        return;
+
+    }
+
+
+    const editingField =
+        document.getElementById(
+            "personalExpenseEditingId"
+        );
+
+
+    const editingId =
+        editingField
+            ? String(
+                editingField.value || ""
+              ).trim()
+            : "";
+
+
+    const saveButton =
+        document.getElementById(
+            "btnSavePersonalExpense"
+        );
+
+
+    isSavingPersonalExpense = true;
+
+
+    if (saveButton) {
+
+        saveButton.disabled =
+            true;
+
+        saveButton.innerHTML =
+            editingId
+                ? "⏳ Updating..."
+                : "⏳ Saving...";
+
+    }
+
+
+    hidePersonalExpenseMessage();
+
+
+
+
+
+
+
+
+    // ==========================================
+    // Common Success Handler
+    // ==========================================
+
+    function handleSuccess(response) {
+
+        isSavingPersonalExpense =
+            false;
+
+
+        if (saveButton) {
+
+            saveButton.disabled =
+                false;
+
+            saveButton.innerHTML =
+                "💾 Save Expense";
+
+        }
+
+
+        if (
+            !response ||
+            response.success !== true
+        ) {
+
+            showPersonalExpenseMessage(
+                response &&
+                response.message
+                    ? response.message
+                    : "Unable to save expense.",
+                "danger"
+            );
+
+            return;
+
+        }
+
+
+        showPersonalExpenseMessage(
+            editingId
+                ? "Expense updated successfully. ID: " +
+                  response.expenseId
+                : "Expense saved successfully. ID: " +
+                  response.expenseId,
+            "success"
+        );
+
+
+        resetPersonalExpenseForm();
+
+
+        if (editingField) {
+
+            editingField.value =
+                "";
+
+        }
+
+
+        loadPersonalExpenses();
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ==========================================
+    // Common Failure Handler
+    // ==========================================
+
+    function handleFailure(error) {
+
+        isSavingPersonalExpense =
+            false;
+
+
+        if (saveButton) {
+
+            saveButton.disabled =
+                false;
+
+            saveButton.innerHTML =
+                editingId
+                    ? "✏️ Update Expense"
+                    : "💾 Save Expense";
+
+        }
+
+
+        const message =
+            error &&
+            error.message
+                ? error.message
+                : String(error);
+
+
+        showPersonalExpenseMessage(
+            message ||
+            "Unable to save expense.",
+            "danger"
+        );
+
+    }
+
+
+    // ==========================================
+    // EDIT
+    // ==========================================
+
+    if (editingId) {
+
+        google.script.run
+
+            .withSuccessHandler(
+                handleSuccess
+            )
+
+            .withFailureHandler(
+                handleFailure
+            )
+
+            .updatePersonalExpenseFromWeb(
+                editingId,
+                expenseData
+            );
+
+
+        return;
+
+    }
+
+
+    // ==========================================
+    // NEW EXPENSE
+    // ==========================================
+
+    google.script.run
+
+        .withSuccessHandler(
+            handleSuccess
+        )
+
+        .withFailureHandler(
+            handleFailure
+        )
+
+        .savePersonalExpenseFromWeb(
+            expenseData
+        );
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * EDIT PERSONAL EXPENSE
+ * ==========================================================
+ */
+function editPersonalExpense(
+    expense
+) {
+
+    if (!expense) {
+        return;
+    }
+
+
+    setPersonalExpenseValue(
+        "personalExpenseDate",
+        expense.expenseDateRaw
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseCategory",
+        expense.category
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseSubcategory",
+        expense.subcategory
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseDescription",
+        expense.description
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseAmount",
+        expense.amount
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpensePaymentMode",
+        expense.paymentMode
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpensePaidTo",
+        expense.paidTo
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseFor",
+        expense.expenseFor || "Self"
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseNature",
+        expense.nature || "Expense"
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseRecurring",
+        expense.recurring || "No"
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseReference",
+        expense.referenceNo
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseRemarks",
+        expense.remarks
+    );
+
+
+    setPersonalExpenseValue(
+        "personalExpenseEditingId",
+        expense.expenseId
+    );
+
+
+    const saveButton =
+        document.getElementById(
+            "btnSavePersonalExpense"
+        );
+
+
+    if (saveButton) {
+
+        saveButton.innerHTML =
+            "✏️ Update Expense";
+
+    }
+
+
+    // ------------------------------------------
+    // Open More Details
+    // ------------------------------------------
+
+    const moreDetails =
+        document.getElementById(
+            "personalExpenseMoreDetails"
+        );
+
+
+    if (moreDetails) {
+
+        try {
+
+            bootstrap.Collapse
+                .getOrCreateInstance(
+                    moreDetails
+                )
+                .show();
+
+        } catch (error) {
+
+            moreDetails
+                .classList
+                .add("show");
+
+        }
+
+    }
+
+
+    // ------------------------------------------
+    // Scroll to form
+    // ------------------------------------------
+
+    const screen =
+        document.getElementById(
+            "personalExpensesScreen"
+        );
+
+
+    if (screen) {
+
+        screen.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+    }
+
+
+    showPersonalExpenseMessage(
+        "Editing " +
+        expense.expenseId,
+        "info"
+    );
+
+}
+
+
+/**
+ * ==========================================================
+ * SET PERSONAL EXPENSE VALUE
+ * ==========================================================
+ */
+function setPersonalExpenseValue(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(id);
+
+
+    if (!element) {
+        return;
+    }
+
+
+    element.value =
+        value === null ||
+        value === undefined
+            ? ""
+            : value;
+
+}
+
+
+/**
+ * ==========================================================
+ * DELETE PERSONAL EXPENSE
+ * ==========================================================
+ */
+function deletePersonalExpense(
+    expenseId,
+    description,
+    amount
+) {
+
+    expenseId =
+        String(
+            expenseId || ""
+        ).trim();
+
+
+    if (!expenseId) {
+        return;
+    }
+
+
+    const amountText =
+        formatPersonalExpenseCurrency(
+            amount
+        );
+
+
+    const confirmed =
+        confirm(
+            "Delete this expense?\n\n" +
+            expenseId +
+            "\n" +
+            description +
+            "\n" +
+            amountText +
+            "\n\n" +
+            "It will be removed from expense totals but retained for audit."
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    showPersonalExpenseMessage(
+                        response &&
+                        response.message
+                            ? response.message
+                            : "Unable to delete expense.",
+                        "danger"
+                    );
+
+                    return;
+
+                }
+
+
+                showPersonalExpenseMessage(
+                    "Expense deleted. " +
+                    expenseId +
+                    " can be restored from Deleted Expenses.",
+                    "warning"
+                );
+
+
+                loadPersonalExpenses();
+
+            }
+        )
+
+
+        .withFailureHandler(
+            function(error) {
+
+                showPersonalExpenseMessage(
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error),
+                    "danger"
+                );
+
+            }
+        )
+
+
+        .deletePersonalExpenseFromWeb(
+            expenseId
+        );
+
+}
+
+
+/**
+ * ==========================================================
+ * LOAD DELETED PERSONAL EXPENSES
+ * ==========================================================
+ */
+function loadDeletedPersonalExpenses() {
+
+    const container =
+        document.getElementById(
+            "personalExpenseDeletedList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.style.display =
+        "block";
+
+
+    container.innerHTML = `
+        <div
+            class="text-center text-muted py-3">
+
+            Loading deleted expenses...
+
+        </div>
+    `;
+
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    container.innerHTML =
+                        "<div class='alert alert-danger mb-0'>" +
+                        escapePersonalExpenseHtml(
+                            response &&
+                            response.message
+                                ? response.message
+                                : "Unable to load deleted expenses."
+                        ) +
+                        "</div>";
+
+                    return;
+
+                }
+
+
+                renderDeletedPersonalExpenses(
+                    response.expenses || []
+                );
+
+            }
+        )
+
+
+        .withFailureHandler(
+            function(error) {
+
+                container.innerHTML =
+                    "<div class='alert alert-danger mb-0'>" +
+                    escapePersonalExpenseHtml(
+                        error &&
+                        error.message
+                            ? error.message
+                            : String(error)
+                    ) +
+                    "</div>";
+
+            }
+        )
+
+
+        .getDeletedPersonalExpenses();
+
+}
+
+
+/**
+ * ==========================================================
+ * RENDER DELETED PERSONAL EXPENSES
+ * ==========================================================
+ */
+function renderDeletedPersonalExpenses(
+    expenses
+) {
+
+    const container =
+        document.getElementById(
+            "personalExpenseDeletedList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(expenses) ||
+        expenses.length === 0
+    ) {
+
+        container.innerHTML = `
+            <div
+                class="text-center text-muted py-3">
+
+                No deleted expenses.
+
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    let html = "";
+
+
+    expenses.forEach(
+        function(expense) {
+
+            html += `
+                <div
+                    class="border rounded p-3 mb-2">
+
+                    <div
+                        class="d-flex justify-content-between gap-2">
+
+                        <div>
+
+                            <div class="fw-bold">
+
+                                ${escapePersonalExpenseHtml(
+                                    expense.category
+                                )}
+
+                            </div>
+
+                            <div>
+
+                                ${escapePersonalExpenseHtml(
+                                    expense.description
+                                )}
+
+                            </div>
+
+                            <div
+                                class="small text-muted">
+
+                                ${escapePersonalExpenseHtml(
+                                    expense.expenseDate
+                                )}
+
+                                •
+
+                                ${escapePersonalExpenseHtml(
+                                    expense.expenseId
+                                )}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="text-end">
+
+                            <div class="fw-bold mb-2">
+
+                                ${formatPersonalExpenseCurrency(
+                                    expense.amount
+                                )}
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-success"
+                                onclick="restorePersonalExpense(
+                                    '${escapePersonalExpenseJs(
+                                        expense.expenseId
+                                    )}'
+                                )">
+
+                                ↩ Restore
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+
+        }
+    );
+
+
+    container.innerHTML =
+        html;
+
+}
+
+
+/**
+ * ==========================================================
+ * RESTORE PERSONAL EXPENSE
+ * ==========================================================
+ */
+function restorePersonalExpense(
+    expenseId
+) {
+
+    const confirmed =
+        confirm(
+            "Restore " +
+            expenseId +
+            "?\n\n" +
+            "It will again be included in expense reports."
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    alert(
+                        response &&
+                        response.message
+                            ? response.message
+                            : "Unable to restore expense."
+                    );
+
+                    return;
+
+                }
+
+
+                loadPersonalExpenses();
+
+                loadDeletedPersonalExpenses();
+
+
+                showPersonalExpenseMessage(
+                    "Expense restored successfully: " +
+                    expenseId,
+                    "success"
+                );
+
+            }
+        )
+
+
+        .withFailureHandler(
+            function(error) {
+
+                alert(
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error)
+                );
+
+            }
+        )
+
+
+        .restorePersonalExpenseFromWeb(
+            expenseId
+        );
+
+}
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * ESCAPE VALUE FOR INLINE JS STRING
+ * ==========================================================
+ */
+function escapePersonalExpenseJs(
+    value
+) {
+
+    return String(
+        value === null ||
+        value === undefined
+            ? ""
+            : value
+    )
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, "")
+        .replace(/\n/g, "\\n");
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * COLLECT PERSONAL EXPENSE DATA
+ * ==========================================================
+ */
+function collectPersonalExpenseData() {
+
+    return {
+
+        expenseDate:
+            getPersonalExpenseFieldValue(
+                "personalExpenseDate"
+            ),
+
+        category:
+            getPersonalExpenseFieldValue(
+                "personalExpenseCategory"
+            ),
+
+        subcategory:
+            getPersonalExpenseFieldValue(
+                "personalExpenseSubcategory"
+            ),
+
+        description:
+            getPersonalExpenseFieldValue(
+                "personalExpenseDescription"
+            ),
+
+        amount:
+            getPersonalExpenseFieldValue(
+                "personalExpenseAmount"
+            ),
+
+        paymentMode:
+            getPersonalExpenseFieldValue(
+                "personalExpensePaymentMode"
+            ),
+
+        paidTo:
+            getPersonalExpenseFieldValue(
+                "personalExpensePaidTo"
+            ),
+
+        expenseFor:
+            getPersonalExpenseFieldValue(
+                "personalExpenseFor"
+            ),
+
+        nature:
+            getPersonalExpenseFieldValue(
+                "personalExpenseNature"
+            ),
+
+        recurring:
+            getPersonalExpenseFieldValue(
+                "personalExpenseRecurring"
+            ),
+
+        referenceNo:
+            getPersonalExpenseFieldValue(
+                "personalExpenseReference"
+            ),
+
+        remarks:
+            getPersonalExpenseFieldValue(
+                "personalExpenseRemarks"
+            )
+
+    };
+
+}
+
+
+/**
+ * ==========================================================
+ * GET FIELD VALUE SAFELY
+ * ==========================================================
+ */
+function getPersonalExpenseFieldValue(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+        return "";
+    }
+
+
+    return String(
+        element.value || ""
+    ).trim();
+
+}
+
+
+/**
+ * ==========================================================
+ * CLIENT-SIDE VALIDATION
+ * ==========================================================
+ *
+ * Server-side validation still exists.
+ * This validation simply gives the user faster
+ * feedback without waiting for Apps Script.
+ *
+ * ==========================================================
+ */
+function validatePersonalExpenseForm(
+    expenseData
+) {
+
+    if (!expenseData.expenseDate) {
+
+        focusPersonalExpenseField(
+            "personalExpenseDate"
+        );
+
+        return {
+
+            success: false,
+
+            message:
+                "Please select Expense Date."
+
+        };
+
+    }
+
+
+    if (!expenseData.category) {
+
+        focusPersonalExpenseField(
+            "personalExpenseCategory"
+        );
+
+        return {
+
+            success: false,
+
+            message:
+                "Please select a Category."
+
+        };
+
+    }
+
+
+    if (!expenseData.description) {
+
+        focusPersonalExpenseField(
+            "personalExpenseDescription"
+        );
+
+        return {
+
+            success: false,
+
+            message:
+                "Please enter Description."
+
+        };
+
+    }
+
+
+    const amount =
+        Number(expenseData.amount);
+
+
+    if (
+        !Number.isFinite(amount) ||
+        amount <= 0
+    ) {
+
+        focusPersonalExpenseField(
+            "personalExpenseAmount"
+        );
+
+        return {
+
+            success: false,
+
+            message:
+                "Please enter a valid Amount greater than zero."
+
+        };
+
+    }
+
+
+    if (!expenseData.paymentMode) {
+
+        focusPersonalExpenseField(
+            "personalExpensePaymentMode"
+        );
+
+        return {
+
+            success: false,
+
+            message:
+                "Please select Payment Mode."
+
+        };
+
+    }
+
+
+    return {
+
+        success: true
+
+    };
+
+}
+
+
+/**
+ * ==========================================================
+ * FOCUS INVALID FIELD
+ * ==========================================================
+ */
+function focusPersonalExpenseField(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    // Scroll field into view on mobile
+    try {
+
+        element.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+    } catch (error) {
+
+        // Older browser fallback
+        element.scrollIntoView();
+
+    }
+
+
+    // Give scrolling a moment before focus
+    setTimeout(
+        function() {
+
+            try {
+                element.focus();
+            } catch (error) {
+                // Ignore focus failure
+            }
+
+        },
+        250
+    );
+
+}
+
+
+/**
+ * ==========================================================
+ * SHOW MESSAGE
+ * ==========================================================
+ */
+function showPersonalExpenseMessage(
+    message,
+    type
+) {
+
+    const messageBox =
+        document.getElementById(
+            "personalExpenseMessage"
+        );
+
+
+    if (!messageBox) {
+        return;
+    }
+
+
+    const allowedTypes = [
+        "success",
+        "danger",
+        "warning",
+        "info"
+    ];
+
+
+    if (
+        !allowedTypes.includes(type)
+    ) {
+
+        type = "info";
+
+    }
+
+
+    messageBox.className =
+        "alert alert-" +
+        type +
+        " mt-2 mb-0";
+
+
+    messageBox.textContent =
+        message;
+
+
+    messageBox.style.display =
+        "block";
+
+}
+
+
+/**
+ * ==========================================================
+ * HIDE MESSAGE
+ * ==========================================================
+ */
+function hidePersonalExpenseMessage() {
+
+    const messageBox =
+        document.getElementById(
+            "personalExpenseMessage"
+        );
+
+
+    if (!messageBox) {
+        return;
+    }
+
+
+    messageBox.style.display =
+        "none";
+
+
+    messageBox.textContent =
+        "";
+
+}
+
+
+/**
+ * ==========================================================
+ * RESET PERSONAL EXPENSE FORM
+ * ==========================================================
+ *
+ * We clear transaction-specific information
+ * while preserving useful defaults.
+ *
+ * ==========================================================
+ */
+function resetPersonalExpenseForm() {
+
+    // ------------------------------------------
+    // Date -> Today
+    // ------------------------------------------
+
+    const dateInput =
+        document.getElementById(
+            "personalExpenseDate"
+        );
+
+
+    if (dateInput) {
+
+        dateInput.value =
+            getToday();
+
+    }
+
+
+    // ------------------------------------------
+    // Category
+    // ------------------------------------------
+
+    const category =
+        document.getElementById(
+            "personalExpenseCategory"
+        );
+
+
+    if (category) {
+
+        category.value = "";
+
+    }
+
+
+    // ------------------------------------------
+    // Description
+    // ------------------------------------------
+
+    const description =
+        document.getElementById(
+            "personalExpenseDescription"
+        );
+
+
+    if (description) {
+
+        description.value = "";
+
+    }
+
+
+    // ------------------------------------------
+    // Amount
+    // ------------------------------------------
+
+    const amount =
+        document.getElementById(
+            "personalExpenseAmount"
+        );
+
+
+    if (amount) {
+
+        amount.value = "";
+
+    }
+
+
+    // ------------------------------------------
+    // Payment Mode
+    //
+    // Keep UPI as convenient default
+    // ------------------------------------------
+
+    const paymentMode =
+        document.getElementById(
+            "personalExpensePaymentMode"
+        );
+
+
+    if (paymentMode) {
+
+        paymentMode.value =
+            "UPI";
+
+    }
+
+
+    // ------------------------------------------
+    // Optional Fields
+    // ------------------------------------------
+
+    const optionalFields = [
+
+        "personalExpenseSubcategory",
+
+        "personalExpensePaidTo",
+
+        "personalExpenseReference",
+
+        "personalExpenseRemarks"
+
+    ];
+
+
+    optionalFields.forEach(
+        function(elementId) {
+
+            const element =
+                document.getElementById(
+                    elementId
+                );
+
+
+            if (element) {
+
+                element.value = "";
+
+            }
+
+        }
+    );
+
+
+    // ------------------------------------------
+    // Expense For
+    // ------------------------------------------
+
+    const expenseFor =
+        document.getElementById(
+            "personalExpenseFor"
+        );
+
+
+    if (expenseFor) {
+
+        expenseFor.value =
+            "Self";
+
+    }
+
+
+    // ------------------------------------------
+    // Nature
+    // ------------------------------------------
+
+    const nature =
+        document.getElementById(
+            "personalExpenseNature"
+        );
+
+
+    if (nature) {
+
+        nature.value =
+            "Expense";
+
+    }
+
+
+    // ------------------------------------------
+    // Recurring
+    // ------------------------------------------
+
+    const recurring =
+        document.getElementById(
+            "personalExpenseRecurring"
+        );
+
+
+    if (recurring) {
+
+        recurring.value =
+            "No";
+
+    }
+
+
+    // ------------------------------------------
+    // Collapse More Details
+    // ------------------------------------------
+
+    const moreDetails =
+        document.getElementById(
+            "personalExpenseMoreDetails"
+        );
+
+
+    if (
+        moreDetails &&
+        moreDetails.classList.contains(
+            "show"
+        )
+    ) {
+
+        try {
+
+            const collapse =
+                bootstrap.Collapse.getOrCreateInstance(
+                    moreDetails
+                );
+
+
+            collapse.hide();
+
+        } catch (error) {
+
+            // Safe fallback if Bootstrap
+            // collapse instance is unavailable.
+
+            moreDetails.classList.remove(
+                "show"
+            );
+
+        }
+
+    }
+
+
+    // ------------------------------------------
+    // Return focus to Category
+    //
+    // Useful when entering multiple expenses.
+    // ------------------------------------------
+
+    if (category) {
+
+        setTimeout(
+            function() {
+
+                try {
+                    category.focus();
+                } catch (error) {
+                    // Ignore
+                }
+
+            },
+            150
+        );
+
+    }
+
+
+    const editingField =
+    document.getElementById(
+        "personalExpenseEditingId"
+    );
+
+
+if (editingField) {
+
+    editingField.value = "";
+
+}
+
+
+const saveButton =
+    document.getElementById(
+        "btnSavePersonalExpense"
+    );
+
+
+if (saveButton) {
+
+    saveButton.innerHTML =
+        "💾 Save Expense";
+
+}
+
+}
+
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * PERSONAL EXPENSES
+ * LOAD DASHBOARD / RECENT EXPENSES
+ * ==========================================================
+ */
+function loadPersonalExpenses() {
+
+    const desktopBody =
+        document.getElementById(
+            "personalExpenseTableBody"
+        );
+
+
+    const mobileList =
+        document.getElementById(
+            "personalExpenseMobileList"
+        );
+
+
+    // ------------------------------------------
+    // Loading State
+    // ------------------------------------------
+
+    if (desktopBody) {
+
+        desktopBody.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    class="text-center text-muted py-4">
+
+                    Loading expenses...
+
+                </td>
+            </tr>
+        `;
+
+    }
+
+
+    if (mobileList) {
+
+        mobileList.innerHTML = `
+            <div
+                class="text-center text-muted py-4">
+
+                Loading expenses...
+
+            </div>
+        `;
+
+    }
+
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    showPersonalExpenseMessage(
+                        response &&
+                        response.message
+                            ? response.message
+                            : "Unable to load expenses.",
+                        "danger"
+                    );
+
+                    return;
+
+                }
+
+
+                // --------------------------------
+                // Update Summary
+                // --------------------------------
+
+                updatePersonalExpenseSummary(
+                    response.summary
+                );
+
+
+                // --------------------------------
+                // Render Recent Expenses
+                // --------------------------------
+
+                renderPersonalExpenses(
+                    response.expenses || []
+                );
+
+            }
+        )
+
+
+        .withFailureHandler(
+            function(error) {
+
+                const message =
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error);
+
+
+                showPersonalExpenseMessage(
+                    message ||
+                    "Unable to load expenses.",
+                    "danger"
+                );
+
+            }
+        )
+
+
+        .getPersonalExpensesDashboardData();
+
+}
+
+
+/**
+ * ==========================================================
+ * UPDATE SUMMARY CARDS
+ * ==========================================================
+ */
+function updatePersonalExpenseSummary(
+    summary
+) {
+
+    summary =
+        summary || {};
+
+
+    const today =
+        document.getElementById(
+            "personalExpenseToday"
+        );
+
+
+    const month =
+        document.getElementById(
+            "personalExpenseMonth"
+        );
+
+
+    const count =
+        document.getElementById(
+            "personalExpenseTransactionCount"
+        );
+
+
+    if (today) {
+
+        today.textContent =
+            formatPersonalExpenseCurrency(
+                summary.today
+            );
+
+    }
+
+
+    if (month) {
+
+        month.textContent =
+            formatPersonalExpenseCurrency(
+                summary.thisMonth
+            );
+
+    }
+
+
+    if (count) {
+
+        count.textContent =
+            Number(
+                summary.transactionCount || 0
+            );
+
+    }
+
+}
+
+
+/**
+ * ==========================================================
+ * RENDER PERSONAL EXPENSES
+ * ==========================================================
+ */
+function renderPersonalExpenses(
+    expenses
+) {
+
+    if (!Array.isArray(expenses)) {
+
+        expenses = [];
+
+    }
+
+
+    renderPersonalExpenseDesktopTable(
+        expenses
+    );
+
+
+    renderPersonalExpenseMobileCards(
+        expenses
+    );
+
+}
+
+
+/**
+ * ==========================================================
+ * DESKTOP TABLE
+ * ==========================================================
+ */
+function renderPersonalExpenseDesktopTable(
+    expenses
+) {
+
+    const body =
+        document.getElementById(
+            "personalExpenseTableBody"
+        );
+
+
+    if (!body) {
+        return;
+    }
+
+
+    if (expenses.length === 0) {
+
+        body.innerHTML = `
+            <tr>
+                <td
+                    colspan="7"
+                    class="text-center text-muted py-4">
+
+                    No expenses found.
+
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    let html = "";
+
+
+    expenses.forEach(
+        function(expense) {
+
+            html += `
+                <tr>
+
+                    <td>
+                        ${escapePersonalExpenseHtml(
+                            expense.expenseDate
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapePersonalExpenseHtml(
+                            expense.category
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapePersonalExpenseHtml(
+                            expense.description
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapePersonalExpenseHtml(
+                            expense.paidTo || "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapePersonalExpenseHtml(
+                            expense.paymentMode
+                        )}
+                    </td>
+
+                    <td
+                        class="text-end fw-semibold">
+
+                        ${formatPersonalExpenseCurrency(
+                            expense.amount
+                        )}
+
+                    </td>
+
+                   <td class="text-center text-nowrap">
+
+    <button
+        type="button"
+        class="btn btn-sm btn-outline-primary me-1"
+        onclick='editPersonalExpense(
+            ${JSON.stringify(expense).replace(/&/g, "&amp;").replace(/'/g, "&#39;")}
+        )'>
+
+        ✏️ Edit
+
+    </button>
+
+    <button
+        type="button"
+        class="btn btn-sm btn-outline-danger"
+        onclick="deletePersonalExpense(
+            '${escapePersonalExpenseJs(
+                expense.expenseId
+            )}',
+            '${escapePersonalExpenseJs(
+                expense.description
+            )}',
+            ${Number(expense.amount) || 0}
+        )">
+
+        🗑️ Delete
+
+    </button>
+
+</td>
+
+                </tr>
+            `;
+
+        }
+    );
+
+
+    body.innerHTML =
+        html;
+
+}
+
+
+/**
+ * ==========================================================
+ * MOBILE CARDS
+ * ==========================================================
+ */
+function renderPersonalExpenseMobileCards(expenses) {
+
+    const list =
+        document.getElementById(
+            "personalExpenseMobileList"
+        );
+
+    if (!list) {
+        return;
+    }
+
+    if (!Array.isArray(expenses) || expenses.length === 0) {
+
+        list.innerHTML = `
+            <div
+                class="text-center text-muted py-4">
+
+                No expenses found.
+
+            </div>
+        `;
+
+        return;
+    }
+
+    let html = "";
+
+    expenses.forEach(
+        function(expense) {
+
+            const expenseJson =
+                JSON.stringify(expense)
+                    .replace(/&/g, "&amp;")
+                    .replace(/'/g, "&#39;");
+
+            html += `
+                <div
+                    class="pe-mobile-expense-card">
+
+                    <div
+                        class="d-flex justify-content-between align-items-start gap-2">
+
+                        <div
+                            class="pe-mobile-category">
+
+                            ${escapePersonalExpenseHtml(
+                                expense.category
+                            )}
+
+                        </div>
+
+                        <div
+                            class="pe-mobile-amount text-nowrap">
+
+                            ${formatPersonalExpenseCurrency(
+                                expense.amount
+                            )}
+
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="pe-mobile-description">
+
+                        ${escapePersonalExpenseHtml(
+                            expense.description
+                        )}
+
+                    </div>
+
+                    <div
+                        class="pe-mobile-meta">
+
+                        ${escapePersonalExpenseHtml(
+                            expense.expenseDate
+                        )}
+
+                        •
+
+                        ${escapePersonalExpenseHtml(
+                            expense.paymentMode
+                        )}
+
+                    </div>
+
+                    ${
+                        expense.paidTo
+                            ? `
+                                <div
+                                    class="pe-mobile-meta">
+
+                                    Paid to:
+                                    ${escapePersonalExpenseHtml(
+                                        expense.paidTo
+                                    )}
+
+                                </div>
+                              `
+                            : ""
+                    }
+
+                    <div
+                        class="pe-mobile-meta">
+
+                        ${escapePersonalExpenseHtml(
+                            expense.expenseId
+                        )}
+
+                    </div>
+
+                    <div
+                        class="pe-mobile-actions mt-3 d-flex gap-2">
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary flex-fill"
+                            onclick='editPersonalExpense(
+                                ${expenseJson}
+                            )'>
+
+                            ✏️ Edit
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-danger flex-fill"
+                            onclick="deletePersonalExpense(
+                                '${escapePersonalExpenseJs(
+                                    expense.expenseId
+                                )}',
+                                '${escapePersonalExpenseJs(
+                                    expense.description
+                                )}',
+                                ${Number(expense.amount) || 0}
+                            )">
+
+                            🗑️ Delete
+
+                        </button>
+
+                    </div>
+
+                </div>
+            `;
+
+        }
+    );
+
+    list.innerHTML =
+        html;
+
+}
+
+
+/**
+ * ==========================================================
+ * FORMAT CURRENCY
+ * ==========================================================
+ */
+function formatPersonalExpenseCurrency(
+    amount
+) {
+
+    const value =
+        Number(amount) || 0;
+
+
+    try {
+
+        return new Intl.NumberFormat(
+            "en-IN",
+            {
+                style: "currency",
+                currency: "INR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        ).format(value);
+
+    } catch (error) {
+
+        return (
+            "₹" +
+            value.toFixed(2)
+        );
+
+    }
+
+}
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * ESCAPE HTML
+ * ==========================================================
+ *
+ * Important because Description / Paid To / Remarks
+ * are user-entered text.
+ *
+ * Prevents entered HTML from being interpreted
+ * as page markup.
+ *
+ * ==========================================================
+ */
+function escapePersonalExpenseHtml(
+    value
+) {
+
+    return String(
+        value === null ||
+        value === undefined
+            ? ""
+            : value
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    /**
     * ==========================================
@@ -178,146 +2393,111 @@ if (orderDate) {
       selectedLink.classList.add("active");
    }
 
-/** 
- * ==========================================
- *  Customer
- * ==========================================
- */
+   /**
+    * ==========================================
+    *  Customer
+    * ==========================================
+    */
 
-  function searchCustomer() {
+   function searchCustomer() {
+      const mobileBox = document.getElementById("mobile");
 
-   const mobileBox = document.getElementById("mobile");
+      if (!mobileBox) {
+         console.error("Mobile textbox not found.");
+         return;
+      }
 
-   if (!mobileBox) {
-      console.error("Mobile textbox not found.");
-      return;
+      const mobile = mobileBox.value.trim();
+
+      if (mobile.length !== 10) {
+         return;
+      }
+
+      // Search customer in local cache
+      const customer = customerCache.find((c) => c.mobile === mobile);
+
+      if (customer) {
+         fillCustomerForm(customer);
+      } else {
+         fillCustomerForm(null);
+      }
    }
 
-   const mobile = mobileBox.value.trim();
+   /**
+    * ==========================================
+    * Fill Customer Details
+    * ==========================================
+    */
+   function fillCustomerForm(customer) {
+      if (!customer) {
+         return;
+      }
 
-   if (mobile.length !== 10) {
-      return;
+      const customerName = document.getElementById("customerName");
+
+      const houseAddress = document.getElementById("houseAddress");
+
+      const deliveryArea = document.getElementById("deliveryArea");
+
+      // ------------------------------------------
+      // Customer Name
+      // ------------------------------------------
+
+      if (customerName) {
+         customerName.value = customer.customerName || "";
+      }
+
+      // ------------------------------------------
+      // House / Flat Address
+      // ------------------------------------------
+
+      if (houseAddress) {
+         houseAddress.value = customer.houseAddress || customer.address || "";
+      }
+
+      // ------------------------------------------
+      // Delivery Area
+      // ------------------------------------------
+
+      if (deliveryArea) {
+         deliveryArea.value = customer.deliveryArea || "";
+      }
+
+      // ------------------------------------------
+      // IMPORTANT
+      // Recalculate Delivery Charge
+      // ------------------------------------------
+
+      updateDeliveryCharge();
    }
 
-   // Search customer in local cache
-   const customer = customerCache.find(c => c.mobile === mobile);
-
-   if (customer) {
-      fillCustomerForm(customer);
-   } else {
-      fillCustomerForm(null);
-   }
-
-}
-   
-   
-   
-/**
- * ==========================================
- * Fill Customer Details
- * ==========================================
- */
-function fillCustomerForm(customer) {
-
-    if (!customer) {
-        return;
-    }
-
-    const customerName =
-        document.getElementById("customerName");
-
-    const houseAddress =
-        document.getElementById("houseAddress");
-
-    const deliveryArea =
-        document.getElementById("deliveryArea");
-
-
-    // ------------------------------------------
-    // Customer Name
-    // ------------------------------------------
-
-    if (customerName) {
-
-        customerName.value =
-            customer.customerName || "";
-
-    }
-
-
-    // ------------------------------------------
-    // House / Flat Address
-    // ------------------------------------------
-
-    if (houseAddress) {
-
-        houseAddress.value =
-            customer.houseAddress ||
-            customer.address ||
-            "";
-
-    }
-
-
-    // ------------------------------------------
-    // Delivery Area
-    // ------------------------------------------
-
-    if (deliveryArea) {
-
-        deliveryArea.value =
-            customer.deliveryArea || "";
-
-    }
-
-
-    // ------------------------------------------
-    // IMPORTANT
-    // Recalculate Delivery Charge
-    // ------------------------------------------
-
-    updateDeliveryCharge();
-
-}
-
-
-/**==========================================
+   /**==========================================
    Menu Cache
 ========================================== */
 
-function loadMenuCache() {
+   function loadMenuCache() {
+      google.script.run
 
-   google.script.run
+         .withSuccessHandler(function (menu) {
+            menuCache = (menu || []).map(function (item) {
+               return {
+                  ...item,
 
-      .withSuccessHandler(function (menu) {
+                  searchName: String(item.itemName || "")
+                     .trim()
+                     .toLowerCase(),
+               };
+            });
 
-         menuCache = (menu || []).map(function (item) {
+            console.log("Menu Loaded :", menuCache.length);
+         })
 
-            return {
-               ...item,
+         .withFailureHandler(function (error) {
+            console.error("Unable to load menu:", error);
+         })
 
-               searchName: String(item.itemName || "")
-                  .trim()
-                  .toLowerCase()
-            };
-
-         });
-
-         console.log("Menu Loaded :", menuCache.length);
-
-      })
-
-      .withFailureHandler(function (error) {
-
-         console.error("Unable to load menu:", error);
-
-      })
-
-      .loadMenu();
-
-}
-
-
+         .loadMenu();
+   }
 
    /**
     * Load Application Settings
@@ -335,9 +2515,9 @@ function loadMenuCache() {
             console.log("Settings Loaded");
             const orderDate = document.getElementById("orderDate");
 
-  if (orderDate && !orderDate.value) {
-    orderDate.value = getToday();
-}
+            if (orderDate && !orderDate.value) {
+               orderDate.value = getToday();
+            }
 
             // Enable Save Button
             const saveButton = document.getElementById("btnSaveOrder");
@@ -350,128 +2530,102 @@ function loadMenuCache() {
          .withFailureHandler(function (error) {
             console.error(error);
 
-
-
-
             alert("Unable to load application settings.");
          })
 
          .loadAppSettings();
    }
 
+   /**
+    * ==========================================
+    * Debounced Menu Search
+    * ==========================================
+    */
+   function debounceMenuSearch() {
+      clearTimeout(menuSearchTimer);
 
-/**
- * ==========================================
- * Debounced Menu Search
- * ==========================================
- */
-function debounceMenuSearch() {
-
-   clearTimeout(menuSearchTimer);
-
-   menuSearchTimer = setTimeout(function () {
-      searchMenuItems();
-   }, 120);
-
-}
-
-
-
-
-/**
- * ==========================================
- * Menu Search - Optimized Local Search
- * ==========================================
- */
-function searchMenuItems() {
-
-   const searchBox = document.getElementById("menuSearch");
-   const suggestionBox = document.getElementById("menuSuggestions");
-
-   if (!searchBox || !suggestionBox) {
-      return;
+      menuSearchTimer = setTimeout(function () {
+         searchMenuItems();
+      }, 120);
    }
 
-   const keyword = searchBox.value
-      .trim()
-      .toLowerCase();
+   /**
+    * ==========================================
+    * Menu Search - Optimized Local Search
+    * ==========================================
+    */
+   function searchMenuItems() {
+      const searchBox = document.getElementById("menuSearch");
+      const suggestionBox = document.getElementById("menuSuggestions");
 
-   if (keyword.length < 2) {
-
-      suggestionBox.innerHTML = "";
-      suggestionBox.style.display = "none";
-
-      return;
-   }
-
-   const results = [];
-
-   // Search locally and stop after 8 matches
-   for (let i = 0; i < menuCache.length; i++) {
-
-      const item = menuCache[i];
-
-      if (!item) {
-         continue;
+      if (!searchBox || !suggestionBox) {
+         return;
       }
 
-      // Use precomputed searchName when available.
-      // Fallback protects against old/unprepared cache objects.
-      const searchName =
-         item.searchName ||
-         String(item.itemName || "").trim().toLowerCase();
+      const keyword = searchBox.value.trim().toLowerCase();
 
-      if (searchName.includes(keyword)) {
+      if (keyword.length < 2) {
+         suggestionBox.innerHTML = "";
+         suggestionBox.style.display = "none";
 
-         results.push(item);
+         return;
+      }
 
-         // Stop scanning immediately
-         if (results.length >= 8) {
-            break;
+      const results = [];
+
+      // Search locally and stop after 8 matches
+      for (let i = 0; i < menuCache.length; i++) {
+         const item = menuCache[i];
+
+         if (!item) {
+            continue;
          }
 
+         // Use precomputed searchName when available.
+         // Fallback protects against old/unprepared cache objects.
+         const searchName =
+            item.searchName ||
+            String(item.itemName || "")
+               .trim()
+               .toLowerCase();
+
+         if (searchName.includes(keyword)) {
+            results.push(item);
+
+            // Stop scanning immediately
+            if (results.length >= 8) {
+               break;
+            }
+         }
       }
 
+      showMenuSuggestions(results);
    }
 
-   showMenuSuggestions(results);
-
-}
-
-
-
-
-
-
-
-/** ==========================================
+   /** ==========================================
    Menu Suggestions
 ========================================== */
-function showMenuSuggestions(items) {
+   function showMenuSuggestions(items) {
+      const list = document.getElementById("menuSuggestions");
 
-    const list = document.getElementById("menuSuggestions");
+      if (!list) return;
 
-    if (!list) return;
+      list.style.display = "block";
 
-    list.style.display = "block";
-
-    if (items.length === 0) {
-
-        list.innerHTML = `
+      if (items.length === 0) {
+         list.innerHTML = `
             <div class="list-group-item text-muted">
                 No menu item found
             </div>
         `;
 
-        return;
+         return;
+      }
 
-    }
+      let html = "";
 
-    let html = "";
-
-    items.forEach(function(item){
-
-        html += `
+      items.forEach(function (item) {
+         html += `
             <button
                 type="button"
                 class="list-group-item list-group-item-action"
@@ -487,17 +2641,13 @@ function showMenuSuggestions(items) {
 
             </button>
         `;
+      });
 
-    });
+      // Single DOM update
+      list.innerHTML = html;
+   }
 
-    // Single DOM update
-    list.innerHTML = html;
-
-}
-
-
-
-/** ==========================================
+   /** ==========================================
    Shopping Cart
 ========================================== */
 
@@ -544,8 +2694,6 @@ function showMenuSuggestions(items) {
 
       renderCart();
    }
-
-
 
    /**
     * Render Shopping Cart
@@ -725,413 +2873,261 @@ function showMenuSuggestions(items) {
       renderCart();
    }
 
+   /**
+    * ==========================================
+    * Calculate Order Totals
+    * ==========================================
+    */
+   function calculateTotals() {
+      // ------------------------------------------
+      // Menu Subtotal
+      // ------------------------------------------
 
+      const subTotal = cart.reduce(function (total, item) {
+         const price = Number(item.price) || 0;
+         const qty = Number(item.qty) || 0;
 
+         return total + price * qty;
+      }, 0);
 
+      // ------------------------------------------
+      // Custom Add-on Total
+      // ------------------------------------------
 
+      const addonTotal = getCustomAddonTotal();
 
+      // ------------------------------------------
+      // Discount
+      // ------------------------------------------
 
+      const discountBox = document.getElementById("discount");
 
+      let discount = discountBox ? parseFloat(discountBox.value) : 0;
 
+      if (!Number.isFinite(discount) || discount < 0) {
+         discount = 0;
+      }
 
+      /*
+       * Maximum discount is limited to:
+       *
+       * Menu Subtotal + Add-on Total
+       *
+       * Delivery charge is intentionally excluded
+       * from the discountable amount.
+       */
 
-/**
- * ==========================================
- * Calculate Order Totals
- * ==========================================
- */
-function calculateTotals() {
+      const discountableAmount = subTotal + addonTotal;
 
-    // ------------------------------------------
-    // Menu Subtotal
-    // ------------------------------------------
+      if (discount > discountableAmount) {
+         discount = discountableAmount;
 
-    const subTotal = cart.reduce(function(total, item) {
+         if (discountBox) {
+            discountBox.value = discount.toFixed(2);
+         }
+      }
 
-        const price = Number(item.price) || 0;
-        const qty = Number(item.qty) || 0;
+      // ------------------------------------------
+      // Safe Delivery Charge
+      // ------------------------------------------
 
-        return total + (price * qty);
+      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge))
+         ? Number(deliveryCharge)
+         : 0;
 
-    }, 0);
+      // ------------------------------------------
+      // Grand Total
+      // ------------------------------------------
 
+      const grandTotal = subTotal + addonTotal - discount + safeDeliveryCharge;
 
-    // ------------------------------------------
-    // Custom Add-on Total
-    // ------------------------------------------
+      // ------------------------------------------
+      // UI Elements
+      // ------------------------------------------
 
-    const addonTotal = getCustomAddonTotal();
+      const subTotalEl = document.getElementById("subTotal");
 
+      const addonTotalEl = document.getElementById("addonTotalDisplay");
 
-    // ------------------------------------------
-    // Discount
-    // ------------------------------------------
+      const deliveryEl = document.getElementById("deliveryCharge");
 
-    const discountBox =
-        document.getElementById("discount");
+      const grandEl = document.getElementById("grandTotal");
 
-    let discount = discountBox
-        ? parseFloat(discountBox.value)
-        : 0;
+      // ------------------------------------------
+      // Update UI
+      // ------------------------------------------
 
+      if (subTotalEl) {
+         subTotalEl.innerText = "₹" + subTotal.toFixed(2);
+      }
 
-    if (!Number.isFinite(discount) || discount < 0) {
+      if (addonTotalEl) {
+         addonTotalEl.textContent = "₹" + addonTotal.toFixed(2);
+      }
 
-        discount = 0;
+      if (deliveryEl) {
+         deliveryEl.innerText = "₹" + safeDeliveryCharge.toFixed(2);
+      }
 
-    }
-
-
-    /*
-     * Maximum discount is limited to:
-     *
-     * Menu Subtotal + Add-on Total
-     *
-     * Delivery charge is intentionally excluded
-     * from the discountable amount.
-     */
-
-    const discountableAmount =
-        subTotal + addonTotal;
-
-
-    if (discount > discountableAmount) {
-
-        discount = discountableAmount;
-
-        if (discountBox) {
-
-            discountBox.value =
-                discount.toFixed(2);
-
-        }
-
-    }
-
-
-    // ------------------------------------------
-    // Safe Delivery Charge
-    // ------------------------------------------
-
-    const safeDeliveryCharge =
-        Number.isFinite(Number(deliveryCharge))
-            ? Number(deliveryCharge)
-            : 0;
-
-
-    // ------------------------------------------
-    // Grand Total
-    // ------------------------------------------
-
-    const grandTotal =
-        subTotal
-        + addonTotal
-        - discount
-        + safeDeliveryCharge;
-
-
-    // ------------------------------------------
-    // UI Elements
-    // ------------------------------------------
-
-    const subTotalEl =
-        document.getElementById("subTotal");
-
-    const addonTotalEl =
-        document.getElementById("addonTotalDisplay");
-
-    const deliveryEl =
-        document.getElementById("deliveryCharge");
-
-    const grandEl =
-        document.getElementById("grandTotal");
-
-
-    // ------------------------------------------
-    // Update UI
-    // ------------------------------------------
-
-    if (subTotalEl) {
-
-        subTotalEl.innerText =
-            "₹" + subTotal.toFixed(2);
-
-    }
-
-
-    if (addonTotalEl) {
-
-        addonTotalEl.textContent =
-            "₹" + addonTotal.toFixed(2);
-
-    }
-
-
-    if (deliveryEl) {
-
-        deliveryEl.innerText =
-            "₹" + safeDeliveryCharge.toFixed(2);
-
-    }
-
-
-    if (grandEl) {
-
-        grandEl.innerText =
-            "₹" + grandTotal.toFixed(2);
-
-    }
-
-}
-
-
-
-
-
-
-
-
-
+      if (grandEl) {
+         grandEl.innerText = "₹" + grandTotal.toFixed(2);
+      }
+   }
 
    /**
- * ==========================================
- * Collect Complete Order Data
- * ==========================================
- */
-function collectOrderData() {
+    * ==========================================
+    * Collect Complete Order Data
+    * ==========================================
+    */
+   function collectOrderData() {
+      const getValue = function (id) {
+         const element = document.getElementById(id);
 
-    const getValue = function(id) {
-
-        const element =
-            document.getElementById(id);
-
-        if (!element) {
-
+         if (!element) {
             return "";
+         }
 
-        }
+         return element.value;
+      };
 
-        return element.value;
+      // ------------------------------------------
+      // Customer
+      // ------------------------------------------
 
-    };
+      const customer = {
+         customerName: getValue("customerName").trim(),
 
+         mobile: getValue("mobile").trim(),
 
-    // ------------------------------------------
-    // Customer
-    // ------------------------------------------
+         deliveryArea: getValue("deliveryArea"),
 
-    const customer = {
+         houseAddress: getValue("houseAddress").trim(),
 
-        customerName:
-            getValue("customerName").trim(),
+         deliverySlot: getValue("deliverySlot"),
+      };
 
-        mobile:
-            getValue("mobile").trim(),
+      // ------------------------------------------
+      // Order
+      // ------------------------------------------
 
-        deliveryArea:
-            getValue("deliveryArea"),
+      const order = {
+         orderType: getValue("orderType"),
 
-        houseAddress:
-            getValue("houseAddress").trim(),
+         specialInstructions: getValue("specialInstructions").trim(),
+      };
 
-        deliverySlot:
-            getValue("deliverySlot")
+      // ------------------------------------------
+      // Payment
+      // ------------------------------------------
 
-    };
+      const payment = {
+         paymentMode: getValue("paymentMode"),
 
+         paymentStatus: getValue("paymentStatus") || "Pending",
+      };
 
-    // ------------------------------------------
-    // Order
-    // ------------------------------------------
+      // ------------------------------------------
+      // Menu Subtotal
+      // ------------------------------------------
 
-    const order = {
+      const subTotal = cart.reduce(function (sum, item) {
+         const price = Number(item.price) || 0;
 
-        orderType:
-            getValue("orderType"),
+         const qty = Number(item.qty) || 0;
 
-        specialInstructions:
-            getValue("specialInstructions").trim()
+         return sum + price * qty;
+      }, 0);
 
-    };
+      // ------------------------------------------
+      // Add-on Total
+      // ------------------------------------------
 
+      const addonTotal = getCustomAddonTotal();
 
-    // ------------------------------------------
-    // Payment
-    // ------------------------------------------
+      // ------------------------------------------
+      // Discount
+      // ------------------------------------------
 
-    const payment = {
+      let discount = parseFloat(getValue("discount"));
 
-        paymentMode:
-            getValue("paymentMode"),
+      if (!Number.isFinite(discount) || discount < 0) {
+         discount = 0;
+      }
 
-        paymentStatus:
-            getValue("paymentStatus") || "Pending"
+      const discountableAmount = subTotal + addonTotal;
 
-    };
+      if (discount > discountableAmount) {
+         discount = discountableAmount;
+      }
 
+      // ------------------------------------------
+      // Delivery Charge
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Menu Subtotal
-    // ------------------------------------------
+      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge))
+         ? Number(deliveryCharge)
+         : 0;
 
-    const subTotal = cart.reduce(
-        function(sum, item) {
+      // ------------------------------------------
+      // Grand Total
+      // ------------------------------------------
 
-            const price =
-                Number(item.price) || 0;
+      const grandTotal = subTotal + addonTotal - discount + safeDeliveryCharge;
 
-            const qty =
-                Number(item.qty) || 0;
+      // ------------------------------------------
+      // Totals
+      // ------------------------------------------
 
-            return sum + (price * qty);
+      const totals = {
+         subTotal: subTotal,
 
-        },
-        0
-    );
+         addonTotal: addonTotal,
 
+         discount: discount,
 
-    // ------------------------------------------
-    // Add-on Total
-    // ------------------------------------------
+         deliveryCharge: safeDeliveryCharge,
 
-    const addonTotal =
-        getCustomAddonTotal();
+         grandTotal: grandTotal,
+      };
 
+      // ------------------------------------------
+      // Meta
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Discount
-    // ------------------------------------------
+      const meta = {
+         orderDate: getValue("orderDate"),
 
-    let discount =
-        parseFloat(getValue("discount"));
+         source: "WEB",
+      };
 
+      // ------------------------------------------
+      // Final Payload
+      // ------------------------------------------
 
-    if (
-        !Number.isFinite(discount) ||
-        discount < 0
-    ) {
+      return {
+         customer: customer,
 
-        discount = 0;
+         order: order,
 
-    }
+         payment: payment,
 
+         totals: totals,
 
-    const discountableAmount =
-        subTotal + addonTotal;
-
-
-    if (discount > discountableAmount) {
-
-        discount =
-            discountableAmount;
-
-    }
-
-
-    // ------------------------------------------
-    // Delivery Charge
-    // ------------------------------------------
-
-    const safeDeliveryCharge =
-        Number.isFinite(Number(deliveryCharge))
-            ? Number(deliveryCharge)
-            : 0;
-
-
-    // ------------------------------------------
-    // Grand Total
-    // ------------------------------------------
-
-    const grandTotal =
-        subTotal
-        + addonTotal
-        - discount
-        + safeDeliveryCharge;
-
-
-    // ------------------------------------------
-    // Totals
-    // ------------------------------------------
-
-    const totals = {
-
-        subTotal: subTotal,
-
-        addonTotal: addonTotal,
-
-        discount: discount,
-
-        deliveryCharge:
-            safeDeliveryCharge,
-
-        grandTotal:
-            grandTotal
-
-    };
-
-
-    // ------------------------------------------
-    // Meta
-    // ------------------------------------------
-
-    const meta = {
-
-        orderDate:
-            getValue("orderDate"),
-
-        source: "WEB"
-
-    };
-
-
-    // ------------------------------------------
-    // Final Payload
-    // ------------------------------------------
-
-    return {
-
-        customer: customer,
-
-        order: order,
-
-        payment: payment,
-
-        totals: totals,
-
-        cart: cart.map(function(item) {
-
+         cart: cart.map(function (item) {
             return { ...item };
+         }),
 
-        }),
+         customAddons: customAddons.map(function (addon) {
+            return {
+               name: String(addon.name || "").trim(),
 
-        customAddons:
-            customAddons.map(function(addon) {
+               price: Number(addon.price) || 0,
+            };
+         }),
 
-                return {
-
-                    name:
-                        String(addon.name || "").trim(),
-
-                    price:
-                        Number(addon.price) || 0
-
-                };
-
-            }),
-
-        meta: meta
-
-    };
-
-}
-
-
-
-
-
-
-
-
+         meta: meta,
+      };
+   }
 
    /**
     * Enable / Disable Discount Field
@@ -1160,7 +3156,6 @@ function collectOrderData() {
     * Populate POS Dropdowns
     */
    function populatePOSDropdowns() {
-
       if (appSettings.deliveryAreas) {
          fillSelect(
             "deliveryArea",
@@ -1209,37 +3204,33 @@ function collectOrderData() {
    /**
     * Fill Select Box
     */
- function fillSelect(id, values) {
+   function fillSelect(id, values) {
+      const select = document.getElementById(id);
 
-   const select = document.getElementById(id);
+      if (!select) return;
 
-   if (!select) return;
+      if (!Array.isArray(values)) {
+         console.warn(id + " has no values.");
+         return;
+      }
 
-   if (!Array.isArray(values)) {
-      console.warn(id + " has no values.");
-      return;
+      // Skip rebuilding if already populated
+      if (select.options.length > 1) {
+         return;
+      }
+
+      let html = "";
+
+      if (id === "deliveryArea") {
+         html += `<option value="" selected>Select Delivery Area</option>`;
+      }
+
+      values.forEach(function (value) {
+         html += `<option value="${value}">${value}</option>`;
+      });
+
+      select.innerHTML = html;
    }
-
-   // Skip rebuilding if already populated
-   if (select.options.length > 1) {
-      return;
-   }
-
-   let html = "";
-
-   if (id === "deliveryArea") {
-      html += `<option value="" selected>Select Delivery Area</option>`;
-   }
-
-   values.forEach(function(value){
-
-      html += `<option value="${value}">${value}</option>`;
-
-   });
-
-   select.innerHTML = html;
-
-}
 
    /**
     * Add Quick Note
@@ -1308,194 +3299,150 @@ function collectOrderData() {
       });
    }
 
+   /**
+    * ==========================================
+    * Save Order
+    * ==========================================
+    */
+   function saveOrder() {
+      // ------------------------------------------
+      // Prevent Double Click / Duplicate Save
+      // ------------------------------------------
 
-  /**
- * ==========================================
- * Save Order
- * ==========================================
- */
-function saveOrder() {
+      if (isSavingOrder) {
+         return;
+      }
 
-    // ------------------------------------------
-    // Prevent Double Click / Duplicate Save
-    // ------------------------------------------
+      // ------------------------------------------
+      // Collect Order Data
+      // ------------------------------------------
 
-    if (isSavingOrder) {
-        return;
-    }
+      const orderData = collectOrderData();
 
+      // ------------------------------------------
+      // Lock Save
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Collect Order Data
-    // ------------------------------------------
+      isSavingOrder = true;
 
-    const orderData = collectOrderData();
+      const saveButton = document.getElementById("btnSaveOrder");
 
+      if (saveButton) {
+         saveButton.disabled = true;
 
-    // ------------------------------------------
-    // Lock Save
-    // ------------------------------------------
+         saveButton.textContent = "Saving...";
+      }
 
-    isSavingOrder = true;
+      // ------------------------------------------
+      // Send Order To Server
+      // ------------------------------------------
 
-    const saveButton =
-        document.getElementById("btnSaveOrder");
+      google.script.run
 
-    if (saveButton) {
-
-        saveButton.disabled = true;
-
-        saveButton.textContent = "Saving...";
-
-    }
-
-
-    // ------------------------------------------
-    // Send Order To Server
-    // ------------------------------------------
-
-    google.script.run
-
-        .withSuccessHandler(function(response) {
-
+         .withSuccessHandler(function (response) {
             // ----------------------------------
             // Unlock Save
             // ----------------------------------
 
             isSavingOrder = false;
-
 
             if (response && response.success) {
+               // ----------------------------------
+               // Clear POS Immediately
+               // ----------------------------------
 
-                // ----------------------------------
-                // Clear POS Immediately
-                // ----------------------------------
+               clearPOSForm();
 
-                clearPOSForm();
+               // ----------------------------------
+               // Restore Save Button
+               // ----------------------------------
 
+               if (saveButton) {
+                  saveButton.disabled = false;
 
-                // ----------------------------------
-                // Restore Save Button
-                // ----------------------------------
+                  saveButton.textContent = "Save Order";
+               }
 
-                if (saveButton) {
+               // ----------------------------------
+               // Success Message
+               // ----------------------------------
 
-                    saveButton.disabled = false;
-
-                    saveButton.textContent = "Save Order";
-
-                }
-
-
-                // ----------------------------------
-                // Success Message
-                // ----------------------------------
-
-                alert(
-                    "Order Saved Successfully\n\n" +
-                    "Order ID : " +
-                    response.orderId
-                );
-
+               alert(
+                  "Order Saved Successfully\n\n" +
+                     "Order ID : " +
+                     response.orderId,
+               );
             } else {
+               // ----------------------------------
+               // Restore Save Button
+               // ----------------------------------
 
-                // ----------------------------------
-                // Restore Save Button
-                // ----------------------------------
+               if (saveButton) {
+                  saveButton.disabled = false;
 
-                if (saveButton) {
+                  saveButton.textContent = "Save Order";
+               }
 
-                    saveButton.disabled = false;
+               // ----------------------------------
+               // Server Validation / Save Error
+               // ----------------------------------
 
-                    saveButton.textContent = "Save Order";
-
-                }
-
-
-                // ----------------------------------
-                // Server Validation / Save Error
-                // ----------------------------------
-
-                alert(
-                    response && response.message
-                        ? response.message
-                        : "Unable to save order."
-                );
-
+               alert(
+                  response && response.message
+                     ? response.message
+                     : "Unable to save order.",
+               );
             }
+         })
 
-        })
-
-
-        .withFailureHandler(function(error) {
-
+         .withFailureHandler(function (error) {
             // ----------------------------------
             // Unlock Save
             // ----------------------------------
 
             isSavingOrder = false;
-
 
             // ----------------------------------
             // Restore Save Button
             // ----------------------------------
 
             if (saveButton) {
+               saveButton.disabled = false;
 
-                saveButton.disabled = false;
-
-                saveButton.textContent = "Save Order";
-
+               saveButton.textContent = "Save Order";
             }
-
 
             // ----------------------------------
             // Unexpected Server Error
             // ----------------------------------
 
-            console.error(
-                "Save Order Error:",
-                error
-            );
-
+            console.error("Save Order Error:", error);
 
             alert(
-                error && error.message
-                    ? error.message
-                    : "Unable to save order."
+               error && error.message ? error.message : "Unable to save order.",
             );
+         })
 
-        })
+         .saveOrderFromWeb(orderData);
+   }
 
-
-        .saveOrderFromWeb(orderData);
-
-}
-
-
-/* ==========================================
+   /* ==========================================
    Utility
 ========================================== */
 
-function clearMenuSuggestions() {
+   function clearMenuSuggestions() {
+      const el = document.getElementById("menuSuggestions");
 
-    const el = document.getElementById("menuSuggestions");
+      if (!el) return;
 
-    if (!el) return;
+      el.innerHTML = "";
 
-    el.innerHTML = "";
-
-    el.style.display = "none";
-
-}
+      el.style.display = "none";
+   }
 </script>
 
-
-
-
-
 <script>
-  /**
+   /**
     * ==========================================
     * PURCHASE MODULE
     * ==========================================
@@ -1515,39 +3462,33 @@ function clearMenuSuggestions() {
     * initializePurchase
     * ==========================================
     */
-  function initializePurchase() {
+   function initializePurchase() {
+      const purchaseDate = document.getElementById("purchaseDate");
 
-    const purchaseDate = document.getElementById("purchaseDate");
+      if (purchaseDate && !purchaseDate.value) {
+         const today = new Date();
 
-    if (purchaseDate && !purchaseDate.value) {
+         const year = today.getFullYear();
 
-        const today = new Date();
+         const month = String(today.getMonth() + 1).padStart(2, "0");
 
-        const year = today.getFullYear();
+         const day = String(today.getDate()).padStart(2, "0");
 
-        const month = String(today.getMonth() + 1).padStart(2, "0");
+         purchaseDate.value = `${year}-${month}-${day}`;
+      }
 
-        const day = String(today.getDate()).padStart(2, "0");
+      loadPurchaseSettings();
 
-        purchaseDate.value = `${year}-${month}-${day}`;
+      registerPurchaseEvents();
 
-    }
+      updatePurchaseSummary();
 
-    loadPurchaseSettings();
-
-    registerPurchaseEvents();
-
-    updatePurchaseSummary();
-
-    google.script.run
-        .withSuccessHandler(function (items) {
-
+      google.script.run
+         .withSuccessHandler(function (items) {
             purchaseItemsCache = items;
-
-        })
-        .getPurchaseItems();
-
-}
+         })
+         .getPurchaseItems();
+   }
 
    /**
     * ==========================================
@@ -1614,83 +3555,75 @@ function clearMenuSuggestions() {
     * ==========================================
     */
    function fillPurchaseSelect(id, values) {
+      const select = document.getElementById(id);
 
-    const select = document.getElementById(id);
+      if (!select) return;
 
-    if (!select) return;
+      let defaultValue = "";
 
-    let defaultValue = "";
+      if (id === "unit") {
+         defaultValue = "Gram";
+      } else if (id === "paymentType") {
+         defaultValue = "PhonePe";
+      } else if (id === "supplier") {
+         defaultValue = "Local Market";
+      }
 
-    if (id === "unit") {
-        defaultValue = "Gram";
-    } else if (id === "paymentType") {
-        defaultValue = "PhonePe";
-    } else if (id === "supplier") {
-        defaultValue = "Local Market";
-    }
+      let html = "";
 
-    let html = "";
+      values.forEach(function (value) {
+         const selected = value === defaultValue ? "selected" : "";
 
-    values.forEach(function (value) {
-
-        const selected = value === defaultValue ? "selected" : "";
-
-        html += `
+         html += `
             <option value="${value}" ${selected}>
                 ${value}
             </option>
         `;
+      });
 
-    });
-
-    select.innerHTML = html;
-
-}
+      select.innerHTML = html;
+   }
 
    /**
     * ==========================================
     * Search Purchase Items
     * ==========================================
     */
-function searchPurchaseItems() {
+   function searchPurchaseItems() {
+      const keyword = document
+         .getElementById("itemSearch")
+         .value.trim()
+         .toLowerCase();
 
-    const keyword = document
-        .getElementById("itemSearch")
-        .value
-        .trim()
-        .toLowerCase();
+      if (keyword.length === 0) {
+         clearPurchaseSuggestions();
 
-    if (keyword.length === 0) {
+         return;
+      }
 
-        clearPurchaseSuggestions();
+      const items = purchaseItemsCache
+         .filter((item) => item.searchName.includes(keyword))
+         .slice(0, 15);
 
-        return;
-
-    }
-
-const items = purchaseItemsCache
-    .filter(item => item.searchName.includes(keyword))
-    .slice(0, 15);
-
-    showPurchaseSuggestions(items);
-
-}
+      showPurchaseSuggestions(items);
+   }
 
    /**
     * ==========================================
     * Show Purchase Suggestions
     * ==========================================
     */
-function showPurchaseSuggestions(items) {
+   function showPurchaseSuggestions(items) {
+      const keyword = document.getElementById("itemSearch").value.trim();
 
-   const keyword = document.getElementById("itemSearch").value.trim();
+      const suggestionBox = document.getElementById("itemSuggestions");
 
-   const suggestionBox = document.getElementById("itemSuggestions");
+      if (!suggestionBox) return;
 
-   if (!suggestionBox) return;
-
-   // Build suggestions in memory
-   let html = items.map(item => `
+      // Build suggestions in memory
+      let html = items
+         .map(
+            (item) => `
       <button
          type="button"
          class="list-group-item list-group-item-action"
@@ -1699,17 +3632,18 @@ function showPurchaseSuggestions(items) {
          ${item.itemName}
 
       </button>
-   `).join("");
+   `,
+         )
+         .join("");
 
-   // Check if exact item already exists (Case Insensitive)
-   const exactMatch = items.some(item =>
-      item.itemName.toLowerCase() === keyword.toLowerCase()
-   );
+      // Check if exact item already exists (Case Insensitive)
+      const exactMatch = items.some(
+         (item) => item.itemName.toLowerCase() === keyword.toLowerCase(),
+      );
 
-   // Show Add New Item option
-   if (keyword !== "" && !exactMatch) {
-
-      html += `
+      // Show Add New Item option
+      if (keyword !== "" && !exactMatch) {
+         html += `
          <button
             type="button"
             class="list-group-item list-group-item-action text-success fw-bold border-top"
@@ -1719,13 +3653,11 @@ function showPurchaseSuggestions(items) {
 
          </button>
       `;
+      }
 
+      // Single DOM update
+      suggestionBox.innerHTML = html;
    }
-
-   // Single DOM update
-   suggestionBox.innerHTML = html;
-
-}
 
    /**
     * ==========================================
@@ -1745,32 +3677,28 @@ function showPurchaseSuggestions(items) {
     * Add New Purchase Item
     * ==========================================
     */
-function addNewPurchaseItem() {
+   function addNewPurchaseItem() {
+      const itemName = document.getElementById("itemSearch").value.trim();
 
-    const itemName = document.getElementById("itemSearch").value.trim();
+      if (!itemName) return;
 
-    if (!itemName) return;
+      google.script.run
 
-    google.script.run
-
-        .withSuccessHandler(function (response) {
-
+         .withSuccessHandler(function (response) {
             // If item already exists or newly created,
             // make sure it exists in local cache only once.
-            const exists = purchaseItemsCache.some(item =>
-                item.itemName.toLowerCase() === response.itemName.toLowerCase()
+            const exists = purchaseItemsCache.some(
+               (item) =>
+                  item.itemName.toLowerCase() ===
+                  response.itemName.toLowerCase(),
             );
 
             if (!exists) {
+               purchaseItemsCache.push({
+                  itemName: response.itemName,
 
-                purchaseItemsCache.push({
-
-                    itemName: response.itemName,
-
-                    searchName: response.itemName.toLowerCase()
-
-                });
-
+                  searchName: response.itemName.toLowerCase(),
+               });
             }
 
             // Select the item
@@ -1779,18 +3707,14 @@ function addNewPurchaseItem() {
             clearPurchaseSuggestions();
 
             selectPurchaseItem(response.itemName);
+         })
 
-        })
-
-        .withFailureHandler(function (error) {
-
+         .withFailureHandler(function (error) {
             alert(error.message || error);
+         })
 
-        })
-
-        .addPurchaseItem(itemName);
-
-}
+         .addPurchaseItem(itemName);
+   }
 
    /**
     * ==========================================
@@ -1835,76 +3759,60 @@ function addNewPurchaseItem() {
     * ==========================================
     */
    function savePurchase() {
+      if (isSavingPurchase) {
+         return;
+      }
 
-   if (isSavingPurchase) {
-      return;
+      isSavingPurchase = true;
+
+      const purchaseData = collectPurchaseData();
+
+      const saveButton = document.getElementById("btnSavePurchase");
+
+      if (saveButton) {
+         saveButton.disabled = true;
+
+         saveButton.innerHTML = "Saving...";
+      }
+
+      google.script.run
+
+         .withSuccessHandler(function (response) {
+            isSavingPurchase = false;
+
+            if (saveButton) {
+               saveButton.disabled = false;
+
+               saveButton.innerHTML = "💾 Save Purchase";
+            }
+
+            if (!response.success) {
+               alert(response.message);
+
+               return;
+            }
+
+            alert(
+               response.message + "\n\nPurchase ID : " + response.purchaseId,
+            );
+
+            clearPurchaseForm();
+         })
+
+         .withFailureHandler(function (error) {
+            isSavingPurchase = false;
+
+            if (saveButton) {
+               saveButton.disabled = false;
+
+               saveButton.innerHTML = "💾 Save Purchase";
+            }
+
+            alert(error.message || error);
+         })
+
+         .savePurchaseFromWeb(purchaseData);
    }
-
-   isSavingPurchase = true;
-
-   const purchaseData = collectPurchaseData();
-
-   const saveButton = document.getElementById("btnSavePurchase");
-
-   if (saveButton) {
-
-      saveButton.disabled = true;
-
-      saveButton.innerHTML = "Saving...";
-
-   }
-
-   google.script.run
-
-      .withSuccessHandler(function (response) {
-
-         isSavingPurchase = false;
-
-         if (saveButton) {
-
-            saveButton.disabled = false;
-
-            saveButton.innerHTML = "💾 Save Purchase";
-
-         }
-
-         if (!response.success) {
-
-            alert(response.message);
-
-            return;
-
-         }
-
-         alert(
-            response.message +
-            "\n\nPurchase ID : " +
-            response.purchaseId
-         );
-
-         clearPurchaseForm();
-
-      })
-
-      .withFailureHandler(function (error) {
-
-         isSavingPurchase = false;
-
-         if (saveButton) {
-
-            saveButton.disabled = false;
-
-            saveButton.innerHTML = "💾 Save Purchase";
-
-         }
-
-         alert(error.message || error);
-
-      })
-
-      .savePurchaseFromWeb(purchaseData);
-
-}
    /**
     * ==========================================
     * Update Purchase Summary
@@ -1946,18 +3854,15 @@ function addNewPurchaseItem() {
     */
    function clearPurchaseForm() {
       // Today's date
-const today = new Date();
+      const today = new Date();
 
-const year = today.getFullYear();
+      const year = today.getFullYear();
 
-const month = String(today.getMonth() + 1).padStart(2, "0");
+      const month = String(today.getMonth() + 1).padStart(2, "0");
 
-const day = String(today.getDate()).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
 
-document.getElementById("purchaseDate").value =
-    `${year}-${month}-${day}`;
-
-
+      document.getElementById("purchaseDate").value = `${year}-${month}-${day}`;
 
       // Clear form fields
       document.getElementById("itemSearch").value = "";
@@ -1982,212 +3887,139 @@ document.getElementById("purchaseDate").value =
    }
 
    /**
- * ==========================================
- * Clear POS Form
- * ==========================================
- */
-function clearPOSForm() {
+    * ==========================================
+    * Clear POS Form
+    * ==========================================
+    */
+   function clearPOSForm() {
+      console.log("Clearing POS Form...");
 
-    console.log("Clearing POS Form...");
+      function setValue(id, value) {
+         const el = document.getElementById(id);
 
-
-    function setValue(id, value) {
-
-        const el =
-            document.getElementById(id);
-
-        if (el) {
-
+         if (el) {
             el.value = value;
+         }
+      }
 
-        }
+      function resetSelect(id) {
+         const el = document.getElementById(id);
 
-    }
-
-
-    function resetSelect(id) {
-
-        const el =
-            document.getElementById(id);
-
-        if (el) {
-
+         if (el) {
             el.selectedIndex = 0;
+         }
+      }
 
-        }
+      // ------------------------------------------
+      // Customer
+      // ------------------------------------------
 
-    }
+      setValue("customerName", "");
 
+      setValue("mobile", "");
 
-    // ------------------------------------------
-    // Customer
-    // ------------------------------------------
+      setValue("houseAddress", "");
 
-    setValue(
-        "customerName",
-        ""
-    );
+      // ------------------------------------------
+      // Today's Date
+      // ------------------------------------------
 
-    setValue(
-        "mobile",
-        ""
-    );
+      setValue("orderDate", getToday());
 
-    setValue(
-        "houseAddress",
-        ""
-    );
+      // ------------------------------------------
+      // Dropdowns
+      // ------------------------------------------
 
+      resetSelect("deliveryArea");
 
-    // ------------------------------------------
-    // Today's Date
-    // ------------------------------------------
+      resetSelect("deliverySlot");
 
-    setValue(
-        "orderDate",
-        getToday()
-    );
+      resetSelect("orderType");
 
+      resetSelect("paymentMode");
 
-    // ------------------------------------------
-    // Dropdowns
-    // ------------------------------------------
+      resetSelect("paymentStatus");
 
-    resetSelect("deliveryArea");
+      // ------------------------------------------
+      // Menu Search
+      // ------------------------------------------
 
-    resetSelect("deliverySlot");
+      setValue("menuSearch", "");
 
-    resetSelect("orderType");
+      const suggestionBox = document.getElementById("menuSuggestions");
 
-    resetSelect("paymentMode");
+      if (suggestionBox) {
+         suggestionBox.innerHTML = "";
 
-    resetSelect("paymentStatus");
+         suggestionBox.style.display = "none";
+      }
 
+      // ------------------------------------------
+      // Special Instructions
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Menu Search
-    // ------------------------------------------
+      setValue("specialInstructions", "");
 
-    setValue(
-        "menuSearch",
-        ""
-    );
+      // ------------------------------------------
+      // Discount
+      // ------------------------------------------
 
+      setValue("discount", 0);
 
-    const suggestionBox =
-        document.getElementById(
-            "menuSuggestions"
-        );
+      // ------------------------------------------
+      // Reset Menu Cart
+      // ------------------------------------------
 
+      cart = [];
 
-    if (suggestionBox) {
+      // ------------------------------------------
+      // Reset Custom Add-ons
+      // ------------------------------------------
 
-        suggestionBox.innerHTML = "";
+      customAddons = [];
 
-        suggestionBox.style.display =
-            "none";
+      // Clear Add-on input fields
 
-    }
+      setValue("addonName", "");
 
+      setValue("addonPrice", "");
 
-    // ------------------------------------------
-    // Special Instructions
-    // ------------------------------------------
+      // ------------------------------------------
+      // Reset Delivery Charge
+      // ------------------------------------------
 
-    setValue(
-        "specialInstructions",
-        ""
-    );
+      deliveryCharge = 0;
 
+      // ------------------------------------------
+      // Refresh Add-on UI
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Discount
-    // ------------------------------------------
+      renderCustomAddons();
 
-    setValue(
-        "discount",
-        0
-    );
+      // ------------------------------------------
+      // Refresh Shopping Cart
+      // ------------------------------------------
 
+      renderCart();
 
-    // ------------------------------------------
-    // Reset Menu Cart
-    // ------------------------------------------
+      // ------------------------------------------
+      // Final Totals Refresh
+      // ------------------------------------------
 
-    cart = [];
+      calculateTotals();
 
+      // ------------------------------------------
+      // Focus Customer Name
+      // ------------------------------------------
 
-    // ------------------------------------------
-    // Reset Custom Add-ons
-    // ------------------------------------------
+      const customer = document.getElementById("customerName");
 
-    customAddons = [];
+      if (customer) {
+         customer.focus();
+      }
 
-
-    // Clear Add-on input fields
-
-    setValue(
-        "addonName",
-        ""
-    );
-
-    setValue(
-        "addonPrice",
-        ""
-    );
-
-
-    // ------------------------------------------
-    // Reset Delivery Charge
-    // ------------------------------------------
-
-    deliveryCharge = 0;
-
-
-    // ------------------------------------------
-    // Refresh Add-on UI
-    // ------------------------------------------
-
-    renderCustomAddons();
-
-
-    // ------------------------------------------
-    // Refresh Shopping Cart
-    // ------------------------------------------
-
-    renderCart();
-
-
-    // ------------------------------------------
-    // Final Totals Refresh
-    // ------------------------------------------
-
-    calculateTotals();
-
-
-    // ------------------------------------------
-    // Focus Customer Name
-    // ------------------------------------------
-
-    const customer =
-        document.getElementById(
-            "customerName"
-        );
-
-
-    if (customer) {
-
-        customer.focus();
-
-    }
-
-
-    console.log("POS Cleared");
-
-}
-
-
-
+      console.log("POS Cleared");
+   }
 
    /**
     * ==========================================
@@ -2200,13 +4032,11 @@ function clearPOSForm() {
     * Initialize Invoice Module
     * ==========================================
     */
- function initializeInvoice() {
+   function initializeInvoice() {
+      console.log("Invoice Module Loaded");
 
-   console.log("Invoice Module Loaded");
-
-   loadInvoiceCompanyLogo();
-
-}
+      loadInvoiceCompanyLogo();
+   }
 
    /**
     * ==========================================
@@ -2214,10 +4044,9 @@ function clearPOSForm() {
     * ==========================================
     */
    function searchInvoice() {
-
       // Load Smoky Swaad logo
       loadInvoiceCompanyLogo();
-      
+
       const orderId = document.getElementById("searchOrderId").value.trim();
 
       if (!orderId) {
@@ -2322,77 +4151,62 @@ function clearPOSForm() {
 
       document.getElementById("invoiceItemsBody").innerHTML = rows;
 
-// ===========================
-// Totals
-// ===========================
+      // ===========================
+      // Totals
+      // ===========================
 
-document.getElementById("invSubtotal").innerText =
-   "₹" + subtotal.toFixed(2);
+      document.getElementById("invSubtotal").innerText =
+         "₹" + subtotal.toFixed(2);
 
+      // ===========================
+      // Custom Add-ons
+      // ===========================
 
-// ===========================
-// Custom Add-ons
-// ===========================
+      const addonsRow = document.getElementById("invAddonsRow");
 
-const addonsRow =
-   document.getElementById("invAddonsRow");
+      const addonsText = document.getElementById("invAddons");
 
-const addonsText =
-   document.getElementById("invAddons");
+      const addonTotalElement = document.getElementById("invAddonTotal");
 
-const addonTotalElement =
-   document.getElementById("invAddonTotal");
+      const addons = String(order.addons || "").trim();
 
+      const addonTotal = Number(order.addonTotal || 0);
 
-const addons =
-   String(order.addons || "").trim();
+      if (addons && addonTotal > 0) {
+         if (addonsRow) {
+            addonsRow.style.display = "";
+         }
 
-const addonTotal =
-   Number(order.addonTotal || 0);
+         if (addonsText) {
+            addonsText.innerText = addons;
+         }
 
+         if (addonTotalElement) {
+            addonTotalElement.innerText = "₹" + addonTotal.toFixed(2);
+         }
+      } else {
+         if (addonsRow) {
+            addonsRow.style.display = "none";
+         }
 
-if (addons && addonTotal > 0) {
+         if (addonsText) {
+            addonsText.innerText = "";
+         }
 
-   if (addonsRow) {
-      addonsRow.style.display = "";
+         if (addonTotalElement) {
+            addonTotalElement.innerText = "₹0.00";
+         }
+      }
+
+      document.getElementById("invDeliveryCharge").innerText =
+         "₹" + Number(order.deliveryCharge || 0).toFixed(2);
+
+      document.getElementById("invDiscount").innerText =
+         "₹" + Number(order.discount || 0).toFixed(2);
+
+      document.getElementById("invGrandTotal").innerText =
+         "₹" + Number(order.grandTotal || 0).toFixed(2);
    }
-
-   if (addonsText) {
-      addonsText.innerText = addons;
-   }
-
-   if (addonTotalElement) {
-      addonTotalElement.innerText =
-         "₹" + addonTotal.toFixed(2);
-   }
-
-} else {
-
-   if (addonsRow) {
-      addonsRow.style.display = "none";
-   }
-
-   if (addonsText) {
-      addonsText.innerText = "";
-   }
-
-   if (addonTotalElement) {
-      addonTotalElement.innerText = "₹0.00";
-   }
-
-}
-
-
-document.getElementById("invDeliveryCharge").innerText =
-   "₹" + Number(order.deliveryCharge || 0).toFixed(2);
-
-document.getElementById("invDiscount").innerText =
-   "₹" + Number(order.discount || 0).toFixed(2);
-
-document.getElementById("invGrandTotal").innerText =
-   "₹" + Number(order.grandTotal || 0).toFixed(2);
-
-}
 
    /**
     * ==========================================
@@ -2453,747 +4267,420 @@ document.getElementById("invGrandTotal").innerText =
       printWindow.close();
    }
 
- /**
- * ==========================================
- * Download Invoice PDF
- * Dynamic Multi-Page Safe Version
- * ==========================================
- */
-async function downloadInvoicePdf() {
+   /**
+    * ==========================================
+    * Download Invoice PDF
+    * Dynamic Multi-Page Safe Version
+    * ==========================================
+    */
+   async function downloadInvoicePdf() {
+      const invoice = document.getElementById("invoicePdfContainer");
 
-    const invoice =
-        document.getElementById("invoicePdfContainer");
+      if (!invoice) {
+         alert("Invoice not found.");
 
+         return;
+      }
 
-    if (!invoice) {
+      const orderId = document.getElementById("invOrderId").innerText.trim();
 
-        alert("Invoice not found.");
+      if (!orderId || orderId === "-") {
+         alert("Please search an invoice first.");
 
-        return;
+         return;
+      }
 
-    }
+      const btn = document.getElementById("btnDownloadPdf");
 
+      if (btn) {
+         btn.disabled = true;
 
-    const orderId =
-        document
-            .getElementById("invOrderId")
-            .innerText
-            .trim();
+         btn.innerHTML = "Generating PDF...";
+      }
 
+      // ==========================================
+      // File Name
+      // ==========================================
 
-    if (!orderId || orderId === "-") {
+      const today = new Date();
 
-        alert("Please search an invoice first.");
+      const fileDate =
+         today.getFullYear() +
+         "-" +
+         String(today.getMonth() + 1).padStart(2, "0") +
+         "-" +
+         String(today.getDate()).padStart(2, "0");
 
-        return;
+      const fileName = orderId + "_" + fileDate + ".pdf";
 
-    }
+      // ==========================================
+      // Create PDF Clone
+      // ==========================================
 
+      const pdfInvoice = invoice.cloneNode(true);
 
-    const btn =
-        document.getElementById("btnDownloadPdf");
+      pdfInvoice.id = "invoicePdfExport";
 
+      // ==========================================
+      // Remove Buttons / Non-PDF Controls
+      // ==========================================
 
-    if (btn) {
-
-        btn.disabled = true;
-
-        btn.innerHTML =
-            "Generating PDF...";
-
-    }
-
-
-    // ==========================================
-    // File Name
-    // ==========================================
-
-    const today = new Date();
-
-
-    const fileDate =
-
-        today.getFullYear() +
-
-        "-" +
-
-        String(
-            today.getMonth() + 1
-        ).padStart(2, "0") +
-
-        "-" +
-
-        String(
-            today.getDate()
-        ).padStart(2, "0");
-
-
-    const fileName =
-
-        orderId +
-
-        "_" +
-
-        fileDate +
-
-        ".pdf";
-
-
-    // ==========================================
-    // Create PDF Clone
-    // ==========================================
-
-    const pdfInvoice =
-        invoice.cloneNode(true);
-
-
-    pdfInvoice.id =
-        "invoicePdfExport";
-
-
-    // ==========================================
-    // Remove Buttons / Non-PDF Controls
-    // ==========================================
-
-    pdfInvoice
-        .querySelectorAll(
-            "button, .btn, .no-print"
-        )
-        .forEach(function(element) {
-
+      pdfInvoice
+         .querySelectorAll("button, .btn, .no-print")
+         .forEach(function (element) {
             element.remove();
+         });
 
-        });
+      // ==========================================
+      // Remove Empty Address Section
+      // ==========================================
 
+      const address = pdfInvoice.querySelector("#invAddress");
 
-    // ==========================================
-    // Remove Empty Address Section
-    // ==========================================
+      if (address && !address.textContent.trim()) {
+         const card = address.closest(".card");
 
-    const address =
-        pdfInvoice.querySelector(
-            "#invAddress"
-        );
-
-
-    if (
-        address &&
-        !address.textContent.trim()
-    ) {
-
-        const card =
-            address.closest(".card");
-
-
-        if (card) {
-
+         if (card) {
             card.remove();
+         }
+      }
 
-        }
+      // ==========================================
+      // Remove Empty Special Instructions
+      // ==========================================
 
-    }
+      const instructions = pdfInvoice.querySelector("#invInstructions");
 
+      if (
+         instructions &&
+         (!instructions.textContent.trim() ||
+            instructions.textContent.trim() === "-")
+      ) {
+         const card = instructions.closest(".card");
 
-    // ==========================================
-    // Remove Empty Special Instructions
-    // ==========================================
-
-    const instructions =
-        pdfInvoice.querySelector(
-            "#invInstructions"
-        );
-
-
-    if (
-        instructions &&
-        (
-            !instructions.textContent.trim() ||
-            instructions.textContent.trim() === "-"
-        )
-    ) {
-
-        const card =
-            instructions.closest(".card");
-
-
-        if (card) {
-
+         if (card) {
             card.remove();
+         }
+      }
 
-        }
+      // ==========================================
+      // Base PDF Layout
+      // ==========================================
 
-    }
+      pdfInvoice.style.width = "190mm";
 
+      pdfInvoice.style.maxWidth = "190mm";
 
-    // ==========================================
-    // Base PDF Layout
-    // ==========================================
+      pdfInvoice.style.margin = "0";
 
-    pdfInvoice.style.width =
-        "190mm";
+      pdfInvoice.style.padding = "0";
 
-    pdfInvoice.style.maxWidth =
-        "190mm";
+      pdfInvoice.style.background = "#ffffff";
 
-    pdfInvoice.style.margin =
-        "0";
+      pdfInvoice.style.fontFamily = "Arial, sans-serif";
 
-    pdfInvoice.style.padding =
-        "0";
+      pdfInvoice.style.fontSize = "10.5px";
 
-    pdfInvoice.style.background =
-        "#ffffff";
+      pdfInvoice.style.lineHeight = "1.20";
 
-    pdfInvoice.style.fontFamily =
-        "Arial, sans-serif";
+      // ==========================================
+      // Compact Cards
+      // ==========================================
 
-    pdfInvoice.style.fontSize =
-        "10.5px";
+      pdfInvoice.querySelectorAll(".card").forEach(function (card) {
+         card.style.marginBottom = "4px";
 
-    pdfInvoice.style.lineHeight =
-        "1.20";
+         card.style.boxShadow = "none";
 
+         card.style.border = "1px solid #dddddd";
 
-    // ==========================================
-    // Compact Cards
-    // ==========================================
+         /*
+          * IMPORTANT
+          *
+          * Do NOT force every card to
+          * avoid page breaks.
+          *
+          * Large cards such as Ordered Items
+          * must be allowed to flow naturally.
+          */
 
-    pdfInvoice
-        .querySelectorAll(".card")
-        .forEach(function(card) {
+         card.style.breakInside = "auto";
 
-            card.style.marginBottom =
-                "4px";
+         card.style.pageBreakInside = "auto";
+      });
 
-            card.style.boxShadow =
-                "none";
+      // ==========================================
+      // Compact Card Headers
+      // ==========================================
 
-            card.style.border =
-                "1px solid #dddddd";
+      pdfInvoice.querySelectorAll(".card-header").forEach(function (header) {
+         header.style.padding = "3px 7px";
 
+         header.style.fontSize = "10.5px";
 
-            /*
-             * IMPORTANT
-             *
-             * Do NOT force every card to
-             * avoid page breaks.
-             *
-             * Large cards such as Ordered Items
-             * must be allowed to flow naturally.
-             */
+         /*
+          * Keep card heading with
+          * content immediately below it.
+          */
 
-            card.style.breakInside =
-                "auto";
+         header.style.breakAfter = "avoid";
 
-            card.style.pageBreakInside =
-                "auto";
+         header.style.pageBreakAfter = "avoid";
+      });
 
-        });
+      // ==========================================
+      // Compact Card Bodies
+      // ==========================================
 
+      pdfInvoice.querySelectorAll(".card-body").forEach(function (body) {
+         body.style.padding = "5px 7px";
+      });
 
-    // ==========================================
-    // Compact Card Headers
-    // ==========================================
+      // ==========================================
+      // Tables
+      // ==========================================
 
-    pdfInvoice
-        .querySelectorAll(".card-header")
-        .forEach(function(header) {
+      pdfInvoice.querySelectorAll("table").forEach(function (table) {
+         table.style.marginBottom = "0";
 
-            header.style.padding =
-                "3px 7px";
+         table.style.fontSize = "9.5px";
 
-            header.style.fontSize =
-                "10.5px";
+         table.style.width = "100%";
 
-            /*
-             * Keep card heading with
-             * content immediately below it.
-             */
+         /*
+          * Tables are allowed to continue
+          * onto another page when necessary.
+          */
 
-            header.style.breakAfter =
-                "avoid";
+         table.style.breakInside = "auto";
 
-            header.style.pageBreakAfter =
-                "avoid";
+         table.style.pageBreakInside = "auto";
+      });
 
-        });
+      // ==========================================
+      // Table Rows
+      //
+      // Individual item rows should NEVER
+      // split between pages.
+      // ==========================================
 
+      pdfInvoice.querySelectorAll("tr").forEach(function (row) {
+         row.style.breakInside = "avoid";
 
-    // ==========================================
-    // Compact Card Bodies
-    // ==========================================
+         row.style.pageBreakInside = "avoid";
+      });
 
-    pdfInvoice
-        .querySelectorAll(".card-body")
-        .forEach(function(body) {
+      // ==========================================
+      // Repeat Table Header
+      // ==========================================
 
-            body.style.padding =
-                "5px 7px";
+      pdfInvoice.querySelectorAll("thead").forEach(function (head) {
+         head.style.display = "table-header-group";
+      });
 
-        });
+      // ==========================================
+      // Compact Table Cells
+      // ==========================================
 
+      pdfInvoice.querySelectorAll("th, td").forEach(function (cell) {
+         cell.style.padding = "2px 4px";
 
-    // ==========================================
-    // Tables
-    // ==========================================
+         cell.style.verticalAlign = "middle";
+      });
 
-    pdfInvoice
-        .querySelectorAll("table")
-        .forEach(function(table) {
+      // ==========================================
+      // Reduce Bootstrap Margins
+      // ==========================================
 
-            table.style.marginBottom =
-                "0";
+      pdfInvoice.querySelectorAll(".mb-3").forEach(function (element) {
+         element.style.marginBottom = "4px";
+      });
 
-            table.style.fontSize =
-                "9.5px";
+      pdfInvoice.querySelectorAll(".mt-3").forEach(function (element) {
+         element.style.marginTop = "4px";
+      });
 
-            table.style.width =
-                "100%";
+      // ==========================================
+      // Compact Headings
+      // ==========================================
 
-            /*
-             * Tables are allowed to continue
-             * onto another page when necessary.
-             */
+      pdfInvoice
+         .querySelectorAll("h1, h2, h3, h4, h5, h6")
+         .forEach(function (heading) {
+            heading.style.marginTop = "0";
 
-            table.style.breakInside =
-                "auto";
+            heading.style.marginBottom = "2px";
+         });
 
-            table.style.pageBreakInside =
-                "auto";
+      // ==========================================
+      // Protect Important Small Sections
+      //
+      // These sections should stay together
+      // because they're normally small.
+      // ==========================================
 
-        });
+      const protectedSections = ["#invPaymentMode2", "#invInstructions"];
 
+      protectedSections.forEach(function (selector) {
+         const element = pdfInvoice.querySelector(selector);
 
-    // ==========================================
-    // Table Rows
-    //
-    // Individual item rows should NEVER
-    // split between pages.
-    // ==========================================
+         if (!element) {
+            return;
+         }
 
-    pdfInvoice
-        .querySelectorAll("tr")
-        .forEach(function(row) {
+         const card = element.closest(".card");
 
-            row.style.breakInside =
-                "avoid";
+         if (card) {
+            card.style.breakInside = "avoid";
 
-            row.style.pageBreakInside =
-                "avoid";
+            card.style.pageBreakInside = "avoid";
+         }
+      });
 
-        });
+      // ==========================================
+      // Temporary Off-Screen Wrapper
+      // ==========================================
 
+      const wrapper = document.createElement("div");
 
-    // ==========================================
-    // Repeat Table Header
-    // ==========================================
+      wrapper.style.position = "fixed";
 
-    pdfInvoice
-        .querySelectorAll("thead")
-        .forEach(function(head) {
+      wrapper.style.left = "-10000px";
 
-            head.style.display =
-                "table-header-group";
+      wrapper.style.top = "0";
 
-        });
+      wrapper.style.width = "190mm";
 
+      wrapper.style.background = "#ffffff";
 
-    // ==========================================
-    // Compact Table Cells
-    // ==========================================
+      wrapper.appendChild(pdfInvoice);
 
-    pdfInvoice
-        .querySelectorAll(
-            "th, td"
-        )
-        .forEach(function(cell) {
+      document.body.appendChild(wrapper);
 
-            cell.style.padding =
-                "2px 4px";
+      // ==========================================
+      // PDF Configuration
+      // ==========================================
 
-            cell.style.verticalAlign =
-                "middle";
+      const options = {
+         margin: [5, 5, 5, 5],
 
-        });
+         filename: fileName,
 
+         image: {
+            type: "jpeg",
 
-    // ==========================================
-    // Reduce Bootstrap Margins
-    // ==========================================
+            quality: 0.98,
+         },
 
-    pdfInvoice
-        .querySelectorAll(".mb-3")
-        .forEach(function(element) {
+         html2canvas: {
+            scale: 2,
 
-            element.style.marginBottom =
-                "4px";
+            useCORS: true,
 
-        });
+            logging: false,
 
+            backgroundColor: "#ffffff",
+         },
 
-    pdfInvoice
-        .querySelectorAll(".mt-3")
-        .forEach(function(element) {
+         jsPDF: {
+            unit: "mm",
 
-            element.style.marginTop =
-                "4px";
+            format: "a4",
 
-        });
+            orientation: "portrait",
+         },
 
+         /*
+          * IMPORTANT:
+          *
+          * Removed "avoid-all".
+          *
+          * CSS controls which elements
+          * may or may not split.
+          */
 
-    // ==========================================
-    // Compact Headings
-    // ==========================================
+         pagebreak: {
+            mode: ["css", "legacy"],
+         },
+      };
 
-    pdfInvoice
-        .querySelectorAll(
-            "h1, h2, h3, h4, h5, h6"
-        )
-        .forEach(function(heading) {
+      try {
+         // ======================================
+         // Generate PDF
+         // ======================================
 
-            heading.style.marginTop =
-                "0";
+         const worker = html2pdf()
+            .set(options)
 
-            heading.style.marginBottom =
-                "2px";
+            .from(pdfInvoice);
 
-        });
+         const pdfBlob = await worker.outputPdf("blob");
 
+         // ======================================
+         // Download PDF
+         // ======================================
 
-    // ==========================================
-    // Protect Important Small Sections
-    //
-    // These sections should stay together
-    // because they're normally small.
-    // ==========================================
+         const downloadUrl = URL.createObjectURL(pdfBlob);
 
-    const protectedSections = [
+         const link = document.createElement("a");
 
-        "#invPaymentMode2",
-        "#invInstructions"
+         link.href = downloadUrl;
 
-    ];
+         link.download = fileName;
 
+         document.body.appendChild(link);
 
-    protectedSections.forEach(
-        function(selector) {
+         link.click();
 
-            const element =
-                pdfInvoice.querySelector(
-                    selector
-                );
+         link.remove();
 
+         setTimeout(function () {
+            URL.revokeObjectURL(downloadUrl);
+         }, 1000);
 
-            if (!element) {
+         // ======================================
+         // Save Same PDF To Google Drive
+         // ======================================
 
-                return;
+         const base64Pdf = await blobToBase64(pdfBlob);
 
-            }
+         google.script.run
 
+            .withSuccessHandler(function (response) {
+               console.log("PDF saved to Drive");
 
-            const card =
-                element.closest(".card");
+               console.log(response);
+            })
 
+            .withFailureHandler(function (error) {
+               console.error("Unable to save PDF to Drive:", error);
+            })
 
-            if (card) {
+            .savePdf(fileName, base64Pdf);
+      } catch (err) {
+         console.error("Invoice PDF Error:", err);
 
-                card.style.breakInside =
-                    "avoid";
+         alert("Unable to generate PDF.");
+      } finally {
+         // ======================================
+         // Remove Temporary DOM
+         // ======================================
 
-                card.style.pageBreakInside =
-                    "avoid";
+         if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+         }
 
-            }
+         // ======================================
+         // Restore Button
+         // ======================================
 
-        }
-    );
+         if (btn) {
+            btn.disabled = false;
 
-
-    // ==========================================
-    // Temporary Off-Screen Wrapper
-    // ==========================================
-
-    const wrapper =
-        document.createElement("div");
-
-
-    wrapper.style.position =
-        "fixed";
-
-    wrapper.style.left =
-        "-10000px";
-
-    wrapper.style.top =
-        "0";
-
-    wrapper.style.width =
-        "190mm";
-
-    wrapper.style.background =
-        "#ffffff";
-
-
-    wrapper.appendChild(
-        pdfInvoice
-    );
-
-
-    document.body.appendChild(
-        wrapper
-    );
-
-
-    // ==========================================
-    // PDF Configuration
-    // ==========================================
-
-    const options = {
-
-        margin: [
-            5,
-            5,
-            5,
-            5
-        ],
-
-        filename:
-            fileName,
-
-        image: {
-
-            type:
-                "jpeg",
-
-            quality:
-                0.98
-
-        },
-
-        html2canvas: {
-
-            scale:
-                2,
-
-            useCORS:
-                true,
-
-            logging:
-                false,
-
-            backgroundColor:
-                "#ffffff"
-
-        },
-
-        jsPDF: {
-
-            unit:
-                "mm",
-
-            format:
-                "a4",
-
-            orientation:
-                "portrait"
-
-        },
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Removed "avoid-all".
-         *
-         * CSS controls which elements
-         * may or may not split.
-         */
-
-        pagebreak: {
-
-            mode: [
-                "css",
-                "legacy"
-            ]
-
-        }
-
-    };
-
-
-    try {
-
-
-        // ======================================
-        // Generate PDF
-        // ======================================
-
-        const worker =
-
-            html2pdf()
-
-                .set(options)
-
-                .from(pdfInvoice);
-
-
-        const pdfBlob =
-
-            await worker.outputPdf(
-                "blob"
-            );
-
-
-        // ======================================
-        // Download PDF
-        // ======================================
-
-        const downloadUrl =
-
-            URL.createObjectURL(
-                pdfBlob
-            );
-
-
-        const link =
-
-            document.createElement(
-                "a"
-            );
-
-
-        link.href =
-            downloadUrl;
-
-
-        link.download =
-            fileName;
-
-
-        document.body.appendChild(
-            link
-        );
-
-
-        link.click();
-
-
-        link.remove();
-
-
-        setTimeout(
-            function() {
-
-                URL.revokeObjectURL(
-                    downloadUrl
-                );
-
-            },
-            1000
-        );
-
-
-        // ======================================
-        // Save Same PDF To Google Drive
-        // ======================================
-
-        const base64Pdf =
-
-            await blobToBase64(
-                pdfBlob
-            );
-
-
-        google.script.run
-
-            .withSuccessHandler(
-                function(response) {
-
-                    console.log(
-                        "PDF saved to Drive"
-                    );
-
-                    console.log(
-                        response
-                    );
-
-                }
-            )
-
-            .withFailureHandler(
-                function(error) {
-
-                    console.error(
-                        "Unable to save PDF to Drive:",
-                        error
-                    );
-
-                }
-            )
-
-            .savePdf(
-                fileName,
-                base64Pdf
-            );
-
-
-    } catch (err) {
-
-
-        console.error(
-            "Invoice PDF Error:",
-            err
-        );
-
-
-        alert(
-            "Unable to generate PDF."
-        );
-
-
-    } finally {
-
-
-        // ======================================
-        // Remove Temporary DOM
-        // ======================================
-
-        if (
-            wrapper &&
-            wrapper.parentNode
-        ) {
-
-            wrapper.parentNode.removeChild(
-                wrapper
-            );
-
-        }
-
-
-        // ======================================
-        // Restore Button
-        // ======================================
-
-        if (btn) {
-
-            btn.disabled =
-                false;
-
-            btn.innerHTML =
-                "📄 Download PDF";
-
-        }
-
-    }
-
-}
-
-
-
-
-
-
-
-
+            btn.innerHTML = "📄 Download PDF";
+         }
+      }
+   }
 
    /**
     * ==========================================
@@ -3384,9 +4871,8 @@ Thank you for choosing Smoky Swaad.
             toDate.value = this.value;
          }
 
-      // Disable PDF until a new report is generated
+         // Disable PDF until a new report is generated
          document.getElementById("btnDownloadPDF").disabled = true;
-         
       });
 
       // To Date Change
@@ -3397,9 +4883,8 @@ Thank you for choosing Smoky Swaad.
             fromDate.value = this.value;
          }
 
-      // Disable PDF until a new report is generated
+         // Disable PDF until a new report is generated
          document.getElementById("btnDownloadPDF").disabled = true;
-  
       });
 
       google.script.run
@@ -3619,12 +5104,10 @@ Thank you for choosing Smoky Swaad.
       const toDate = document.getElementById("reportToDate").value;
 
       if (!fromDate || !toDate) {
+         alert("Please select both From Date and To Date.");
 
-    alert("Please select both From Date and To Date.");
-
-    return;
-
-}
+         return;
+      }
 
       const filename =
          "Smoky_Swaad_Report_" + fromDate + "_to_" + toDate + ".pdf";
@@ -3677,405 +5160,269 @@ Thank you for choosing Smoky Swaad.
       button.disabled = !(fromDate && toDate);
    }
 
+   let purchaseSearchTimer;
 
+   function debouncedPurchaseSearch() {
+      clearTimeout(purchaseSearchTimer);
 
+      purchaseSearchTimer = setTimeout(function () {
+         searchPurchaseItems();
+      }, 200);
+   }
 
+   /**
+    * ==========================================
+    * Load Complete POS Cache
+    * ==========================================
+    */
+   function loadPOSCache() {
+      google.script.run
 
+         .withSuccessHandler(function (data) {
+            console.log("Complete Response:", data);
 
-let purchaseSearchTimer;
+            menuCache = data.menu || [];
 
-function debouncedPurchaseSearch() {
+            appSettings = data.settings || {};
 
-    clearTimeout(purchaseSearchTimer);
+            console.log("App Settings:", appSettings);
 
-    purchaseSearchTimer = setTimeout(function(){
+            customerCache = data.customers || [];
 
-        searchPurchaseItems();
+            populatePOSDropdowns();
+         })
 
-    },200);
+         .withFailureHandler(function (error) {
+            console.error(error);
+         })
 
-}
+         .loadPOSCache();
+   }
 
+   /**
+    * ==========================================
+    * Delete Order
+    * ==========================================
+    */
+   function deleteOrder() {
+      const orderIdBox = document.getElementById("deleteOrderId");
 
+      const deleteButton = document.getElementById("btnDeleteOrder");
 
+      // ------------------------------------------
+      // Validate Order ID
+      // ------------------------------------------
 
+      if (!orderIdBox) {
+         alert("Delete Order field not found.");
 
-/**
- * ==========================================
- * Load Complete POS Cache
- * ==========================================
- */
-function loadPOSCache() {
+         return;
+      }
 
-   google.script.run
+      const orderId = String(orderIdBox.value || "")
+         .trim()
+         .toUpperCase();
 
-      .withSuccessHandler(function (data) {
+      if (!orderId) {
+         alert("Please enter an Order ID.");
 
-         console.log("Complete Response:", data);
+         orderIdBox.focus();
 
-         menuCache = data.menu || [];
+         return;
+      }
 
-         appSettings = data.settings || {};
+      // ------------------------------------------
+      // Confirmation
+      // ------------------------------------------
 
-         console.log("App Settings:", appSettings);
+      const confirmed = confirm(
+         "Delete Order " +
+            orderId +
+            "?\n\n" +
+            "This will permanently delete the order and its " +
+            "order items and recalculate the customer's order history.",
+      );
 
-         customerCache = data.customers || [];
+      if (!confirmed) {
+         return;
+      }
 
-         populatePOSDropdowns();
+      // ------------------------------------------
+      // Lock Delete Button
+      // ------------------------------------------
 
-      })
+      if (deleteButton) {
+         deleteButton.disabled = true;
 
-      .withFailureHandler(function (error) {
+         deleteButton.textContent = "Deleting...";
+      }
 
-         console.error(error);
+      // ------------------------------------------
+      // Server Request
+      // ------------------------------------------
 
-      })
+      google.script.run
 
-      .loadPOSCache();
-
-}
-
-
-
-
-/**
- * ==========================================
- * Delete Order
- * ==========================================
- */
-function deleteOrder() {
-
-    const orderIdBox =
-        document.getElementById("deleteOrderId");
-
-    const deleteButton =
-        document.getElementById("btnDeleteOrder");
-
-
-    // ------------------------------------------
-    // Validate Order ID
-    // ------------------------------------------
-
-    if (!orderIdBox) {
-
-        alert("Delete Order field not found.");
-
-        return;
-
-    }
-
-
-    const orderId =
-        String(orderIdBox.value || "")
-            .trim()
-            .toUpperCase();
-
-
-    if (!orderId) {
-
-        alert("Please enter an Order ID.");
-
-        orderIdBox.focus();
-
-        return;
-
-    }
-
-
-    // ------------------------------------------
-    // Confirmation
-    // ------------------------------------------
-
-    const confirmed = confirm(
-
-        "Delete Order " + orderId + "?\n\n" +
-
-        "This will permanently delete the order and its " +
-        "order items and recalculate the customer's order history."
-
-    );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    // ------------------------------------------
-    // Lock Delete Button
-    // ------------------------------------------
-
-    if (deleteButton) {
-
-        deleteButton.disabled = true;
-
-        deleteButton.textContent = "Deleting...";
-
-    }
-
-
-    // ------------------------------------------
-    // Server Request
-    // ------------------------------------------
-
-    google.script.run
-
-        .withSuccessHandler(function(response) {
-
+         .withSuccessHandler(function (response) {
             if (deleteButton) {
+               deleteButton.disabled = false;
 
-                deleteButton.disabled = false;
-
-                deleteButton.textContent = "Delete Order";
-
+               deleteButton.textContent = "Delete Order";
             }
-
 
             if (response && response.success) {
+               orderIdBox.value = "";
 
-                orderIdBox.value = "";
-
-                alert(
-                    "Order Deleted Successfully\n\n" +
-                    "Order ID : " + orderId
-                );
-
+               alert(
+                  "Order Deleted Successfully\n\n" + "Order ID : " + orderId,
+               );
             } else {
-
-                alert(
-                    response && response.message
-                        ? response.message
-                        : "Unable to delete order."
-                );
-
+               alert(
+                  response && response.message
+                     ? response.message
+                     : "Unable to delete order.",
+               );
             }
+         })
 
-        })
-
-
-        .withFailureHandler(function(error) {
-
+         .withFailureHandler(function (error) {
             if (deleteButton) {
+               deleteButton.disabled = false;
 
-                deleteButton.disabled = false;
-
-                deleteButton.textContent = "Delete Order";
-
+               deleteButton.textContent = "Delete Order";
             }
 
-
-            console.error(
-                "Delete Order Error:",
-                error
-            );
-
+            console.error("Delete Order Error:", error);
 
             alert(
-                error && error.message
-                    ? error.message
-                    : "Unable to delete order."
+               error && error.message
+                  ? error.message
+                  : "Unable to delete order.",
             );
+         })
 
-        })
+         .deleteOrderFromWeb(orderId);
+   }
 
+   /**
+    * ==========================================================
+    * ADD CUSTOM ADD-ON
+    * ==========================================================
+    */
+   function addCustomAddon() {
+      const nameInput = document.getElementById("addonName");
 
-        .deleteOrderFromWeb(orderId);
+      const priceInput = document.getElementById("addonPrice");
 
-}
+      if (!nameInput || !priceInput) {
+         console.error("Add-on input fields not found.");
 
+         return;
+      }
 
+      const addonName = String(nameInput.value || "").trim();
 
+      const addonPrice = Number(priceInput.value || 0);
 
+      // ------------------------------------------
+      // Validation
+      // ------------------------------------------
 
+      if (!addonName) {
+         alert("Please enter Add-on Name.");
 
+         nameInput.focus();
 
-/**
- * ==========================================================
- * ADD CUSTOM ADD-ON
- * ==========================================================
- */
-function addCustomAddon() {
+         return;
+      }
 
-    const nameInput =
-        document.getElementById("addonName");
+      if (!Number.isFinite(addonPrice) || addonPrice <= 0) {
+         alert("Please enter a valid Add-on Price.");
 
-    const priceInput =
-        document.getElementById("addonPrice");
+         priceInput.focus();
 
+         return;
+      }
 
-    if (!nameInput || !priceInput) {
+      // ------------------------------------------
+      // Add to separate Add-on array
+      // ------------------------------------------
 
-        console.error(
-            "Add-on input fields not found."
-        );
+      customAddons.push({
+         name: addonName,
 
-        return;
+         price: addonPrice,
+      });
 
-    }
+      // ------------------------------------------
+      // Clear fields
+      // ------------------------------------------
 
+      nameInput.value = "";
 
-    const addonName =
-        String(nameInput.value || "")
-            .trim();
+      priceInput.value = "";
 
+      // ------------------------------------------
+      // Refresh Add-on display
+      // ------------------------------------------
 
-    const addonPrice =
-        Number(priceInput.value || 0);
+      renderCustomAddons();
 
+      // Keep cursor ready for next Add-on
+      nameInput.focus();
+   }
 
-    // ------------------------------------------
-    // Validation
-    // ------------------------------------------
+   /**
+    * ==========================================================
+    * REMOVE CUSTOM ADD-ON
+    * ==========================================================
+    */
+   function removeCustomAddon(index) {
+      if (index < 0 || index >= customAddons.length) {
+         return;
+      }
 
-    if (!addonName) {
+      customAddons.splice(index, 1);
 
-        alert("Please enter Add-on Name.");
+      renderCustomAddons();
+   }
 
-        nameInput.focus();
+   /**
+    * ==========================================================
+    * RENDER CUSTOM ADD-ONS
+    * ==========================================================
+    */
+   function renderCustomAddons() {
+      const list = document.getElementById("addonList");
 
-        return;
+      const totalDisplay = document.getElementById("addonTotalDisplay");
 
-    }
+      // ------------------------------------------
+      // Calculate Add-on Total
+      // ------------------------------------------
 
+      const addonTotal = getCustomAddonTotal();
 
-    if (
-        !Number.isFinite(addonPrice) ||
-        addonPrice <= 0
-    ) {
+      // ------------------------------------------
+      // Update Add-on Total Display
+      // ------------------------------------------
 
-        alert(
-            "Please enter a valid Add-on Price."
-        );
+      if (totalDisplay) {
+         totalDisplay.textContent = "₹" + addonTotal.toFixed(2);
+      }
 
-        priceInput.focus();
+      // ------------------------------------------
+      // Render Add-on List
+      // ------------------------------------------
 
-        return;
-
-    }
-
-
-    // ------------------------------------------
-    // Add to separate Add-on array
-    // ------------------------------------------
-
-    customAddons.push({
-
-        name: addonName,
-
-        price: addonPrice
-
-    });
-
-
-    // ------------------------------------------
-    // Clear fields
-    // ------------------------------------------
-
-    nameInput.value = "";
-
-    priceInput.value = "";
-
-
-    // ------------------------------------------
-    // Refresh Add-on display
-    // ------------------------------------------
-
-    renderCustomAddons();
-
-
-    // Keep cursor ready for next Add-on
-    nameInput.focus();
-
-}
-
-
-
-/**
- * ==========================================================
- * REMOVE CUSTOM ADD-ON
- * ==========================================================
- */
-function removeCustomAddon(index) {
-
-    if (
-        index < 0 ||
-        index >= customAddons.length
-    ) {
-
-        return;
-
-    }
-
-
-    customAddons.splice(
-        index,
-        1
-    );
-
-
-    renderCustomAddons();
-
-}
-
-
-
-/**
- * ==========================================================
- * RENDER CUSTOM ADD-ONS
- * ==========================================================
- */
-function renderCustomAddons() {
-
-    const list =
-        document.getElementById("addonList");
-
-    const totalDisplay =
-        document.getElementById(
-            "addonTotalDisplay"
-        );
-
-
-    // ------------------------------------------
-    // Calculate Add-on Total
-    // ------------------------------------------
-
-    const addonTotal =
-        getCustomAddonTotal();
-
-
-    // ------------------------------------------
-    // Update Add-on Total Display
-    // ------------------------------------------
-
-    if (totalDisplay) {
-
-        totalDisplay.textContent =
-            "₹" + addonTotal.toFixed(2);
-
-    }
-
-
-    // ------------------------------------------
-    // Render Add-on List
-    // ------------------------------------------
-
-    if (list) {
-
-        if (customAddons.length === 0) {
-
+      if (list) {
+         if (customAddons.length === 0) {
             list.innerHTML = "";
-
-        } else {
-
+         } else {
             let html = "";
 
-
-            customAddons.forEach(
-                function(addon, index) {
-
-                    html += `
+            customAddons.forEach(function (addon, index) {
+               html += `
 
                         <div
                             class="d-flex justify-content-between align-items-center py-2 border-bottom">
@@ -4111,161 +5458,92 @@ function renderCustomAddons() {
                         </div>
 
                     `;
-
-                }
-            );
-
+            });
 
             list.innerHTML = html;
+         }
+      }
 
-        }
+      // ------------------------------------------
+      // IMPORTANT
+      // Recalculate complete order total
+      // ------------------------------------------
 
-    }
+      calculateTotals();
+   }
 
+   /**
+    * ==========================================================
+    * GET CUSTOM ADD-ON TOTAL
+    * ==========================================================
+    */
+   function getCustomAddonTotal() {
+      let total = 0;
 
-    // ------------------------------------------
-    // IMPORTANT
-    // Recalculate complete order total
-    // ------------------------------------------
+      customAddons.forEach(function (addon) {
+         total += Number(addon.price || 0);
+      });
 
-    calculateTotals();
+      return total;
+   }
 
-}
+   /**
+    * ==========================================================
+    * ESCAPE ADD-ON HTML
+    * ==========================================================
+    *
+    * Prevents user-entered Add-on names from being interpreted
+    * as HTML when displayed.
+    * ==========================================================
+    */
+   function escapeAddonHtml(value) {
+      return String(value || "")
+         .replace(/&/g, "&amp;")
 
+         .replace(/</g, "&lt;")
 
+         .replace(/>/g, "&gt;")
 
+         .replace(/"/g, "&quot;")
 
-/**
- * ==========================================================
- * GET CUSTOM ADD-ON TOTAL
- * ==========================================================
- */
-function getCustomAddonTotal() {
+         .replace(/'/g, "&#039;");
+   }
 
-    let total = 0;
+   /**
+    * ==========================================
+    * Load Smoky Swaad Logo
+    * ==========================================
+    */
+   function loadInvoiceCompanyLogo() {
+      const logo = document.getElementById("invoiceCompanyLogo");
 
+      if (!logo) {
+         return;
+      }
 
-    customAddons.forEach(function(addon) {
+      // Already loaded
+      if (logo.dataset.loaded === "true") {
+         return;
+      }
 
-        total +=
-            Number(addon.price || 0);
+      google.script.run
 
-    });
+         .withSuccessHandler(function (response) {
+            if (response && response.success && response.dataUrl) {
+               logo.src = response.dataUrl;
 
+               logo.style.display = "block";
 
-    return total;
-
-}
-
-
-
-/**
- * ==========================================================
- * ESCAPE ADD-ON HTML
- * ==========================================================
- *
- * Prevents user-entered Add-on names from being interpreted
- * as HTML when displayed.
- * ==========================================================
- */
-function escapeAddonHtml(value) {
-
-    return String(value || "")
-
-        .replace(/&/g, "&amp;")
-
-        .replace(/</g, "&lt;")
-
-        .replace(/>/g, "&gt;")
-
-        .replace(/"/g, "&quot;")
-
-        .replace(/'/g, "&#039;");
-
-}
-
-
-
-
-
-
-/**
- * ==========================================
- * Load Smoky Swaad Logo
- * ==========================================
- */
-function loadInvoiceCompanyLogo() {
-
-    const logo =
-        document.getElementById(
-            "invoiceCompanyLogo"
-        );
-
-
-    if (!logo) {
-
-        return;
-
-    }
-
-
-    // Already loaded
-    if (logo.dataset.loaded === "true") {
-
-        return;
-
-    }
-
-
-    google.script.run
-
-        .withSuccessHandler(
-            function(response) {
-
-                if (
-                    response &&
-                    response.success &&
-                    response.dataUrl
-                ) {
-
-                    logo.src =
-                        response.dataUrl;
-
-
-                    logo.style.display =
-                        "block";
-
-
-                    logo.dataset.loaded =
-                        "true";
-
-                } else {
-
-                    console.warn(
-                        "Invoice logo could not be loaded."
-                    );
-
-                }
-
+               logo.dataset.loaded = "true";
+            } else {
+               console.warn("Invoice logo could not be loaded.");
             }
-        )
+         })
 
-        .withFailureHandler(
-            function(error) {
+         .withFailureHandler(function (error) {
+            console.error("Invoice Logo Error:", error);
+         })
 
-                console.error(
-                    "Invoice Logo Error:",
-                    error
-                );
-
-            }
-        )
-
-        .getSmokySwaadLogo();
-
-}
-
-
-
-
+         .getSmokySwaadLogo();
+   }
 </script>
