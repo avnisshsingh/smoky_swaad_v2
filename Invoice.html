@@ -1,4 +1,269 @@
-<div class="container-fluid">
+
+<style>
+/* =========================================================
+   INVOICE MODULE — MOBILE POLISH
+   Scoped to .invoice-screen so other ERP modules are untouched.
+   ========================================================= */
+
+@media (max-width: 767.98px) {
+
+  .invoice-screen {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .invoice-screen > .row {
+    --bs-gutter-x: 0;
+  }
+
+  /* ---------- Top cards ---------- */
+
+  .invoice-screen .invoice-search-card,
+  .invoice-screen .invoice-profit-card {
+    margin-bottom: 10px !important;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .invoice-screen .invoice-search-card .card-header,
+  .invoice-screen .invoice-profit-card .card-header {
+    padding: 9px 12px;
+  }
+
+  .invoice-screen .invoice-search-card .card-header h4,
+  .invoice-screen .invoice-profit-card .card-header h4 {
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .invoice-screen .invoice-search-card .card-body,
+  .invoice-screen .invoice-profit-card .card-body {
+    padding: 10px 12px;
+  }
+
+  .invoice-screen .invoice-search-card h5 {
+    display: none;
+  }
+
+  .invoice-screen .invoice-search-card .mb-3 {
+    margin-bottom: 8px !important;
+  }
+
+  .invoice-screen .invoice-search-card .form-label,
+  .invoice-screen .invoice-profit-card .form-label {
+    margin-bottom: 3px;
+    font-size: 12px;
+  }
+
+  .invoice-screen #searchOrderId,
+  .invoice-screen #profitMonth {
+    min-height: 42px;
+  }
+
+  .invoice-screen #btnSearchInvoice {
+    min-height: 42px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  /* ---------- Profit snapshot ---------- */
+
+  .invoice-screen .invoice-profit-card .mb-3 {
+    margin-bottom: 8px !important;
+  }
+
+  .invoice-screen .invoice-profit-card .row.g-3 {
+    --bs-gutter-x: 8px;
+    --bs-gutter-y: 8px;
+  }
+
+  .invoice-screen .invoice-profit-card .border {
+    padding: 9px 10px !important;
+    min-height: 64px;
+  }
+
+  .invoice-screen .invoice-profit-card .text-muted.small {
+    font-size: 11px;
+    line-height: 1.15;
+    margin-bottom: 3px;
+  }
+
+  .invoice-screen #monthlySales,
+  .invoice-screen #monthlyPurchases,
+  .invoice-screen #monthlyProfit,
+  .invoice-screen #monthlyMargin {
+    font-size: 1rem !important;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  /* ---------- Invoice / PDF visual area ---------- */
+
+  .invoice-screen #invoicePdfContainer > .card {
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header {
+    padding: 8px 10px !important;
+  }
+
+  .invoice-screen #invoiceCompanyLogo {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div {
+    gap: 8px !important;
+  }
+
+  /* Brand title/tagline/address */
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(1) {
+    font-size: 17px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(2) {
+    font-size: 11px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(3) {
+    font-size: 10px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(3) > div:first-child {
+    font-size: 9px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(3) > div:last-child {
+    font-size: 12px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer > .card > .card-body {
+    padding: 8px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer .card.mb-3 {
+    margin-bottom: 8px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer .card.mb-3 > .card-header {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+
+  .invoice-screen #invoicePdfContainer .card.mb-3 > .card-body {
+    padding: 9px 10px;
+  }
+
+  /* Bootstrap md columns stack on phones; tighten their vertical spacing. */
+  .invoice-screen #invoicePdfContainer .card-body .row > [class*="col-md-"] {
+    margin-bottom: 7px;
+  }
+
+  .invoice-screen #invoicePdfContainer .card-body .row > [class*="col-md-"]:last-child {
+    margin-bottom: 0;
+  }
+
+  .invoice-screen #invoicePdfContainer label.text-muted {
+    display: block;
+    font-size: 11px;
+    line-height: 1.15;
+    margin-bottom: 1px;
+  }
+
+  .invoice-screen #invoicePdfContainer h5,
+  .invoice-screen #invoicePdfContainer h6 {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .invoice-screen #invAddress {
+    padding: 8px !important;
+    font-size: 13px;
+  }
+
+  /* ---------- Ordered items ---------- */
+
+  .invoice-screen #invoicePdfContainer table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .invoice-screen #invoicePdfContainer table th,
+  .invoice-screen #invoicePdfContainer table td {
+    padding: 6px 4px;
+    font-size: 11px;
+    vertical-align: middle;
+  }
+
+  .invoice-screen #invoicePdfContainer table th:first-child,
+  .invoice-screen #invoicePdfContainer table td:first-child {
+    width: 42%;
+    overflow-wrap: anywhere;
+  }
+
+  .invoice-screen #invoicePdfContainer table th:nth-child(2),
+  .invoice-screen #invoicePdfContainer table td:nth-child(2) {
+    width: 12% !important;
+  }
+
+  .invoice-screen #invoicePdfContainer table th:nth-child(3),
+  .invoice-screen #invoicePdfContainer table td:nth-child(3),
+  .invoice-screen #invoicePdfContainer table th:nth-child(4),
+  .invoice-screen #invoicePdfContainer table td:nth-child(4) {
+    width: 23% !important;
+  }
+
+  .invoice-screen #invoiceItemsBody td.py-5 {
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
+
+  /* ---------- Payment summary ---------- */
+
+  .invoice-screen #invoicePdfContainer .table-borderless td,
+  .invoice-screen #invoicePdfContainer .table-borderless th {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .invoice-screen #invGrandTotal {
+    font-size: 1.05rem !important;
+  }
+
+  /* ---------- Thank-you block ---------- */
+
+  .invoice-screen #invoicePdfContainer .text-center.mt-3 {
+    margin-top: 8px !important;
+  }
+
+  .invoice-screen #invoicePdfContainer .text-center.mt-3 h5 {
+    font-size: 13px !important;
+  }
+
+  /* ---------- Action buttons ---------- */
+
+  .invoice-screen #invoicePdfContainer + .d-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+    margin-top: 10px;
+  }
+
+  .invoice-screen #invoicePdfContainer + .d-grid .btn {
+    width: 100%;
+    min-height: 42px;
+    padding: 7px 8px;
+    font-size: 12px;
+  }
+
+  .invoice-screen #btnShareInvoice {
+    grid-column: 1 / -1;
+  }
+}
+</style>
+
+<div class="container-fluid invoice-screen">
 
     <div class="row">
 
@@ -8,7 +273,7 @@
 
         <div class="col-lg-4">
 
-            <div class="card shadow-sm mb-4">
+            <div class="card shadow-sm mb-4 invoice-search-card">
 
                 <div class="card-header bg-primary text-white">
 
@@ -52,7 +317,7 @@
             </div>
             
 
-            <div class="card shadow-sm mb-4" id="monthlyProfitCard">
+            <div class="card shadow-sm mb-4 invoice-profit-card" id="monthlyProfitCard">
                 <div class="card-header bg-success text-white">
                     <h4 class="mb-0">💰 Monthly Profit Snapshot</h4>
                 </div>
