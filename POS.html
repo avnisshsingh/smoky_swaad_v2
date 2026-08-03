@@ -1,4 +1,77 @@
-<div class="container-fluid">
+
+<style>
+/* ===== POS Stage-2 Mobile Polish ===== */
+@media (max-width:768px){
+#orderSummaryCard .input-group>.form-control,
+#orderSummaryCard .input-group>.form-select,
+#orderSummaryCard .btn,
+#orderSummaryCard input,
+#orderSummaryCard select{
+min-height:44px!important;
+}
+#orderSummaryCard .btn-success{
+min-height:48px!important;
+font-weight:600;
+}
+#orderSummaryCard .d-flex.total-row{
+align-items:center;
+justify-content:space-between;
+}
+#orderSummaryCard .addon-row{
+display:grid;
+grid-template-columns:7fr 3fr 2fr;
+gap:8px;
+align-items:center;
+}
+#orderSummaryCard .delete-row{
+display:grid;
+grid-template-columns:8fr 4fr;
+gap:8px;
+align-items:center;
+}
+#orderSummaryCard .card-body{
+padding:12px!important;
+}
+}
+</style>
+
+
+<style>
+/* ==========================================================
+   POS MOBILE - STAGE 1
+   Customer / Order Information layout only.
+   Existing IDs, handlers and business logic are unchanged.
+========================================================== */
+@media (max-width: 767.98px) {
+
+    .pos-mobile-stage1 .card-body {
+        padding: 12px;
+    }
+
+    .pos-mobile-stage1 .row.g-3 {
+        --bs-gutter-x: 10px;
+        --bs-gutter-y: 8px;
+        row-gap: 0 !important;
+    }
+
+    .pos-mobile-stage1 .form-label {
+        margin-bottom: 3px;
+        line-height: 1.15;
+    }
+
+    .pos-mobile-stage1 input.form-control,
+    .pos-mobile-stage1 select.form-select,
+    .pos-mobile-stage1 textarea.form-control {
+        min-height: 44px;
+    }
+
+    .pos-mobile-stage1 textarea#houseAddress {
+        min-height: 58px;
+    }
+}
+</style>
+
+<div class="container-fluid pos-mobile-stage1">
    <div class="row">
       <!-- LEFT PANEL -->
       <div class="col-lg-8">

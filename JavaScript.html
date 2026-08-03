@@ -5977,11 +5977,14 @@ function escapePersonalExpenseHtml(
     * Initialize Invoice Module
     * ==========================================
     */
-   function initializeInvoice() {
-      console.log("Invoice Module Loaded");
+  function initializeInvoice() {
+   console.log("Invoice Module Loaded");
 
-      loadInvoiceCompanyLogo();
-   }
+   loadInvoiceCompanyLogo();
+
+   // Load Monthly Profit Snapshot
+   loadProfitMonths();
+  }
 
    /**
     * ==========================================
@@ -7536,4 +7539,98 @@ Thank you for choosing Smoky Swaad.
    document.addEventListener('DOMContentLoaded', function () {
       optimizeMobileControls(document);
    });
+
+
+
+
+
+
+function formatCurrency(value){
+
+    return "₹" + Number(value || 0).toLocaleString("en-IN",{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+    });
+
+}
+
+
+
+
+
+function loadProfitMonths(){
+
+    google.script.run
+
+        .withSuccessHandler(function(months){
+
+            const ddl =
+                document.getElementById("profitMonth");
+
+            if(!ddl) return;
+
+            ddl.innerHTML="";
+
+            months.forEach(function(month){
+
+                ddl.add(
+                    new Option(month,month)
+                );
+
+            });
+
+            if(months.length){
+
+                ddl.value=months[0];
+
+                ddl.onchange = loadMonthlyProfit;
+                
+                loadMonthlyProfit();
+
+            }
+
+        })
+
+        .getAvailableProfitMonths();
+
+}
+
+
+
+
+function loadMonthlyProfit(){
+
+    const ddl =
+        document.getElementById("profitMonth");
+
+    if(!ddl) return;
+
+    google.script.run
+
+        .withSuccessHandler(function(result){
+
+            document.getElementById("monthlySales").innerHTML =
+                formatCurrency(result.sales);
+
+            document.getElementById("monthlyPurchases").innerHTML =
+                formatCurrency(result.purchases);
+
+            document.getElementById("monthlyProfit").innerHTML =
+                formatCurrency(result.grossProfit);
+
+            document.getElementById("monthlyMargin").innerHTML =
+                result.profitMargin===null
+                ? "—"
+                : result.profitMargin.toFixed(1)+"%";
+
+        })
+
+        .getMonthlyProfitSummary(
+            ddl.value
+        );
+
+}
+
+
+
 </script>
