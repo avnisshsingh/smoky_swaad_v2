@@ -5977,14 +5977,28 @@ function escapePersonalExpenseHtml(
     * Initialize Invoice Module
     * ==========================================
     */
-  function initializeInvoice() {
+    function initializeInvoice() {
+
    console.log("Invoice Module Loaded");
 
-   loadInvoiceCompanyLogo();
+   /*
+    * Allow the browser to render the Invoice UI first.
+    * Then load background data.
+    */
 
-   // Load Monthly Profit Snapshot
-   loadProfitMonths();
-  }
+   requestAnimationFrame(function () {
+
+      loadInvoiceCompanyLogo();
+
+      setTimeout(function () {
+
+         loadProfitMonths();
+
+      }, 0);
+
+   });
+
+}
 
    /**
     * ==========================================
@@ -8614,6 +8628,8 @@ Thank you for choosing Smoky Swaad.
 
 
 
+
+
 function formatCurrency(value){
 
     return "₹" + Number(value || 0).toLocaleString("en-IN",{
@@ -8627,42 +8643,58 @@ function formatCurrency(value){
 
 
 
-function loadProfitMonths(){
+
+
+function loadProfitMonths() {
 
     google.script.run
 
-        .withSuccessHandler(function(months){
+        .withSuccessHandler(function(result){
 
             const ddl =
                 document.getElementById("profitMonth");
 
             if(!ddl) return;
 
-            ddl.innerHTML="";
+            ddl.innerHTML = "";
 
-            months.forEach(function(month){
+            result.months.forEach(function(month){
 
                 ddl.add(
-                    new Option(month,month)
+                    new Option(month, month)
                 );
 
             });
 
-            if(months.length){
+            if(result.months.length){
 
-                ddl.value=months[0];
+                ddl.value =
+                    result.months[0];
 
-                ddl.onchange = loadMonthlyProfit;
-                
-                loadMonthlyProfit();
+                ddl.onchange =
+                    loadMonthlyProfit;
 
             }
 
+            /*
+             * Populate Profit Card immediately.
+             * No second Apps Script call.
+             */
+            updateProfitSummary(
+                result.summary
+            );
+
         })
 
-        .getAvailableProfitMonths();
+        .getProfitDashboardData();
 
 }
+
+
+
+
+
+
 
 
 
@@ -8700,6 +8732,33 @@ function loadMonthlyProfit(){
 
 }
 
+
+
+
+
+
+
+
+
+
+
+function updateProfitSummary(result){
+
+    document.getElementById("monthlySales").innerHTML =
+        formatCurrency(result.sales);
+
+    document.getElementById("monthlyPurchases").innerHTML =
+        formatCurrency(result.purchases);
+
+    document.getElementById("monthlyProfit").innerHTML =
+        formatCurrency(result.grossProfit);
+
+    document.getElementById("monthlyMargin").innerHTML =
+        result.profitMargin === null
+            ? "—"
+            : result.profitMargin.toFixed(1) + "%";
+
+}
 
 
 </script>

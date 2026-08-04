@@ -426,3 +426,55 @@ function getMonthlyProfitSummary(
   };
 
 }
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * GET PROFIT DASHBOARD DATA
+ *
+ * Returns:
+ * 1. Available Months
+ * 2. Current Month Summary
+ *
+ * Single server call for Invoice module.
+ * ==========================================================
+ */
+function getProfitDashboardData() {
+
+  const months =
+    getAvailableProfitMonths();
+
+  let summary = {
+
+    sales: 0,
+    purchases: 0,
+    grossProfit: 0,
+    profitMargin: null
+
+  };
+
+  if (months.length) {
+
+    summary =
+      getMonthlyProfitSummary(
+        months[0]
+      );
+
+  }
+
+  return {
+
+    months: months,
+
+    summary: summary
+
+  };
+
+}
