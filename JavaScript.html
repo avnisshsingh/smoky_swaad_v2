@@ -580,7 +580,7 @@
    }
 
 
-   
+
 
 
    /**
@@ -1663,7 +1663,10 @@
    }
 
 
-   function populatePersonalExpenseCategories(categories) {
+
+
+
+  function populatePersonalExpenseCategories(categories) {
 
       const source =
          Array.isArray(categories)
@@ -1728,6 +1731,7 @@
             ? String(historySelect.value || "")
             : "";
 
+      // 1. POPULATE DROPDOWNS (Includes ALL categories)
       const options =
          clean.map(function(category) {
 
@@ -1772,8 +1776,16 @@
 
       if (grid) {
 
+         // 2. DEFINE TILES TO HIDE FROM UI GRID
+         const hiddenTiles = ["education", "entertainment", "medical", "vegetables"];
+
+         // 3. POPULATE GRID (Filters out the hidden tiles)
          grid.innerHTML =
-            clean.map(function(category) {
+            clean
+               .filter(function(category) {
+                  return !hiddenTiles.includes(category.toLowerCase());
+               })
+               .map(function(category) {
 
                const icon =
                   getPersonalExpenseCategoryIcon(
@@ -1837,6 +1849,13 @@
       }
 
    }
+
+
+
+
+
+
+
 
 
    function showAddPersonalExpenseCategory() {
