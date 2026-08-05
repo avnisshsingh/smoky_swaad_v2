@@ -2,16 +2,14 @@
 <html>
 
 <head>
-
   <base target="_top">
-
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1, viewport-fit=cover">
-
+  
+  <!-- Critical mobile viewport tag for iOS/Android native app feel -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
   <title>Smoky Swaad</title>
-
+  
   <?!= include('CSS'); ?>
-
 </head>
 
 <body>
@@ -20,29 +18,22 @@
   <?!= include('Header'); ?>
 
   <div id="sidebar">
-
     <?!= include('Sidebar'); ?>
-
   </div>
 
   <div id="main-content">
-
     <div id="content">
-
       <?!= include('POS'); ?>
-
     </div>
-
   </div>
 
+  <!-- Client-side Logic -->
   <?!= include('JavaScript'); ?>
-
   <?!= include('BusinessCostsClient'); ?>
-
   <?!= include('PricingCalculatorClient'); ?>
 
-
+  <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-</body>
 
+</body>
 </html>

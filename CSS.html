@@ -1,227 +1,82 @@
 <!-- Bootstrap 5 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-
 /* ==========================================
    GLOBAL
 ========================================== */
-
 :root{
-
     --brand:#ff6b00;
-
 }
 
-html,
-body{
-
+html, body{
     height:100%;
     margin:0;
     padding:0;
-
     background:#f5f7fa;
-
     font-family:Arial, Helvetica, sans-serif;
-
     font-size:14px;
-
     overflow:hidden;
-
 }
 
 /* ==========================================
    HEADER
 ========================================== */
-
 .navbar{
-
     height:60px;
-
 }
 
 /* ==========================================
    SIDEBAR
 ========================================== */
-
 #sidebar{
-
     position:fixed;
-
     top:60px;
-
     left:0;
-
     width:220px;
-
     bottom:0;
-
     overflow:hidden;
-
 }
 
 /* ==========================================
    MAIN CONTENT
 ========================================== */
-
 #main-content{
-
     margin-left:220px;
-
     margin-top:60px;
-
     height:calc(100vh - 60px);
-
     overflow-y:auto;
-
     padding:12px;
-
 }
 
 /* ==========================================
    TYPOGRAPHY
 ========================================== */
-
-body{
-
-    font-size:14px;
-
-}
-
-.card-header h4{
-
-    font-size:1.45rem;
-    margin:0;
-
-}
-
-.card-header h5{
-
-    font-size:1.1rem;
-    margin:0;
-
-}
-
-h5{
-
-    font-size:1.05rem;
-
-}
-
-.form-label{
-
-    font-size:13px;
-    font-weight:600;
-    margin-bottom:4px;
-
-}
-
-.form-control,
-.form-select{
-
-    font-size:14px;
-
-}
-
-.btn{
-
-    font-size:14px;
-
-}
-
-.list-group-item{
-
-    font-size:15px;
-
-}
+body{ font-size:14px; }
+.card-header h4{ font-size:1.45rem; margin:0; }
+.card-header h5{ font-size:1.1rem; margin:0; }
+h5{ font-size:1.05rem; }
+.form-label{ font-size:13px; font-weight:600; margin-bottom:4px; }
+.form-control, .form-select{ font-size:14px; }
+.btn{ font-size:14px; }
+.list-group-item{ font-size:15px; }
 
 /* ==========================================
    CARDS
 ========================================== */
-
-.card{
-
-    border-radius:10px;
-
-    margin-bottom:12px;
-
-}
-
-.card-body{
-
-    padding:16px;
-
-}
+.card{ border-radius:10px; margin-bottom:12px; }
+.card-body{ padding:16px; }
 
 /* ==========================================
    FORMS
 ========================================== */
-
-.row.g-3{
-
-    row-gap:.6rem !important;
-
-}
-
-.input-group-text{
-
-    font-size:14px;
-
-}
+.row.g-3{ row-gap:.6rem !important; }
+.input-group-text{ font-size:14px; }
 
 /* ==========================================
    SIDEBAR MENU
 ========================================== */
-
-#sidebar .list-group-item{
-
-    padding:12px 16px;
-
-}
-
-/* ==========================================
-   MOBILE
-========================================== */
-
-@media(max-width:768px){
-
-    html,
-    body{
-        height:auto;
-        min-height:100%;
-        overflow-x:hidden;
-        overflow-y:auto;
-    }
-
-    #sidebar{
-
-        position:relative;
-
-        width:100%;
-
-        height:auto;
-
-        top:0;
-
-    }
-
-    #main-content{
-
-        margin-left:0;
-
-        margin-top:0;
-
-        height:auto;
-
-        min-height:calc(100vh - 60px);
-
-        overflow:visible;
-
-        padding:10px;
-
-    }
-
-}
+#sidebar .list-group-item{ padding:12px 16px; }
 
 
 /* ==========================================
@@ -229,338 +84,361 @@ h5{
    Global fallback for touch/mobile browsers.
    Desktop continues to use native <select>.
 ========================================== */
-
 #mobileSelectPickerOverlay{
-    position:fixed;
-    inset:0;
-    z-index:20000;
-    display:none;
-    align-items:flex-end;
-    background:rgba(0,0,0,.35);
-    padding:12px;
+    position:fixed; inset:0; z-index:20000; display:none;
+    align-items:flex-end; background:rgba(0,0,0,.35); padding:12px;
 }
-
-#mobileSelectPickerOverlay.is-open{
-    display:flex;
-}
-
+#mobileSelectPickerOverlay.is-open{ display:flex; }
 #mobileSelectPicker{
-    width:100%;
-    max-height:min(72vh,560px);
-    overflow:hidden;
-    background:#fff;
-    border-radius:16px 16px 10px 10px;
+    width:100%; max-height:min(72vh,560px); overflow:hidden;
+    background:#fff; border-radius:16px 16px 10px 10px;
     box-shadow:0 -8px 30px rgba(0,0,0,.18);
 }
-
 .mobile-select-picker-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:12px 14px;
-    border-bottom:1px solid #e9ecef;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:12px 14px; border-bottom:1px solid #e9ecef;
 }
-
 #mobileSelectPickerTitle{
-    min-width:0;
-    margin:0;
-    font-size:16px;
-    font-weight:700;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
+    min-width:0; margin:0; font-size:16px; font-weight:700;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-
 #mobileSelectPickerOptions{
-    max-height:calc(min(72vh,560px) - 58px);
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
+    max-height:calc(min(72vh,560px) - 58px); overflow-y:auto;
+    overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
 }
-
 .mobile-select-picker-option{
-    width:100%;
-    min-height:48px;
-    border:0;
-    border-bottom:1px solid #f1f3f5;
-    background:#fff;
-    padding:11px 14px;
-    text-align:left;
-    font-size:16px;
+    width:100%; min-height:48px; border:0; border-bottom:1px solid #f1f3f5;
+    background:#fff; padding:11px 14px; text-align:left; font-size:16px;
 }
-
 .mobile-select-picker-option.is-selected{
-    font-weight:700;
-    background:#f8f9fa;
+    font-weight:700; background:#f8f9fa;
 }
-
 
 /* ==========================================
    MOBILE DROPDOWNS - ARROW ONLY STANDARD V2
 ========================================== */
-
 @media (max-width:768px), (pointer:coarse){
-
-    /* The wrapper must have exactly the same geometry as the select.
-       This prevents the arrow hit-area from leaking above/below fields. */
-    .mobile-select-arrow-host{
-        position:relative !important;
-    }
-
+    .mobile-select-arrow-host{ position:relative !important; }
     select.mobile-arrow-select,
     #personalExpensesScreen select.form-select.mobile-arrow-select{
-        -webkit-appearance:none !important;
-        appearance:none !important;
-        background-image:none !important;
-        pointer-events:none !important;
+        -webkit-appearance:none !important; appearance:none !important;
+        background-image:none !important; pointer-events:none !important;
         padding-right:48px !important;
     }
-
-    /* Dedicated arrow hit area. It is vertically centered against the
-       select itself and has no divider/border line. */
     .mobile-select-arrow-button{
-        position:absolute !important;
-        z-index:20 !important;
-        right:0 !important;
-
-        /* JS writes --mobile-select-top and --mobile-select-height from
-           the actual select geometry. Fallbacks cover initial paint. */
+        position:absolute !important; z-index:20 !important; right:0 !important;
         top:var(--mobile-select-top, 0px) !important;
         height:var(--mobile-select-height, 100%) !important;
-
-        width:48px !important;
-        min-width:48px !important;
-
-        margin:0 !important;
-        padding:0 !important;
-
-        border:0 !important;
-        outline:0 !important;
-        box-shadow:none !important;
-        background:transparent !important;
-
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-
+        width:48px !important; min-width:48px !important;
+        margin:0 !important; padding:0 !important; border:0 !important;
+        outline:0 !important; box-shadow:none !important; background:transparent !important;
+        display:flex !important; align-items:center !important; justify-content:center !important;
         border-radius:0 .375rem .375rem 0 !important;
-
-        touch-action:manipulation;
-        -webkit-tap-highlight-color:transparent;
-        cursor:pointer;
+        touch-action:manipulation; -webkit-tap-highlight-color:transparent; cursor:pointer;
     }
-
-    .mobile-select-arrow-button:active{
-        background:rgba(0,0,0,.04) !important;
-    }
-
+    .mobile-select-arrow-button:active{ background:rgba(0,0,0,.04) !important; }
     .mobile-select-arrow-chevron{
-        display:block;
-        width:10px;
-        height:10px;
-        margin-top:-5px;
-        border-right:2px solid currentColor;
-        border-bottom:2px solid currentColor;
-        transform:rotate(45deg);
-        transform-origin:center;
-        pointer-events:none;
+        display:block; width:10px; height:10px; margin-top:-5px;
+        border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+        transform:rotate(45deg); transform-origin:center; pointer-events:none;
     }
-
-    .mobile-select-arrow-button:disabled{
-        opacity:.45;
-        pointer-events:none;
-    }
-
-    /* Personal Expenses history filters:
-       keep Month and Category on an exact 50/50 grid. */
+    .mobile-select-arrow-button:disabled{ opacity:.45; pointer-events:none; }
+    
     #personalExpensesScreen .pe-history-filter-row{
-        display:grid !important;
-        grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important;
-        gap:10px !important;
+        display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important; gap:10px !important;
     }
-
     #personalExpensesScreen .pe-history-filter-row > *{
-        width:100% !important;
-        min-width:0 !important;
-        max-width:none !important;
+        width:100% !important; min-width:0 !important; max-width:none !important;
     }
 }
 
 @media (min-width:769px) and (pointer:fine){
-    .mobile-select-arrow-button{
-        display:none !important;
-    }
-
-    select.mobile-arrow-select{
-        pointer-events:auto !important;
-    }
-
-    #mobileSelectPickerOverlay{
-        display:none !important;
-    }
+    .mobile-select-arrow-button{ display:none !important; }
+    select.mobile-arrow-select{ pointer-events:auto !important; }
+    #mobileSelectPickerOverlay{ display:none !important; }
 }
-
 </style>
+
 <style>
 /* ==========================================================
-   GLOBAL MOBILE UX OPTIMIZATION V1
+   GLOBAL MOBILE UX POLISH V2
    Applies only to phones/tablets. Desktop layout is preserved.
 ========================================================== */
 @media (max-width: 768px), (pointer: coarse) {
+  
   :root {
-    --mobile-gap: 10px;
-    --mobile-control-height: 48px;
+    --mobile-gap: 12px;
+    --mobile-control-height: 48px; /* Minimum Apple/Android touch target size */
   }
 
-  html { -webkit-text-size-adjust: 100%; }
-  body { overscroll-behavior-y: none; }
+html, body { 
+    height: auto !important;
+    min-height: 100% !important;
+    -webkit-text-size-adjust: 100%; 
+    overscroll-behavior-y: auto !important; 
+    -webkit-overflow-scrolling: touch !important;
+    background: #f4f6f9;
+    /* THE FIX: Unfreeze the body to allow native mobile scrolling */
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
 
-  /* Header */
+  /* ---------- SAFE AREA (For Notches & Home Bars) ---------- */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* ---------- APP SHELL & HEADER ---------- */
   .navbar {
     min-height: 60px;
-    height: 60px;
-    padding-left: 8px;
-    padding-right: 8px;
+    padding: 8px 12px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 1050;
   }
-  .navbar .container-fluid { padding-left: 4px; padding-right: 4px; }
+  
   .navbar-brand {
     max-width: calc(100vw - 82px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 1.12rem;
+    font-size: 1.15rem;
+    font-weight: 700;
   }
+
   .navbar-toggler {
     min-width: 46px;
     min-height: 44px;
     padding: 6px 9px;
   }
 
-  /* App shell */
-  #sidebar { max-height: none; }
+  #main-content { 
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding: 12px 10px 80px 10px !important; /* Extra bottom padding for scrolling past buttons */
+    height: auto !important;
+    min-height: calc(100vh - 60px);
+    overflow: visible !important;
+  }
+  
+  #content {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* ---------- SIDEBAR -> MOBILE GRID ---------- */
+  #sidebar { 
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-top: 0 !important;
+    top: auto !important;
+    box-shadow: none !important;
+  }
+
   #sidebar-menu {
+    padding: 12px 10px 0 10px !important;
     height: auto !important;
     min-height: 0 !important;
-    padding: 8px !important;
   }
+  
   #sidebar-menu h5 { display: none; }
+
   #sidebar .list-group {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    background: transparent;
   }
+
   #sidebar .list-group-item {
-    min-width: 0;
-    min-height: 44px;
-    padding: 10px 8px;
-    border: 1px solid #dee2e6 !important;
-    border-radius: 8px !important;
+    border: none !important;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    border-radius: 12px !important;
+    padding: 12px 8px;
     text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #495057;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-height: 44px;
+    min-width: 0;
   }
-  #main-content { padding: 8px !important; }
+
+  #sidebar .list-group-item i {
+    font-size: 1.4rem !important;
+    margin: 0 !important;
+    color: var(--brand);
+  }
+
+  #sidebar .list-group-item.active {
+    background: var(--brand);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 107, 0, 0.25);
+  }
+  
+  #sidebar .list-group-item.active i {
+    color: #ffffff;
+  }
+
+  /* ---------- CARDS ---------- */
+  .card {
+    border: none !important;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04) !important;
+    margin-bottom: 16px;
+  }
+
+  .card-header { 
+    background: transparent !important;
+    border-bottom: 1px solid #f1f3f5;
+    padding: 14px 16px;
+    border-radius: 14px 14px 0 0 !important;
+  }
+
+  .card-header h4 { font-size: 1.15rem; font-weight: 700; color: #212529; }
+  .card-header h5 { font-size: 1rem; }
+  .card-body { padding: 16px !important; }
+
+  /* ---------- FORMS & TOUCH TARGETS ---------- */
+  .form-control,
+  .form-select,
+  .input-group-text {
+    min-height: var(--mobile-control-height);
+    font-size: 16px !important; /* MUST be 16px to prevent iOS auto-zoom */
+    border-radius: 10px;
+    border: 1px solid #ced4da;
+    background-color: #fcfcfc;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15);
+    border-color: var(--brand);
+  }
+
+  textarea.form-control { min-height: 100px; }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 6px;
+  }
+
+  /* ---------- BUTTONS ---------- */
+  .btn {
+    min-height: var(--mobile-control-height);
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+  .btn-sm { min-height: 38px; }
+  .btn-lg { min-height: 52px; }
+
+  /* ---------- TABLES (SWIPE-FRIENDLY) ---------- */
+  .table-responsive {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #f1f3f5;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    margin-bottom: 0;
+    overflow-x: auto !important;
+    padding-bottom: 2px;
+  }
+
+  .table-responsive > .table {
+    width: max-content;
+    min-width: 100%;
+    margin-bottom: 0;
+  }
+
+  .table th {
+    background: #f8f9fa;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    padding: 12px 16px;
+    white-space: nowrap;
+  }
+
+  .table td {
+    font-size: 14px;
+    padding: 14px 16px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  /* ---------- MODALS ---------- */
+  .modal-dialog {
+    margin: auto 12px;
+    max-width: calc(100vw - 24px);
+    align-items: flex-end; 
+    min-height: calc(100% - 24px);
+    display: flex;
+  }
+
+  .modal-content { 
+    border-radius: 20px; 
+    border: none;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+  }
+
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 10px 12px; gap: 8px; }
+  .modal-footer .btn { flex: 1 1 auto; }
+  
+  /* ---------- UTILITY ---------- */
+  .row.g-3 { --bs-gutter-x: 12px; --bs-gutter-y: 12px; }
+  .alert { padding: 10px 12px; margin-bottom: 10px; }
+
+  #content > .container-fluid > .row > [class*="col-lg-"] {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  
   #content > .container-fluid,
   #personalExpensesScreen.container-fluid {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
 
-  /* Cards */
-  .card {
-    border-radius: 10px;
-    margin-bottom: 10px;
-  }
-  .card-header { padding: 10px 12px; }
-  .card-header h4 { font-size: 1.15rem; }
-  .card-header h5 { font-size: 1rem; }
-  .card-body { padding: 12px !important; }
-
-  /* Forms: large enough for touch and no iOS zoom */
-  .form-control,
-  .form-select,
-  .input-group-text {
-    min-height: var(--mobile-control-height);
-    font-size: 16px !important;
-  }
-  textarea.form-control { min-height: 84px; }
-  .form-label {
-    font-size: 13px;
-    margin-bottom: 5px;
-  }
-  .row.g-3 { --bs-gutter-x: 10px; --bs-gutter-y: 10px; }
-
-  /* Action buttons */
-  .btn {
-    min-height: 44px;
-    touch-action: manipulation;
-  }
-  .btn-sm { min-height: 38px; }
-  .btn-lg { min-height: 52px; }
-
-  /* Search suggestion lists */
   .position-relative > .list-group.position-absolute {
     max-height: min(42vh, 300px) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
+  
   .position-relative > .list-group.position-absolute .list-group-item {
     min-height: 46px;
     padding: 10px 12px;
   }
 
-  /* Tables: predictable horizontal scrolling without breaking columns */
-  .table-responsive {
-    width: 100%;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    padding-bottom: 2px;
-  }
-  .table-responsive > .table {
-    width: max-content;
-    min-width: 100%;
-    margin-bottom: 0;
-  }
-  .table th,
-  .table td {
-    white-space: nowrap;
-    padding: 9px 10px;
-    vertical-align: middle;
-  }
-
-  /* Modals */
-  .modal-dialog {
-    margin: 8px;
-    max-width: calc(100vw - 16px);
-  }
-  .modal-content { border-radius: 12px; }
-  .modal-body { padding: 12px; }
-  .modal-footer {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .modal-footer .btn { flex: 1 1 auto; }
-
-  /* POS/Purchase: stacked panels need no extra desktop gutter */
-  #content > .container-fluid > .row > [class*="col-lg-"] {
-    padding-left: 5px;
-    padding-right: 5px;
-  }
-
-  /* Reports KPI cards: compact two-column cards where possible */
+  /* ---------- MODULE SPECIFIC FIXES ---------- */
   #reportContent .card-body h3,
-  #todaySales,
-  #todayOrders,
-  #todayProfit {
-    font-size: 1.35rem;
-    margin-bottom: 0;
+  #todaySales, #todayOrders, #todayProfit {
+    font-size: 1.35rem; margin-bottom: 0;
   }
 
-  /* Invoice screen: prevent inline desktop content from forcing viewport width */
   #invoicePdfContainer {
     max-width: 100%;
     overflow-x: auto;
@@ -568,107 +446,67 @@ h5{
   }
   #invoicePdfContainer img { max-width: 100%; height: auto; }
 
-  /* Pricing and cost tables */
   #pricingIngredientsTable,
-  #businessCostsTableBody {
-    font-size: 13px;
+  #businessCostsTableBody { font-size: 13px; }
+
+  /* ---------- MOBILE HEADER / NAVIGATION FIX ---------- */
+  #navbarMenu .navbar-nav .nav-item:first-child{
+      display:none !important;
+  }
+  #navbarMenu{
+      background:#212529;
+      padding:6px 4px 8px !important;
+  }
+  #navbarMenu .navbar-nav{
+      align-items:flex-end;
+  }
+  #navbarMenu .nav-link{
+      padding:6px 4px !important;
+  }
+  
+  /* ==========================================
+     POS ADD-ON & INPUT GROUP ALIGNMENT FIX 
+     (This only applies to mobile devices)
+  ========================================== */
+  
+  /* 1. Fix the double-borders on the Price box */
+  .input-group > .input-group-text:first-child {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      border-right: 0 !important;
+  }
+  .input-group > .form-control:not(:first-child) {
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
   }
 
-  /* Keep alert/status feedback visible and readable */
-  .alert { padding: 10px 12px; margin-bottom: 10px; }
+  /* 2. Stop the squishing! Stack the Add-on Row into 2 lines */
+  div:has(> #addonName) {
+      flex-wrap: wrap !important;
+      gap: 10px !important;
+  }
+  
+  div:has(> #addonName) > #addonName {
+      width: 100% !important;
+      flex: 0 0 100% !important; /* Forces the name box to take the full top row */
+      margin: 0 !important;
+  }
+  
+  div:has(> #addonName) > .input-group {
+      flex: 1 !important; /* Price box takes the remaining space on the bottom row */
+      margin: 0 !important;
+  }
+  
+  div:has(> #addonName) > button {
+      width: 48px !important; /* Perfect square touch target for the + button */
+      margin: 0 !important;
+  }
 }
 
+/* Extra small devices */
 @media (max-width: 420px) {
-  #sidebar .list-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .card-body { padding: 10px !important; }
-  #main-content { padding: 6px !important; }
+  .card-body { padding: 12px !important; }
+  .table th, .table td { padding: 10px 12px; }
+  #main-content { padding: 8px 6px 80px 6px !important; }
 }
-
-/* ==========================================
-   MOBILE SCROLL HOTFIX
-   Restores normal page scrolling on phones.
-========================================== */
-@media (max-width:768px), (pointer:coarse){
-
-    html{
-        height:auto !important;
-        min-height:100% !important;
-        overflow-x:hidden !important;
-        overflow-y:auto !important;
-        overscroll-behavior-y:auto !important;
-    }
-
-    body{
-        height:auto !important;
-        min-height:100vh !important;
-        overflow-x:hidden !important;
-        overflow-y:auto !important;
-        -webkit-overflow-scrolling:touch !important;
-        overscroll-behavior-y:auto !important;
-    }
-
-    #main-content{
-        height:auto !important;
-        min-height:calc(100vh - 60px) !important;
-        max-height:none !important;
-        overflow:visible !important;
-        -webkit-overflow-scrolling:auto !important;
-    }
-
-    #content{
-        height:auto !important;
-        min-height:0 !important;
-        max-height:none !important;
-        overflow:visible !important;
-    }
-
-    /* Cards/screens must grow with their content instead of becoming
-       accidental nested scroll containers. */
-    #content > *,
-    #personalExpensesScreen{
-        max-height:none !important;
-    }
-}
-
-/* ==========================================
-   MOBILE HEADER / NAVIGATION FIX V2
-========================================== */
-@media (max-width:768px), (pointer:coarse){
-
-    /* Header is fixed at 60px. The sidebar is now part of normal mobile
-       document flow, so reserve exactly that space above it. Without this,
-       the first menu row (POS + Purchase) sits underneath the fixed navbar. */
-    #sidebar{
-        margin-top:60px !important;
-        top:auto !important;
-    }
-
-    /* Keep the module grid immediately below the header. */
-    #sidebar-menu{
-        margin-top:0 !important;
-    }
-
-    /* "Smoky Swaad" inside the hamburger menu duplicates the permanent
-       navbar brand. Hide only that redundant first mobile nav item.
-       The user item remains available. */
-    #navbarMenu .navbar-nav .nav-item:first-child{
-        display:none !important;
-    }
-
-    /* Keep the expanded hamburger area compact and right aligned. */
-    #navbarMenu{
-        background:#212529;
-        padding:6px 4px 8px !important;
-    }
-
-    #navbarMenu .navbar-nav{
-        align-items:flex-end;
-    }
-
-    #navbarMenu .nav-link{
-        padding:6px 4px !important;
-    }
-}
-
-
 </style>
