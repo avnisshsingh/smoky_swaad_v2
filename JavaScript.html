@@ -1,5 +1,6 @@
 <!-- Bootstrap Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
    /* ==========================================
@@ -6217,131 +6218,173 @@ function escapePersonalExpenseHtml(
       printWindow.close();
    }
 
-  /**
+
+/**
  * ==========================================
- * Download Invoice PDF
- * Compact A4 / Mobile Safe Version
+ * BUILD INVOICE PDF BLOB
+ *
+ * Shared by:
+ * - Download PDF
+ * - WhatsApp PDF
  * ==========================================
  */
-async function downloadInvoicePdf() {
+async function buildInvoicePdfBlob() {
 
    const invoice =
       document.getElementById("invoicePdfContainer");
 
    if (!invoice) {
-      alert("Invoice not found.");
-      return;
-   }
-
-   const orderId =
-      document.getElementById("invOrderId")
-         .innerText
-         .trim();
-
-   if (!orderId || orderId === "-") {
-      alert("Please search an invoice first.");
-      return;
-   }
-
-   const btn =
-      document.getElementById("btnDownloadPdf");
-
-   if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = "Generating PDF...";
+      throw new Error("Invoice not found.");
    }
 
    let wrapper = null;
 
    try {
 
-      /* ==========================================
-         FILE NAME
-      ========================================== */
-
-      const today = new Date();
-
-      const fileDate =
-         today.getFullYear() +
-         "-" +
-         String(today.getMonth() + 1).padStart(2, "0") +
-         "-" +
-         String(today.getDate()).padStart(2, "0");
-
-      const fileName =
-         orderId + "_" + fileDate + ".pdf";
-
-
-      /* ==========================================
-         CREATE OFF-SCREEN DESKTOP COPY
-      ========================================== */
+      // Fixed desktop export width.
+      // Do NOT mix mm sizing with html2canvas pixel sizing.
+      const EXPORT_WIDTH = 794;
 
       wrapper = document.createElement("div");
+      wrapper.id = "invoicePdfExportHost";
 
-      /*
-       * IMPORTANT:
-       * Keep the export clone at document coordinate 0,0.
-       *
-       * Do NOT move it to -10000px. On mobile html2canvas can preserve
-       * that off-screen coordinate and create a blank first PDF page.
-       *
-       * visibility:hidden cannot be used because html2canvas would not
-       * paint the invoice. Instead place it behind the application.
-       */
       wrapper.style.position = "fixed";
       wrapper.style.left = "0";
       wrapper.style.top = "0";
+      wrapper.style.width = EXPORT_WIDTH + "px";
+      wrapper.style.margin = "0";
+      wrapper.style.padding = "0";
+      wrapper.style.background = "#ffffff";
       wrapper.style.zIndex = "-2147483647";
       wrapper.style.pointerEvents = "none";
       wrapper.style.overflow = "visible";
-
-      /*
-       * 190mm is the usable A4 width when
-       * 10mm total horizontal margin is reserved.
-       */
-      wrapper.style.width = "190mm";
-      wrapper.style.background = "#ffffff";
-      wrapper.style.margin = "0";
-      wrapper.style.padding = "0";
-
 
       const pdfInvoice =
          invoice.cloneNode(true);
 
       pdfInvoice.id = "invoicePdfExport";
 
-      pdfInvoice.style.width = "190mm";
-      pdfInvoice.style.maxWidth = "190mm";
-      pdfInvoice.style.minWidth = "190mm";
+      // ADD THIS CODE:
+      // Strip emojis and problematic characters that break html2canvas text metrics
+      pdfInvoice.innerHTML = pdfInvoice.innerHTML
+         .replace(/❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕/g, "")
+         .replace(/•/g, "-");
+      // END OF ADDED CODE
 
-      pdfInvoice.style.margin = "0";
-      pdfInvoice.style.padding = "0";
+      // ==========================================
+      // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
+      // ==========================================
+
+      pdfInvoice.style.setProperty(
+         "display",
+         "block",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "min-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "max-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "overflow",
+         "visible",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin-left",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin-right",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "min-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "max-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "padding",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "position",
+         "relative",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "left",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "top",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "transform",
+         "none",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "overflow",
+         "visible",
+         "important"
+      );
 
       pdfInvoice.style.background = "#ffffff";
-
-      pdfInvoice.style.fontFamily =
-         "Arial, sans-serif";
-
-      pdfInvoice.style.fontSize = "11px";
-      pdfInvoice.style.lineHeight = "1.2";
-
-      /*
-       * IMPORTANT:
-       * Prevent mobile flex/layout rules from
-       * changing the width of the PDF copy.
-       */
       pdfInvoice.style.boxSizing = "border-box";
-      pdfInvoice.style.position = "relative";
-      pdfInvoice.style.left = "0";
-      pdfInvoice.style.top = "0";
-      pdfInvoice.style.transform = "none";
-      pdfInvoice.style.transformOrigin = "top left";
-      pdfInvoice.style.overflow = "visible";
+      pdfInvoice.style.fontFamily = "Arial, sans-serif";
 
 
-      /* ==========================================
-         REMOVE BUTTONS / SCREEN-ONLY CONTROLS
-      ========================================== */
+      // ==========================================
+      // Remove screen-only controls
+      // ==========================================
 
       pdfInvoice
          .querySelectorAll(
@@ -6354,9 +6397,9 @@ async function downloadInvoicePdf() {
          });
 
 
-      /* ==========================================
-         REMOVE EMPTY ADDRESS CARD
-      ========================================== */
+      // ==========================================
+      // Remove empty optional cards
+      // ==========================================
 
       const address =
          pdfInvoice.querySelector("#invAddress");
@@ -6375,10 +6418,6 @@ async function downloadInvoicePdf() {
 
       }
 
-
-      /* ==========================================
-         REMOVE EMPTY SPECIAL INSTRUCTIONS
-      ========================================== */
 
       const instructions =
          pdfInvoice.querySelector(
@@ -6403,9 +6442,128 @@ async function downloadInvoicePdf() {
       }
 
 
-      /* ==========================================
-         COMPACT ALL CARDS
-      ========================================== */
+      // ==========================================
+      // Force desktop Bootstrap layout
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll(".row")
+         .forEach(function(row) {
+
+            row.style.setProperty(
+               "display",
+               "flex",
+               "important"
+            );
+
+            row.style.setProperty(
+               "flex-wrap",
+               "wrap",
+               "important"
+            );
+
+            row.style.setProperty(
+               "margin-left",
+               "0",
+               "important"
+            );
+
+            row.style.setProperty(
+               "margin-right",
+               "0",
+               "important"
+            );
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-6"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 50%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "50%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "50%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-4"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 33.333333%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "33.333333%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "33.333333%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-8"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 66.666667%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "66.666667%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "66.666667%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      // ==========================================
+      // Compact cards
+      // ==========================================
 
       pdfInvoice
          .querySelectorAll(".card")
@@ -6413,32 +6571,12 @@ async function downloadInvoicePdf() {
 
             card.style.marginTop = "0";
             card.style.marginBottom = "5px";
-
-            card.style.padding = "0";
-
             card.style.boxShadow = "none";
-
-            card.style.border =
-               "1px solid #dddddd";
-
-            /*
-             * CRITICAL FIX:
-             *
-             * Do NOT use breakInside = avoid
-             * on every card.
-             *
-             * That was creating large blank
-             * areas and unnecessary pages.
-             */
             card.style.breakInside = "auto";
             card.style.pageBreakInside = "auto";
 
          });
 
-
-      /* ==========================================
-         COMPACT CARD BODY
-      ========================================== */
 
       pdfInvoice
          .querySelectorAll(".card-body")
@@ -6448,10 +6586,6 @@ async function downloadInvoicePdf() {
 
          });
 
-
-      /* ==========================================
-         COMPACT CARD HEADERS
-      ========================================== */
 
       pdfInvoice
          .querySelectorAll(".card-header")
@@ -6463,544 +6597,185 @@ async function downloadInvoicePdf() {
          });
 
 
-      /* ==========================================
-         REMOVE BOOTSTRAP LARGE MARGINS
-      ========================================== */
+      // ==========================================
+      // Tables
+      // ==========================================
 
       pdfInvoice
-         .querySelectorAll(
-            ".mb-1, .mb-2, .mb-3, .mb-4, .mb-5"
-         )
-         .forEach(function(element) {
+         .querySelectorAll("table")
+         .forEach(function(table) {
 
-            element.style.marginBottom = "4px";
+            table.style.setProperty(
+               "width",
+               "100%",
+               "important"
+            );
+
+            table.style.setProperty(
+               "max-width",
+               "100%",
+               "important"
+            );
+
+            table.style.setProperty(
+               "min-width",
+               "0",
+               "important"
+            );
+
+            table.style.tableLayout = "fixed";
+            table.style.borderCollapse = "collapse";
+            table.style.margin = "0";
+            table.style.boxSizing = "border-box";
 
          });
 
 
-      pdfInvoice
-         .querySelectorAll(
-            ".mt-1, .mt-2, .mt-3, .mt-4, .mt-5"
-         )
-         .forEach(function(element) {
+      const itemsBody =
+         pdfInvoice.querySelector(
+            "#invoiceItemsBody"
+         );
 
-            element.style.marginTop = "4px";
+      if (itemsBody) {
 
-         });
+         const itemsTable =
+            itemsBody.closest("table");
 
+         if (itemsTable) {
 
-      pdfInvoice
-         .querySelectorAll(
-            ".my-1, .my-2, .my-3, .my-4, .my-5"
-         )
-         .forEach(function(element) {
+            itemsTable
+               .querySelectorAll("tr")
+               .forEach(function(row) {
 
-            element.style.marginTop = "4px";
-            element.style.marginBottom = "4px";
+                  const cells =
+                     row.children;
 
-         });
+                  if (cells.length >= 4) {
 
+                     cells[0].style.width = "56%";
+                     cells[1].style.width = "10%";
+                     cells[2].style.width = "16%";
+                     cells[3].style.width = "18%";
 
-      /* ==========================================
-         COMPACT HEADINGS
-      ========================================== */
+                     cells[0].style.textAlign = "left";
+                     cells[1].style.textAlign = "center";
+                     cells[2].style.textAlign = "right";
+                     cells[3].style.textAlign = "right";
 
-      pdfInvoice
-         .querySelectorAll(
-            "h1, h2, h3, h4, h5, h6"
-         )
-         .forEach(function(heading) {
+                     cells[0].style.whiteSpace = "normal";
+                     cells[1].style.whiteSpace = "nowrap";
+                     cells[2].style.whiteSpace = "nowrap";
+                     cells[3].style.whiteSpace = "nowrap";
 
-            heading.style.marginTop = "0";
-            heading.style.marginBottom = "3px";
-            heading.style.lineHeight = "1.15";
+                  }
 
-         });
-
-
-      /* ==========================================
-         COMPACT PARAGRAPHS
-      ========================================== */
-
-      pdfInvoice
-         .querySelectorAll("p")
-         .forEach(function(paragraph) {
-
-            paragraph.style.marginTop = "0";
-            paragraph.style.marginBottom = "3px";
-
-         });
-
-
-      /* ==========================================
-         FIX BOOTSTRAP ROW LAYOUT
-      ========================================== */
-
-      pdfInvoice
-         .querySelectorAll(".row")
-         .forEach(function(row) {
-
-            row.style.display = "flex";
-            row.style.flexWrap = "wrap";
-
-            /*
-             * Bootstrap negative row margins can
-             * make html2canvas wider than A4.
-             */
-            row.style.marginLeft = "0";
-            row.style.marginRight = "0";
-
-         });
-
-
-      /* ==========================================
-         PREVENT MOBILE 100% COLUMNS
-      ========================================== */
-
-      pdfInvoice
-         .querySelectorAll(
-            '[class*="col-md-6"]'
-         )
-         .forEach(function(column) {
-
-            column.style.flex =
-               "0 0 50%";
-
-            column.style.width = "50%";
-            column.style.maxWidth = "50%";
-
-            column.style.boxSizing =
-               "border-box";
-
-         });
-
-
-      pdfInvoice
-         .querySelectorAll(
-            '[class*="col-md-4"]'
-         )
-         .forEach(function(column) {
-
-            column.style.flex =
-               "0 0 33.333333%";
-
-            column.style.width =
-               "33.333333%";
-
-            column.style.maxWidth =
-               "33.333333%";
-
-            column.style.boxSizing =
-               "border-box";
-
-         });
-
-
-      pdfInvoice
-         .querySelectorAll(
-            '[class*="col-md-8"]'
-         )
-         .forEach(function(column) {
-
-            column.style.flex =
-               "0 0 66.666667%";
-
-            column.style.width =
-               "66.666667%";
-
-            column.style.maxWidth =
-               "66.666667%";
-
-            column.style.boxSizing =
-               "border-box";
-
-         });
-
-
-    /* ==========================================
-   PDF TABLE FIX
-========================================== */
-
-const tables =
-   pdfInvoice.querySelectorAll("table");
-
-tables.forEach(function(table) {
-
-   table.style.width = "100%";
-   table.style.maxWidth = "100%";
-   table.style.minWidth = "0";
-
-   table.style.tableLayout = "fixed";
-
-   table.style.borderCollapse = "collapse";
-
-   table.style.margin = "0";
-
-   table.style.boxSizing = "border-box";
-
-});
-
-
-/* ==========================================
-   ORDER ITEMS TABLE COLUMN WIDTHS
-========================================== */
-
-const itemsBody =
-   pdfInvoice.querySelector("#invoiceItemsBody");
-
-if (itemsBody) {
-
-   const itemsTable =
-      itemsBody.closest("table");
-
-   if (itemsTable) {
-
-      itemsTable.style.width = "100%";
-      itemsTable.style.maxWidth = "100%";
-      itemsTable.style.tableLayout = "fixed";
-
-
-      /*
-       * Item = 52%
-       * Qty = 12%
-       * Price = 18%
-       * Amount = 18%
-       */
-
-      const rows =
-         itemsTable.querySelectorAll("tr");
-
-      rows.forEach(function(row) {
-
-         const cells =
-            row.children;
-
-         if (cells.length >= 4) {
-
-            cells[0].style.width = "52%";
-            cells[0].style.maxWidth = "52%";
-
-            cells[1].style.width = "12%";
-            cells[1].style.maxWidth = "12%";
-
-            cells[2].style.width = "18%";
-            cells[2].style.maxWidth = "18%";
-
-            cells[3].style.width = "18%";
-            cells[3].style.maxWidth = "18%";
-
-
-            cells[0].style.textAlign = "left";
-
-            cells[1].style.textAlign = "center";
-
-            cells[2].style.textAlign = "right";
-
-            cells[3].style.textAlign = "right";
-
-
-            cells[0].style.whiteSpace = "normal";
-
-            cells[1].style.whiteSpace = "nowrap";
-
-            cells[2].style.whiteSpace = "nowrap";
-
-            cells[3].style.whiteSpace = "nowrap";
-
-
-            cells[0].style.overflow = "hidden";
-
-            cells[1].style.overflow = "hidden";
-
-            cells[2].style.overflow = "hidden";
-
-            cells[3].style.overflow = "hidden";
-
-
-            cells[0].style.boxSizing = "border-box";
-
-            cells[1].style.boxSizing = "border-box";
-
-            cells[2].style.boxSizing = "border-box";
-
-            cells[3].style.boxSizing = "border-box";
+               });
 
          }
 
-      });
-
-   }
-
-}
-
-
-/* ==========================================
-   COMPACT TABLE CELLS
-========================================== */
-
-pdfInvoice
-   .querySelectorAll("th, td")
-   .forEach(function(cell) {
-
-      cell.style.padding = "4px 6px";
-
-      cell.style.verticalAlign = "middle";
-
-      cell.style.lineHeight = "1.15";
-
-      cell.style.fontSize = "10px";
-
-      cell.style.boxSizing = "border-box";
-
-   });
-
-
-/* ==========================================
-   KEEP ROWS TOGETHER
-========================================== */
-
-pdfInvoice
-   .querySelectorAll("tr")
-   .forEach(function(row) {
-
-      row.style.breakInside = "avoid";
-
-      row.style.pageBreakInside = "avoid";
-
-   });
-
-
-/* ==========================================
-   TABLE HEADER
-========================================== */
-
-pdfInvoice
-   .querySelectorAll("thead")
-   .forEach(function(head) {
-
-      head.style.display = "table-header-group";
-
-   });
-
-
-/* ==========================================
-   FINAL INVOICE PDF POLISH
-   PDF COPY ONLY — DOES NOT AFFECT SCREEN UI
-========================================== */
-
-pdfInvoice.querySelectorAll(".card").forEach(function(card) {
-   card.style.marginBottom = "4px";
-});
-
-pdfInvoice.querySelectorAll(".card-body").forEach(function(body) {
-   body.style.padding = "6px 9px";
-});
-
-pdfInvoice.querySelectorAll(".card-header").forEach(function(header) {
-   header.style.padding = "4px 9px";
-   header.style.lineHeight = "1.15";
-});
-
-pdfInvoice.querySelectorAll("label").forEach(function(label) {
-   label.style.display = "block";
-   label.style.marginBottom = "1px";
-   label.style.fontSize = "9px";
-   label.style.lineHeight = "1.1";
-});
-
-pdfInvoice
-   .querySelectorAll(
-      "#invOrderId, #invDate, #invCustomer, #invMobile, " +
-      "#invDeliveryArea, #invDeliverySlot, #invOrderType, #invAddress"
-   )
-   .forEach(function(value) {
-      value.style.marginTop = "0";
-      value.style.marginBottom = "2px";
-      value.style.lineHeight = "1.15";
-   });
-
-const finalItemsBody =
-   pdfInvoice.querySelector("#invoiceItemsBody");
-
-if (finalItemsBody) {
-   const finalItemsTable = finalItemsBody.closest("table");
-
-   if (finalItemsTable) {
-      finalItemsTable.querySelectorAll("tr").forEach(function(row) {
-         const cells = row.children;
-
-         if (cells.length >= 4) {
-            cells[0].style.width = "56%";
-            cells[0].style.maxWidth = "56%";
-            cells[1].style.width = "10%";
-            cells[1].style.maxWidth = "10%";
-            cells[2].style.width = "16%";
-            cells[2].style.maxWidth = "16%";
-            cells[3].style.width = "18%";
-            cells[3].style.maxWidth = "18%";
-
-            cells[0].style.textAlign = "left";
-            cells[1].style.textAlign = "center";
-            cells[2].style.textAlign = "right";
-            cells[3].style.textAlign = "right";
-
-            cells[0].style.whiteSpace = "normal";
-            cells[1].style.whiteSpace = "nowrap";
-            cells[2].style.whiteSpace = "nowrap";
-            cells[3].style.whiteSpace = "nowrap";
-         }
-      });
-   }
-}
-
-[
-   "invSubtotal",
-   "invAddonTotal",
-   "invDeliveryCharge",
-   "invDiscount",
-   "invGrandTotal"
-].forEach(function(id) {
-   const element = pdfInvoice.querySelector("#" + id);
-
-   if (!element) return;
-
-   element.style.textAlign = "right";
-   element.style.whiteSpace = "nowrap";
-   element.style.paddingLeft = "8px";
-});
-
-const grandTotal =
-   pdfInvoice.querySelector("#invGrandTotal");
-
-if (grandTotal) {
-   grandTotal.style.fontSize = "15px";
-   grandTotal.style.lineHeight = "1.1";
-}
-
-const paymentMode =
-   pdfInvoice.querySelector("#invPaymentMode2");
-
-if (paymentMode) {
-   paymentMode.style.marginTop = "1px";
-   paymentMode.style.marginBottom = "0";
-   paymentMode.style.lineHeight = "1.15";
-}
-
-const paymentStatus =
-   pdfInvoice.querySelector("#invPaymentStatus");
-
-if (paymentStatus) {
-   paymentStatus.style.marginTop = "1px";
-   paymentStatus.style.marginBottom = "0";
-   paymentStatus.style.lineHeight = "1.15";
-}
-
-const finalInstructions =
-   pdfInvoice.querySelector("#invInstructions");
-
-if (finalInstructions) {
-   finalInstructions.style.margin = "0";
-   finalInstructions.style.lineHeight = "1.2";
-}
-
-const footerHeadings =
-   pdfInvoice.querySelectorAll(".text-center h5");
-
-footerHeadings.forEach(function(heading) {
-   if (
-      heading.textContent &&
-      heading.textContent.toLowerCase().includes("thank you")
-   ) {
-      const footer = heading.parentElement;
-
-      if (footer) {
-         footer.style.marginTop = "5px";
-         footer.style.marginBottom = "0";
       }
 
-      heading.style.marginTop = "0";
-      heading.style.marginBottom = "1px";
-      heading.style.fontSize = "13px";
-      heading.style.lineHeight = "1.15";
 
-      const footerText = heading.nextElementSibling;
+      pdfInvoice
+         .querySelectorAll("th, td")
+         .forEach(function(cell) {
 
-      if (footerText) {
-         footerText.style.marginTop = "0";
-         footerText.style.marginBottom = "0";
-         footerText.style.lineHeight = "1.1";
-         footerText.style.fontSize = "9px";
-      }
-   }
-});
-      /* ==========================================
-         REMOVE UNWANTED MIN HEIGHTS
+            cell.style.padding = "4px 6px";
+            cell.style.verticalAlign = "middle";
+            cell.style.lineHeight = "1.15";
+            cell.style.fontSize = "10px";
+            cell.style.boxSizing = "border-box";
 
-         Mobile CSS / Bootstrap can leave
-         unnecessary vertical space.
-      ========================================== */
+         });
+
+
+      // ==========================================
+      // Remove responsive overflow
+      // ==========================================
 
       pdfInvoice
          .querySelectorAll("*")
          .forEach(function(element) {
 
-            const computed =
-               window.getComputedStyle(element);
+            element.style.boxSizing =
+               "border-box";
 
             if (
-               computed.minHeight &&
-               computed.minHeight !== "0px"
+               element.style.overflowX === "auto"
             ) {
-
-               element.style.minHeight = "0";
-
+               element.style.overflowX =
+                  "visible";
             }
 
          });
 
 
-      /* ==========================================
-         PROTECT ONLY SMALL IMPORTANT SECTIONS
-      ========================================== */
+      // ==========================================
+      // EXPORT-ONLY CSS
+      // Keeps responsive/mobile UI rules away from
+      // the temporary PDF clone without changing
+      // the live Invoice screen.
+      // ==========================================
 
-      [
-         "#invPaymentMode2",
-         "#invGrandTotal"
-      ].forEach(function(selector) {
+      const exportStyle =
+         document.createElement("style");
 
-         const element =
-            pdfInvoice.querySelector(selector);
-
-         if (!element) {
-            return;
+      exportStyle.textContent = `
+         #invoicePdfExportHost {
+            width: ${EXPORT_WIDTH}px !important;
+            min-width: ${EXPORT_WIDTH}px !important;
+            max-width: ${EXPORT_WIDTH}px !important;
+            overflow: visible !important;
          }
 
-         const card =
-            element.closest(".card");
-
-         if (card) {
-
-            card.style.breakInside = "avoid";
-            card.style.pageBreakInside = "avoid";
-
+         #invoicePdfExport {
+            display: block !important;
+            width: ${EXPORT_WIDTH}px !important;
+            min-width: ${EXPORT_WIDTH}px !important;
+            max-width: ${EXPORT_WIDTH}px !important;
+            overflow: visible !important;
+            margin: 0 !important;
          }
 
-      });
+         #invoicePdfExport > .card {
+            width: 100% !important;
+            max-width: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+         }
 
+         #invoicePdfExport .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+         }
 
-      /* ==========================================
-         ADD COPY TO DOM
-      ========================================== */
+         #invoicePdfExport .row > * {
+            min-width: 0 !important;
+         }
 
+         #invoicePdfExport table {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            overflow: visible !important;
+         }
+
+         #invoicePdfExport .table-responsive {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+         }
+      `;
+
+      wrapper.appendChild(exportStyle);
       wrapper.appendChild(pdfInvoice);
 
       document.body.appendChild(wrapper);
 
 
-      /* ==========================================
-         WAIT UNTIL BROWSER FINISHES LAYOUT
-      ========================================== */
-
+      // Allow browser to calculate the fixed layout.
       await new Promise(function(resolve) {
 
          requestAnimationFrame(function() {
@@ -7012,122 +6787,195 @@ footerHeadings.forEach(function(heading) {
       });
 
 
-      /* ==========================================
-         HTML2PDF OPTIONS
-      ========================================== */
+      // ==========================================
+      // CAPTURE EXACT INVOICE
+      // ==========================================
 
-      const options = {
-
-         margin: [
-            5,
-            5,
-            5,
-            5
-         ],
-
-         filename: fileName,
-
-         image: {
-            type: "jpeg",
-            quality: 0.98
-         },
-
-         html2canvas: {
-
-            scale: 2,
-
-            useCORS: true,
-
-            allowTaint: false,
-
-            backgroundColor: "#ffffff",
-
-            logging: false,
-
-            /*
-             * Force desktop media/layout
-             * even when user downloads PDF
-             * from a phone.
-             */
-            windowWidth: 794,
-            windowHeight: Math.max(
-               pdfInvoice.scrollHeight + 40,
-               1123
-            ),
-
-            scrollX: 0,
-            scrollY: 0,
-
-            onclone: function(clonedDocument) {
-
-               const clonedInvoice =
-                  clonedDocument.getElementById("invoicePdfExport");
-
-               if (!clonedInvoice) {
-                  return;
-               }
-
-               clonedInvoice.style.position = "relative";
-               clonedInvoice.style.left = "0";
-               clonedInvoice.style.top = "0";
-               clonedInvoice.style.margin = "0";
-               clonedInvoice.style.transform = "none";
-               clonedInvoice.style.overflow = "visible";
-
-               const clonedWrapper =
-                  clonedInvoice.parentElement;
-
-               if (clonedWrapper) {
-                  clonedWrapper.style.position = "relative";
-                  clonedWrapper.style.left = "0";
-                  clonedWrapper.style.top = "0";
-                  clonedWrapper.style.margin = "0";
-                  clonedWrapper.style.transform = "none";
-                  clonedWrapper.style.overflow = "visible";
-               }
-
-            }
-
-         },
-
-         jsPDF: {
-
-            unit: "mm",
-
-            format: "a4",
-
-            orientation: "portrait"
-
-         },
-
-         /*
-          * No avoid-all.
-          *
-          * Only the specific elements above
-          * control page breaking.
-          */
-         pagebreak: {
-
-            mode: [
-               "legacy"
-            ]
-
-         }
-
-      };
-
-
-      /* ==========================================
-         GENERATE PDF ONCE
-      ========================================== */
-
-      const worker =
+const captureWorker =
          html2pdf()
-            .set(options)
-            .from(pdfInvoice);
+            .set({
+               html2canvas: {
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  backgroundColor: "#ffffff",
+                  logging: false,
+                  width: EXPORT_WIDTH,
+                  windowWidth: EXPORT_WIDTH,
+                  scrollX: 0,
+                  scrollY: 0,
+                  x: 0,
+                  y: 0
+               }
+            })
+
+            .from(pdfInvoice)
+
+            .toCanvas();
+
+
+      const sourceCanvas =
+         await captureWorker.get("canvas");
+
+
+      if (
+         !sourceCanvas ||
+         !sourceCanvas.width ||
+         !sourceCanvas.height
+      ) {
+
+         throw new Error(
+            "Invoice canvas could not be generated."
+         );
+
+      }
+
+
+      // ==========================================
+      // CREATE A4 PAGE CANVAS
+      // ==========================================
+
+      const pageCanvas =
+         document.createElement("canvas");
+
+      pageCanvas.width = 1588;
+      pageCanvas.height = 2238;
+
+
+      const ctx =
+         pageCanvas.getContext("2d");
+
+      if (!ctx) {
+
+         throw new Error(
+            "Unable to create PDF canvas."
+         );
+
+      }
+
+
+      ctx.fillStyle = "#ffffff";
+
+      ctx.fillRect(
+         0,
+         0,
+         pageCanvas.width,
+         pageCanvas.height
+      );
+
+
+      const margin = 40;
+
+      const usableWidth =
+         pageCanvas.width -
+         (margin * 2);
+
+      const usableHeight =
+         pageCanvas.height -
+         (margin * 2);
+
+
+      const scale =
+         Math.min(
+            usableWidth /
+               sourceCanvas.width,
+
+            usableHeight /
+               sourceCanvas.height
+         );
+
+
+      const drawWidth =
+         sourceCanvas.width *
+         scale;
+
+      const drawHeight =
+         sourceCanvas.height *
+         scale;
+
+
+      // IMPORTANT:
+      // Start from the LEFT margin.
+      // Do not horizontally recenter a malformed capture.
+      const drawX = margin;
+
+      const drawY = margin;
+
+
+      ctx.drawImage(
+         sourceCanvas,
+         0,
+         0,
+         sourceCanvas.width,
+         sourceCanvas.height,
+         drawX,
+         drawY,
+         drawWidth,
+         drawHeight
+      );
+
+
+      // ==========================================
+      // CONVERT A4 CANVAS TO PDF
+      // ==========================================
+
+      const pdfWorker =
+         html2pdf()
+
+            .set({
+
+               margin: 0,
+
+               image: {
+                  type: "jpeg",
+                  quality: 0.98
+               },
+
+               html2canvas: {
+                  scale: 1,
+                  backgroundColor: "#ffffff",
+                  logging: false
+               },
+
+               jsPDF: {
+                  unit: "mm",
+                  format: "a4",
+                  orientation: "portrait"
+               }
+
+            })
+
+            .from(
+               pageCanvas,
+               "canvas"
+            )
+
+            .toPdf();
+
+
+      const pdfDocument =
+         await pdfWorker.get("pdf");
+
+
+      // pageCanvas already contains one complete A4 page.
+      const totalPages =
+         pdfDocument.internal
+            .getNumberOfPages();
+
+
+      for (
+         let page = totalPages;
+         page > 1;
+         page--
+      ) {
+
+         pdfDocument.deletePage(page);
+
+      }
+
 
       const pdfBlob =
-         await worker.outputPdf("blob");
+         pdfDocument.output("blob");
 
 
       if (
@@ -7142,20 +6990,138 @@ footerHeadings.forEach(function(heading) {
       }
 
 
-      /* ==========================================
-         DOWNLOAD SAME GENERATED PDF
-      ========================================== */
+      return pdfBlob;
+
+
+   } finally {
+
+      if (
+         wrapper &&
+         wrapper.parentNode
+      ) {
+
+         wrapper.parentNode
+            .removeChild(wrapper);
+
+      }
+
+   }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Download Invoice PDF
+ * Compact A4 / Mobile Safe Version
+ * ==========================================
+ */
+async function downloadInvoicePdf() {
+
+   const orderId =
+      document
+         .getElementById("invOrderId")
+         .innerText
+         .trim();
+
+
+   if (
+      !orderId ||
+      orderId === "-"
+   ) {
+
+      alert(
+         "Please search an invoice first."
+      );
+
+      return;
+
+   }
+
+
+   const btn =
+      document.getElementById(
+         "btnDownloadPdf"
+      );
+
+
+   if (btn) {
+
+      btn.disabled = true;
+
+      btn.innerHTML =
+         "Generating PDF...";
+
+   }
+
+
+   try {
+
+      const today =
+         new Date();
+
+
+      const fileDate =
+         today.getFullYear() +
+         "-" +
+         String(
+            today.getMonth() + 1
+         ).padStart(2, "0") +
+         "-" +
+         String(
+            today.getDate()
+         ).padStart(2, "0");
+
+
+      const fileName =
+         orderId +
+         "_" +
+         fileDate +
+         ".pdf";
+
+
+      // Generate PDF ONCE
+      const pdfBlob =
+         await buildInvoicePdfBlob();
+
+
+      // ==========================================
+      // DOWNLOAD
+      // ==========================================
 
       const downloadUrl =
-         URL.createObjectURL(pdfBlob);
+         URL.createObjectURL(
+            pdfBlob
+         );
+
 
       const link =
          document.createElement("a");
 
-      link.href = downloadUrl;
-      link.download = fileName;
 
-      document.body.appendChild(link);
+      link.href =
+         downloadUrl;
+
+      link.download =
+         fileName;
+
+
+      document.body
+         .appendChild(link);
+
 
       link.click();
 
@@ -7171,12 +7137,14 @@ footerHeadings.forEach(function(heading) {
       }, 3000);
 
 
-      /* ==========================================
-         SAVE EXACT SAME PDF TO GOOGLE DRIVE
-      ========================================== */
+      // ==========================================
+      // SAVE SAME PDF TO DRIVE
+      // ==========================================
 
       const base64Pdf =
-         await blobToBase64(pdfBlob);
+         await blobToBase64(
+            pdfBlob
+         );
 
 
       google.script.run
@@ -7209,38 +7177,20 @@ footerHeadings.forEach(function(heading) {
          );
 
 
-   } catch (err) {
+   } catch (error) {
 
       console.error(
          "Invoice PDF Error:",
-         err
+         error
       );
+
 
       alert(
          "Unable to generate invoice PDF."
       );
 
+
    } finally {
-
-      /* ==========================================
-         REMOVE TEMPORARY PDF COPY
-      ========================================== */
-
-      if (
-         wrapper &&
-         wrapper.parentNode
-      ) {
-
-         wrapper.parentNode.removeChild(
-            wrapper
-         );
-
-      }
-
-
-      /* ==========================================
-         RESTORE BUTTON
-      ========================================== */
 
       if (btn) {
 
@@ -7264,10 +7214,9 @@ footerHeadings.forEach(function(heading) {
 
 
 
-
-   /**
+/**
     * ==========================================
-    * Convert Blob to Base64
+    * Convert Blob to Base64 (FIXED)
     * ==========================================
     */
    function blobToBase64(blob) {
@@ -7275,7 +7224,9 @@ footerHeadings.forEach(function(heading) {
          const reader = new FileReader();
 
          reader.onloadend = function () {
-            resolve(reader.result);
+            // Split the Data URL and return ONLY the raw Base64 string
+            const base64Data = reader.result.split(',')[1];
+            resolve(base64Data);
          };
 
          reader.onerror = reject;
@@ -7291,509 +7242,134 @@ footerHeadings.forEach(function(heading) {
     */
    async function shareInvoiceWhatsApp() {
 
-      const invoice =
-         document.getElementById("invoicePdfContainer");
+   const invoice =
+      document.getElementById(
+         "invoicePdfContainer"
+      );
 
-      if (!invoice) {
-         alert("Invoice not found.");
-         return;
-      }
 
-      const orderId =
-         document.getElementById("invOrderId")
-            .innerText.trim();
+   if (!invoice) {
 
-      if (!orderId || orderId === "-") {
-         alert("Please search an invoice first.");
-         return;
-      }
+      alert(
+         "Invoice not found."
+      );
 
-      const customerName =
-         document.getElementById("invCustomer")
-            .innerText.trim();
+      return;
 
-      let mobile =
-         document.getElementById("invMobile")
-            .innerText.trim()
-            .replace(/\D/g, "");
+   }
 
-      if (mobile.length === 10) {
-         mobile = "91" + mobile;
-      }
 
-      const grandTotal =
-         document.getElementById("invGrandTotal")
-            .innerText.trim();
+   const orderId =
+      document
+         .getElementById("invOrderId")
+         .innerText
+         .trim();
 
-      const today = new Date();
 
-      const fileDate =
-         today.getFullYear() + "-" +
-         String(today.getMonth() + 1).padStart(2, "0") + "-" +
-         String(today.getDate()).padStart(2, "0");
+   if (
+      !orderId ||
+      orderId === "-"
+   ) {
 
-      const fileName =
-         orderId + "_" + fileDate + ".pdf";
+      alert(
+         "Please search an invoice first."
+      );
 
-      let wrapper = null;
+      return;
 
-      try {
+   }
 
-         /*
-          * IMPORTANT:
-          * WhatsApp sharing must NOT render the live mobile invoice.
-          * The old code did exactly that, which is why the Drive PDF
-          * had a blank first page and a broken second page.
-          *
-          * Build the same fixed-width export copy used for PDF output.
-          */
 
-         wrapper = document.createElement("div");
+   const customerName =
+      document
+         .getElementById("invCustomer")
+         .innerText
+         .trim();
 
-         wrapper.style.position = "fixed";
-         wrapper.style.left = "0";
-         wrapper.style.top = "0";
-         wrapper.style.zIndex = "-2147483647";
-         wrapper.style.pointerEvents = "none";
-         wrapper.style.overflow = "visible";
-         wrapper.style.width = "190mm";
-         wrapper.style.margin = "0";
-         wrapper.style.padding = "0";
-         wrapper.style.background = "#ffffff";
 
-         const pdfInvoice =
-            invoice.cloneNode(true);
+   let mobile =
+      document
+         .getElementById("invMobile")
+         .innerText
+         .trim()
+         .replace(/\D/g, "");
 
-         pdfInvoice.id = "invoicePdfShareExport";
 
-         pdfInvoice.style.width = "190mm";
-         pdfInvoice.style.maxWidth = "190mm";
-         pdfInvoice.style.minWidth = "190mm";
-         pdfInvoice.style.margin = "0";
-         pdfInvoice.style.padding = "0";
-         pdfInvoice.style.background = "#ffffff";
-         pdfInvoice.style.fontFamily = "Arial, sans-serif";
-         pdfInvoice.style.fontSize = "11px";
-         pdfInvoice.style.lineHeight = "1.2";
-         pdfInvoice.style.boxSizing = "border-box";
-         pdfInvoice.style.position = "relative";
-         pdfInvoice.style.left = "0";
-         pdfInvoice.style.top = "0";
-         pdfInvoice.style.transform = "none";
-         pdfInvoice.style.overflow = "visible";
+   if (mobile.length === 10) {
 
-         pdfInvoice
-            .querySelectorAll("button, .btn, .no-print")
-            .forEach(function(element) {
-               element.remove();
-            });
+      mobile =
+         "91" + mobile;
 
-         const address =
-            pdfInvoice.querySelector("#invAddress");
+   }
 
-         if (address && !address.textContent.trim()) {
-            const card = address.closest(".card");
-            if (card) card.remove();
-         }
 
-         const instructions =
-            pdfInvoice.querySelector("#invInstructions");
+   const grandTotal =
+      document
+         .getElementById("invGrandTotal")
+         .innerText
+         .trim();
 
-         if (
-            instructions &&
-            (
-               !instructions.textContent.trim() ||
-               instructions.textContent.trim() === "-"
-            )
-         ) {
-            const card = instructions.closest(".card");
-            if (card) card.remove();
-         }
 
-         pdfInvoice
-            .querySelectorAll(".card")
-            .forEach(function(card) {
-               card.style.marginTop = "0";
-               card.style.marginBottom = "4px";
-               card.style.padding = "0";
-               card.style.boxShadow = "none";
-               card.style.border = "1px solid #dddddd";
-               card.style.breakInside = "auto";
-               card.style.pageBreakInside = "auto";
-            });
+   const today =
+      new Date();
 
-         pdfInvoice
-            .querySelectorAll(".card-body")
-            .forEach(function(body) {
-               body.style.padding = "6px 9px";
-            });
 
-         pdfInvoice
-            .querySelectorAll(".card-header")
-            .forEach(function(header) {
-               header.style.padding = "4px 9px";
-               header.style.margin = "0";
-               header.style.lineHeight = "1.15";
-            });
+   const fileDate =
+      today.getFullYear() +
+      "-" +
+      String(
+         today.getMonth() + 1
+      ).padStart(2, "0") +
+      "-" +
+      String(
+         today.getDate()
+      ).padStart(2, "0");
 
-         pdfInvoice
-            .querySelectorAll(
-               ".mb-1, .mb-2, .mb-3, .mb-4, .mb-5"
-            )
-            .forEach(function(element) {
-               element.style.marginBottom = "4px";
-            });
 
-         pdfInvoice
-            .querySelectorAll(
-               ".mt-1, .mt-2, .mt-3, .mt-4, .mt-5"
-            )
-            .forEach(function(element) {
-               element.style.marginTop = "4px";
-            });
+   const fileName =
+      orderId +
+      "_" +
+      fileDate +
+      ".pdf";
 
-         pdfInvoice
-            .querySelectorAll(
-               ".my-1, .my-2, .my-3, .my-4, .my-5"
-            )
-            .forEach(function(element) {
-               element.style.marginTop = "4px";
-               element.style.marginBottom = "4px";
-            });
 
-         pdfInvoice
-            .querySelectorAll("h1, h2, h3, h4, h5, h6")
-            .forEach(function(heading) {
-               heading.style.marginTop = "0";
-               heading.style.marginBottom = "3px";
-               heading.style.lineHeight = "1.15";
-            });
+   try {
 
-         pdfInvoice
-            .querySelectorAll("p")
-            .forEach(function(paragraph) {
-               paragraph.style.marginTop = "0";
-               paragraph.style.marginBottom = "3px";
-            });
+      // SAME PDF generator as Download
+      const pdfBlob =
+         await buildInvoicePdfBlob();
 
-         pdfInvoice
-            .querySelectorAll(".row")
-            .forEach(function(row) {
-               row.style.display = "flex";
-               row.style.flexWrap = "wrap";
-               row.style.marginLeft = "0";
-               row.style.marginRight = "0";
-            });
 
-         pdfInvoice
-            .querySelectorAll('[class*="col-md-6"]')
-            .forEach(function(column) {
-               column.style.flex = "0 0 50%";
-               column.style.width = "50%";
-               column.style.maxWidth = "50%";
-               column.style.boxSizing = "border-box";
-            });
+      const base64Pdf =
+         await blobToBase64(
+            pdfBlob
+         );
 
-         pdfInvoice
-            .querySelectorAll('[class*="col-md-4"]')
-            .forEach(function(column) {
-               column.style.flex = "0 0 33.333333%";
-               column.style.width = "33.333333%";
-               column.style.maxWidth = "33.333333%";
-               column.style.boxSizing = "border-box";
-            });
 
-         pdfInvoice
-            .querySelectorAll('[class*="col-md-8"]')
-            .forEach(function(column) {
-               column.style.flex = "0 0 66.666667%";
-               column.style.width = "66.666667%";
-               column.style.maxWidth = "66.666667%";
-               column.style.boxSizing = "border-box";
-            });
+      google.script.run
 
-         pdfInvoice
-            .querySelectorAll("table")
-            .forEach(function(table) {
-               table.style.width = "100%";
-               table.style.maxWidth = "100%";
-               table.style.minWidth = "0";
-               table.style.tableLayout = "fixed";
-               table.style.borderCollapse = "collapse";
-               table.style.margin = "0";
-               table.style.boxSizing = "border-box";
-            });
-
-         const itemsBody =
-            pdfInvoice.querySelector("#invoiceItemsBody");
-
-         if (itemsBody) {
-
-            const itemsTable =
-               itemsBody.closest("table");
-
-            if (itemsTable) {
-
-               itemsTable
-                  .querySelectorAll("tr")
-                  .forEach(function(row) {
-
-                     const cells = row.children;
-
-                     if (cells.length >= 4) {
-
-                        cells[0].style.width = "56%";
-                        cells[1].style.width = "10%";
-                        cells[2].style.width = "16%";
-                        cells[3].style.width = "18%";
-
-                        cells[0].style.textAlign = "left";
-                        cells[1].style.textAlign = "center";
-                        cells[2].style.textAlign = "right";
-                        cells[3].style.textAlign = "right";
-
-                        cells[0].style.whiteSpace = "normal";
-                        cells[1].style.whiteSpace = "nowrap";
-                        cells[2].style.whiteSpace = "nowrap";
-                        cells[3].style.whiteSpace = "nowrap";
-                     }
-                  });
-            }
-         }
-
-         pdfInvoice
-            .querySelectorAll("th, td")
-            .forEach(function(cell) {
-               cell.style.padding = "4px 6px";
-               cell.style.verticalAlign = "middle";
-               cell.style.lineHeight = "1.15";
-               cell.style.fontSize = "10px";
-               cell.style.boxSizing = "border-box";
-            });
-
-         [
-            "invSubtotal",
-            "invAddonTotal",
-            "invDeliveryCharge",
-            "invDiscount",
-            "invGrandTotal"
-         ].forEach(function(id) {
-
-            const element =
-               pdfInvoice.querySelector("#" + id);
-
-            if (!element) return;
-
-            element.style.textAlign = "right";
-            element.style.whiteSpace = "nowrap";
-            element.style.paddingLeft = "8px";
-         });
-
-         pdfInvoice
-            .querySelectorAll("*")
-            .forEach(function(element) {
-
-               const computed =
-                  window.getComputedStyle(element);
+         .withSuccessHandler(
+            function(response) {
 
                if (
-                  computed.minHeight &&
-                  computed.minHeight !== "0px"
+                  !response ||
+                  response.success !== true
                ) {
-                  element.style.minHeight = "0";
-               }
-            });
 
-         wrapper.appendChild(pdfInvoice);
-         document.body.appendChild(wrapper);
+                  alert(
+                     response &&
+                     response.message
+                        ? response.message
+                        : "Unable to save invoice."
+                  );
 
-         await new Promise(function(resolve) {
-            requestAnimationFrame(function() {
-               requestAnimationFrame(resolve);
-            });
-         });
-
-         /*
-          * Generate a canvas first, then place that single image on one
-          * A4 PDF page. This deliberately avoids html2pdf's DOM page
-          * pagination, which was creating the blank page in the Drive PDF.
-          */
-         /*
-          * IMPORTANT:
-          * The Apps Script page loads html2pdf, but does not necessarily
-          * expose standalone global html2canvas / jspdf objects.
-          * Use html2pdf's own bundled canvas renderer instead.
-          */
-         const captureWorker =
-            html2pdf()
-               .set({
-                  html2canvas: {
-                     scale: 2,
-                     useCORS: true,
-                     allowTaint: false,
-                     backgroundColor: "#ffffff",
-                     logging: false,
-                     windowWidth: 794,
-                     scrollX: 0,
-                     scrollY: 0
-                  }
-               })
-               .from(pdfInvoice)
-               .toCanvas();
-
-         const sourceCanvas =
-            await captureWorker.get("canvas");
-
-         if (
-            !sourceCanvas ||
-            !sourceCanvas.width ||
-            !sourceCanvas.height
-         ) {
-            throw new Error("Invoice canvas could not be generated.");
-         }
-
-         /*
-          * Build ONE A4-ratio canvas.
-          * The complete invoice is scaled proportionally into this canvas,
-          * so html2pdf receives exactly one page-sized image.
-          */
-         const pageCanvas =
-            document.createElement("canvas");
-
-         const pageWidthPx = 1588;   // A4 ratio at ~192 dpi
-         const pageHeightPx = 2238;
-
-         pageCanvas.width = pageWidthPx;
-         pageCanvas.height = pageHeightPx;
-
-         const ctx =
-            pageCanvas.getContext("2d");
-
-         if (!ctx) {
-            throw new Error("Unable to create PDF canvas.");
-         }
-
-         ctx.fillStyle = "#ffffff";
-         ctx.fillRect(
-            0,
-            0,
-            pageCanvas.width,
-            pageCanvas.height
-         );
-
-         const marginPx = 38;
-
-         const usableWidth =
-            pageCanvas.width - (marginPx * 2);
-
-         const usableHeight =
-            pageCanvas.height - (marginPx * 2);
-
-         const scale =
-            Math.min(
-               usableWidth / sourceCanvas.width,
-               usableHeight / sourceCanvas.height
-            );
-
-         const drawWidth =
-            sourceCanvas.width * scale;
-
-         const drawHeight =
-            sourceCanvas.height * scale;
-
-         const drawX =
-            marginPx +
-            ((usableWidth - drawWidth) / 2);
-
-         const drawY =
-            marginPx;
-
-         ctx.drawImage(
-            sourceCanvas,
-            drawX,
-            drawY,
-            drawWidth,
-            drawHeight
-         );
-
-         /*
-          * Generate the Drive PDF using html2pdf only.
-          * No standalone jsPDF dependency is required.
-          */
-         /*
-          * Generate the PDF through html2pdf's internal jsPDF instance.
-          *
-          * html2pdf can sometimes create a second completely blank page
-          * when the source canvas is extremely close to the exact A4
-          * boundary because of pixel/mm rounding.
-          *
-          * We deliberately keep ONLY page 1 because pageCanvas already
-          * contains the COMPLETE invoice scaled to one A4 page.
-          */
-         const pdfWorker =
-            html2pdf()
-               .set({
-                  margin: 0,
-                  image: {
-                     type: "jpeg",
-                     quality: 0.98
-                  },
-                  html2canvas: {
-                     scale: 1,
-                     backgroundColor: "#ffffff",
-                     logging: false
-                  },
-                  jsPDF: {
-                     unit: "mm",
-                     format: "a4",
-                     orientation: "portrait"
-                  },
-                  pagebreak: {
-                     mode: ["legacy"]
-                  }
-               })
-               .from(pageCanvas, "canvas")
-               .toPdf();
-
-         const pdfDocument =
-            await pdfWorker.get("pdf");
-
-         /*
-          * pageCanvas is already a complete one-page invoice image.
-          * Any additional PDF pages are therefore html2pdf rounding
-          * artifacts and are safe to remove.
-          */
-         const totalPages =
-            pdfDocument.internal.getNumberOfPages();
-
-         for (
-            let pageNo = totalPages;
-            pageNo > 1;
-            pageNo--
-         ) {
-            pdfDocument.deletePage(pageNo);
-         }
-
-         const pdfBlob =
-            pdfDocument.output("blob");
-
-         if (!pdfBlob || pdfBlob.size < 1000) {
-            throw new Error("Generated PDF is empty.");
-         }
-
-         const base64Pdf =
-            await blobToBase64(pdfBlob);
-
-         google.script.run
-
-            .withSuccessHandler(function(response) {
-
-               if (!response.success) {
-                  alert(response.message);
                   return;
+
                }
 
-               const message = `Hello ${customerName},
+
+               const message =
+`Hello ${customerName},
 
 Thank you for choosing Smoky Swaad.
 
@@ -7807,50 +7383,67 @@ Thank you for choosing Smoky Swaad.
 
 🍛 Smoky Swaad`;
 
+
                window.open(
+
                   "https://wa.me/" +
                   mobile +
                   "?text=" +
-                  encodeURIComponent(message),
+                  encodeURIComponent(
+                     message
+                  ),
+
                   "_blank"
+
                );
-            })
 
-            .withFailureHandler(function(error) {
+            }
+         )
 
-               console.error(error);
+
+         .withFailureHandler(
+            function(error) {
+
+               console.error(
+                  error
+               );
+
 
                alert(
                   "Unable to save invoice to Google Drive."
                );
-            })
 
-            .saveInvoicePdf(
-               fileName,
-               base64Pdf
-            );
+            }
+         )
 
-      } catch (err) {
 
-         console.error(
-            "Share Invoice PDF Error:",
-            err
+         .saveInvoicePdf(
+            fileName,
+            base64Pdf
          );
 
-         alert(
-            "Unable to generate Invoice PDF."
-         );
 
-      } finally {
+   } catch (error) {
 
-         if (
-            wrapper &&
-            wrapper.parentNode
-         ) {
-            wrapper.parentNode.removeChild(wrapper);
-         }
-      }
+      console.error(
+         "Share Invoice PDF Error:",
+         error
+      );
+
+
+      alert(
+         "Unable to generate Invoice PDF."
+      );
+
    }
+
+}
+
+
+
+
+
+
 
    /**
     * ==========================================
