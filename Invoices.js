@@ -1,17 +1,22 @@
 /**
  * ==========================================
- * Get Invoice - PERFORMANCE OPTIMIZED
+ * Get Invoice
  * ==========================================
  */
 function getInvoice(orderId) {
 
+  Logger.log("=====================================");
+  Logger.log("getInvoice() Started");
+  Logger.log("Input Order ID : " + orderId);
+
   try {
 
-    // ==========================================
-    // VALIDATE
-    // ==========================================
-
+    // -------------------------------
+    // Validate Input
+    // -------------------------------
     if (!orderId) {
+
+      Logger.log("Order ID is blank.");
 
       return {
         success: false,
@@ -20,36 +25,37 @@ function getInvoice(orderId) {
 
     }
 
-    orderId =
-      String(orderId)
-        .trim()
-        .toUpperCase();
+    orderId = String(orderId).trim().toUpperCase();
 
+    Logger.log("Searching for Order ID : " + orderId);
 
-    // ==========================================
-    // LOAD SHEETS
-    // ==========================================
+    // -------------------------------
+    // Get Sheets
+    // -------------------------------
+    Logger.log("Opening Orders sheet...");
 
-    const ordersSheet =
-      getSheet(SHEETS.ORDERS);
+    const ordersSheet = getSheet(SHEETS.ORDERS);
 
-    const itemsSheet =
-      getSheet(SHEETS.ORDER_ITEMS);
+    Logger.log("Orders sheet loaded.");
 
+    Logger.log("Opening OrderItems sheet...");
 
-    // ==========================================
-    // FIND ORDER
-    //
-    // IMPORTANT:
-    // We search only Column A first.
-    // We no longer load the complete Orders
-    // sheet into memory.
-    // ==========================================
+    const itemsSheet = getSheet(SHEETS.ORDER_ITEMS);
 
-    const orderLastRow =
-      ordersSheet.getLastRow();
+    Logger.log("OrderItems sheet loaded.");
 
-    if (orderLastRow <= 1) {
+    // -------------------------------
+    // Read Data
+    // -------------------------------
+    const orders = ordersSheet.getDataRange().getValues();
+    const items = itemsSheet.getDataRange().getValues();
+
+    Logger.log("Orders Rows : " + orders.length);
+    Logger.log("Order Items Rows : " + items.length);
+
+    if (orders.length <= 1) {
+
+      Logger.log("Orders sheet is empty.");
 
       return {
         success: false,
@@ -58,260 +64,152 @@ function getInvoice(orderId) {
 
     }
 
+    orders.shift();
+    items.shift();
 
-    const orderIdRange =
-      ordersSheet.getRange(
-        2,
-        1,
-        orderLastRow - 1,
-        1
-      );
+    // -------------------------------
+    // Find Order
+    // -------------------------------
+    Logger.log("Searching order...");
 
+    const orderRow = orders.find(function (row) {
 
-    const orderFinder =
-      orderIdRange.createTextFinder(orderId)
-        .matchEntireCell(true)
-        .matchCase(false);
+      return String(row[0]).trim().toUpperCase() === orderId;
 
+    });
 
-    const orderCell =
-      orderFinder.findNext();
+    if (!orderRow) {
 
-
-    if (!orderCell) {
+      Logger.log("Order NOT FOUND.");
 
       return {
+
         success: false,
+
         message: "Invoice not found."
+
       };
 
     }
 
+    Logger.log("Order Found.");
 
-    // ==========================================
-    // READ ONLY THE MATCHING ORDER ROW
-    // A:R = 18 columns
-    // ==========================================
+    // -------------------------------
+    // Find Order Items
+    // -------------------------------
+    Logger.log("Searching invoice items...");
 
-    const orderRowNumber =
-      orderCell.getRow();
+    const invoiceItems = items
+      .filter(function (row) {
 
+        return String(row[0]).trim().toUpperCase() === orderId;
 
-    const orderRow =
-      ordersSheet
-        .getRange(
-          orderRowNumber,
-          1,
-          1,
-          18
+      })
+      .map(function (row) {
+
+        return {
+
+          itemName: row[1],
+          qty: Number(row[2]),
+          price: Number(row[3]),
+          total: Number(row[4])
+
+        };
+
+      });
+
+    Logger.log("Items Found : " + invoiceItems.length);
+
+    // -------------------------------
+    // Success
+    // -------------------------------
+// -------------------------------
+// Success
+// -------------------------------
+const response = {
+
+  success: true,
+
+  order: {
+
+    orderId: String(orderRow[0] || ""),
+
+    orderDate: orderRow[1]
+      ? Utilities.formatDate(
+          new Date(orderRow[1]),
+          Session.getScriptTimeZone(),
+          "dd/MM/yyyy"
         )
-        .getValues()[0];
+      : "",
 
+    customerName: String(orderRow[2] || ""),
+    mobile: String(orderRow[3] || ""),
+    deliveryArea: String(orderRow[4] || ""),
+    houseAddress: String(orderRow[5] || ""),
+    deliverySlot: String(orderRow[6] || ""),
+    orderType: String(orderRow[7] || ""),
+    paymentMode: String(orderRow[8] || ""),
+    paymentStatus: String(orderRow[9] || ""),
 
-    // ==========================================
-    // FIND ORDER ITEMS
-    // ==========================================
+    grandTotal: Number(orderRow[10]) || 0,
 
-    const invoiceItems = [];
+    status: String(orderRow[11] || ""),
 
-    const itemLastRow =
-      itemsSheet.getLastRow();
+    specialInstructions: String(orderRow[12] || ""),
 
+    createdAt: orderRow[13]
+      ? Utilities.formatDate(
+          new Date(orderRow[13]),
+          Session.getScriptTimeZone(),
+          "dd/MM/yyyy HH:mm:ss"
+        )
+      : "",
 
-    if (itemLastRow > 1) {
+    deliveryCharge: Number(orderRow[14]) || 0,
 
-      const itemIdRange =
-        itemsSheet.getRange(
-          2,
-          1,
-          itemLastRow - 1,
-          1
-        );
+    discount: Number(orderRow[15]) || 0,
 
+    // Q - Custom Add-ons
+    addons: String(orderRow[16] || ""),
 
-      const itemFinder =
-        itemIdRange.createTextFinder(orderId)
-          .matchEntireCell(true)
-          .matchCase(false);
+    // R - Add-on Total
+    addonTotal: Number(orderRow[17]) || 0
 
+  },
 
-      const matches =
-        itemFinder.findAll();
+  items: invoiceItems
 
+};
 
-      if (matches && matches.length) {
+Logger.log(JSON.stringify(response));
 
-        // Usually an invoice has only a few items.
-        // Read only those matching rows instead of
-        // loading the complete OrderItems sheet.
+return response;
 
-        for (
-          let i = 0;
-          i < matches.length;
-          i++
-        ) {
+  } catch (err) {
 
-          const rowNumber =
-            matches[i].getRow();
+    Logger.log("=====================================");
+    Logger.log("ERROR OCCURRED");
+    Logger.log(err.toString());
 
+    if (err.stack) {
 
-          const row =
-            itemsSheet
-              .getRange(
-                rowNumber,
-                1,
-                1,
-                5
-              )
-              .getValues()[0];
-
-
-          invoiceItems.push({
-
-            itemName:
-              String(row[1] || ""),
-
-            qty:
-              Number(row[2]) || 0,
-
-            price:
-              Number(row[3]) || 0,
-
-            total:
-              Number(row[4]) || 0
-
-          });
-
-        }
-
-      }
+      Logger.log(err.stack);
 
     }
-
-
-    // ==========================================
-    // FORMAT DATES
-    // ==========================================
-
-    const timezone =
-      Session.getScriptTimeZone();
-
-
-    const orderDate =
-      orderRow[1]
-        ? Utilities.formatDate(
-            new Date(orderRow[1]),
-            timezone,
-            "dd/MM/yyyy"
-          )
-        : "";
-
-
-    const createdAt =
-      orderRow[13]
-        ? Utilities.formatDate(
-            new Date(orderRow[13]),
-            timezone,
-            "dd/MM/yyyy HH:mm:ss"
-          )
-        : "";
-
-
-    // ==========================================
-    // RETURN
-    // ==========================================
-
-    return {
-
-      success: true,
-
-      order: {
-
-        orderId:
-          String(orderRow[0] || ""),
-
-        orderDate:
-          orderDate,
-
-        customerName:
-          String(orderRow[2] || ""),
-
-        mobile:
-          String(orderRow[3] || ""),
-
-        deliveryArea:
-          String(orderRow[4] || ""),
-
-        houseAddress:
-          String(orderRow[5] || ""),
-
-        deliverySlot:
-          String(orderRow[6] || ""),
-
-        orderType:
-          String(orderRow[7] || ""),
-
-        paymentMode:
-          String(orderRow[8] || ""),
-
-        paymentStatus:
-          String(orderRow[9] || ""),
-
-        grandTotal:
-          Number(orderRow[10]) || 0,
-
-        status:
-          String(orderRow[11] || ""),
-
-        specialInstructions:
-          String(orderRow[12] || ""),
-
-        createdAt:
-          createdAt,
-
-        deliveryCharge:
-          Number(orderRow[14]) || 0,
-
-        discount:
-          Number(orderRow[15]) || 0,
-
-        addons:
-          String(orderRow[16] || ""),
-
-        addonTotal:
-          Number(orderRow[17]) || 0
-
-      },
-
-      items:
-        invoiceItems
-
-    };
-
-
-  } catch (error) {
-
-    console.error(
-      "getInvoice Error:",
-      error
-    );
-
 
     return {
 
       success: false,
 
-      message:
-        error &&
-        error.message
-          ? error.message
-          : String(error)
+      message: err.toString()
 
     };
 
   }
 
 }
+
+
 
 /**
  * ==========================================
