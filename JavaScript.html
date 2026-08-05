@@ -6264,12 +6264,10 @@ async function buildInvoicePdfBlob() {
 
       pdfInvoice.id = "invoicePdfExport";
 
-      // ADD THIS CODE:
       // Strip emojis and problematic characters that break html2canvas text metrics
       pdfInvoice.innerHTML = pdfInvoice.innerHTML
-         .replace(/❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕/g, "")
+         .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/ug, "")
          .replace(/•/g, "-");
-      // END OF ADDED CODE
 
       // ==========================================
       // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
@@ -6767,6 +6765,12 @@ async function buildInvoicePdfBlob() {
             max-width: 100% !important;
             overflow: visible !important;
          }
+
+         #invoicePdfExport .text-center {
+            width: 100% !important;
+            display: block !important;
+            text-align: center !important;
+         }
       `;
 
       wrapper.appendChild(exportStyle);
@@ -6788,210 +6792,40 @@ async function buildInvoicePdfBlob() {
 
 
       // ==========================================
-      // CAPTURE EXACT INVOICE
+      // CAPTURE EXACT INVOICE AND CONVERT TO PDF
       // ==========================================
 
-const captureWorker =
-         html2pdf()
-            .set({
-               html2canvas: {
-                  scale: 2,
-                  useCORS: true,
-                  allowTaint: false,
-                  backgroundColor: "#ffffff",
-                  logging: false,
-                  width: EXPORT_WIDTH,
-                  windowWidth: EXPORT_WIDTH,
-                  scrollX: 0,
-                  scrollY: 0,
-                  x: 0,
-                  y: 0
-               }
-            })
+      const pdfBlob = await html2pdf()
+         .set({
+            margin: [10, 0], // 10mm top/bottom margin
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+               scale: 2,
+               useCORS: true,
+               allowTaint: false,
+               backgroundColor: "#ffffff",
+               logging: false,
+               width: EXPORT_WIDTH,
+               windowWidth: EXPORT_WIDTH,
+               scrollX: 0,
+               scrollY: 0,
+               x: 0,
+               y: 0
+            },
+            jsPDF: {
+               unit: "mm",
+               format: "a4",
+               orientation: "portrait"
+            }
+         })
+         .from(pdfInvoice)
+         .output('blob');
 
-            .from(pdfInvoice)
-
-            .toCanvas();
-
-
-      const sourceCanvas =
-         await captureWorker.get("canvas");
-
-
-      if (
-         !sourceCanvas ||
-         !sourceCanvas.width ||
-         !sourceCanvas.height
-      ) {
-
-         throw new Error(
-            "Invoice canvas could not be generated."
-         );
-
+      if (!pdfBlob || pdfBlob.size < 1000) {
+         throw new Error("Generated PDF is empty.");
       }
-
-
-      // ==========================================
-      // CREATE A4 PAGE CANVAS
-      // ==========================================
-
-      const pageCanvas =
-         document.createElement("canvas");
-
-      pageCanvas.width = 1588;
-      pageCanvas.height = 2238;
-
-
-      const ctx =
-         pageCanvas.getContext("2d");
-
-      if (!ctx) {
-
-         throw new Error(
-            "Unable to create PDF canvas."
-         );
-
-      }
-
-
-      ctx.fillStyle = "#ffffff";
-
-      ctx.fillRect(
-         0,
-         0,
-         pageCanvas.width,
-         pageCanvas.height
-      );
-
-
-      const margin = 40;
-
-      const usableWidth =
-         pageCanvas.width -
-         (margin * 2);
-
-      const usableHeight =
-         pageCanvas.height -
-         (margin * 2);
-
-
-      const scale =
-         Math.min(
-            usableWidth /
-               sourceCanvas.width,
-
-            usableHeight /
-               sourceCanvas.height
-         );
-
-
-      const drawWidth =
-         sourceCanvas.width *
-         scale;
-
-      const drawHeight =
-         sourceCanvas.height *
-         scale;
-
-
-      // IMPORTANT:
-      // Start from the LEFT margin.
-      // Do not horizontally recenter a malformed capture.
-      const drawX = margin;
-
-      const drawY = margin;
-
-
-      ctx.drawImage(
-         sourceCanvas,
-         0,
-         0,
-         sourceCanvas.width,
-         sourceCanvas.height,
-         drawX,
-         drawY,
-         drawWidth,
-         drawHeight
-      );
-
-
-      // ==========================================
-      // CONVERT A4 CANVAS TO PDF
-      // ==========================================
-
-      const pdfWorker =
-         html2pdf()
-
-            .set({
-
-               margin: 0,
-
-               image: {
-                  type: "jpeg",
-                  quality: 0.98
-               },
-
-               html2canvas: {
-                  scale: 1,
-                  backgroundColor: "#ffffff",
-                  logging: false
-               },
-
-               jsPDF: {
-                  unit: "mm",
-                  format: "a4",
-                  orientation: "portrait"
-               }
-
-            })
-
-            .from(
-               pageCanvas,
-               "canvas"
-            )
-
-            .toPdf();
-
-
-      const pdfDocument =
-         await pdfWorker.get("pdf");
-
-
-      // pageCanvas already contains one complete A4 page.
-      const totalPages =
-         pdfDocument.internal
-            .getNumberOfPages();
-
-
-      for (
-         let page = totalPages;
-         page > 1;
-         page--
-      ) {
-
-         pdfDocument.deletePage(page);
-
-      }
-
-
-      const pdfBlob =
-         pdfDocument.output("blob");
-
-
-      if (
-         !pdfBlob ||
-         pdfBlob.size < 1000
-      ) {
-
-         throw new Error(
-            "Generated PDF is empty."
-         );
-
-      }
-
 
       return pdfBlob;
-
 
    } finally {
 
@@ -7223,7 +7057,7 @@ async function downloadInvoicePdf() {
       return new Promise(function (resolve, reject) {
          const reader = new FileReader();
 
-         reader.onloadend = function () {
+         reader.onload = function () {
             // Split the Data URL and return ONLY the raw Base64 string
             const base64Data = reader.result.split(',')[1];
             resolve(base64Data);
@@ -7724,30 +7558,16 @@ Thank you for choosing Smoky Swaad.
 
       const options = {
          margin: 0.5,
-
          filename: filename,
-
-         image: {
-            type: "jpeg",
-
-            quality: 1,
-         },
-
+         image: { type: "jpeg", quality: 1 },
          html2canvas: {
             scale: 2,
-
             useCORS: true,
-
             logging: false,
+            scrollX: 0,
+            scrollY: 0
          },
-
-         jsPDF: {
-            unit: "in",
-
-            format: "a4",
-
-            orientation: "portrait",
-         },
+         jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
       };
 
       setTimeout(function () {
