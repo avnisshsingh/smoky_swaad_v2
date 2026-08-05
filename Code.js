@@ -39,10 +39,13 @@ function include(filename){
  * ==========================================
  */
 function loadScreen(screen) {
+  // Changing this to createTemplateFromFile tells Apps Script to process the <?!= ?> tags
+  return HtmlService.createTemplateFromFile(screen).evaluate().getContent();
+}
 
-  return HtmlService
-    .createHtmlOutputFromFile(screen)
-    .getContent();
 
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 

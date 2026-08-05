@@ -519,7 +519,7 @@
     * ==========================================
     */
 
-   function openScreen(screen) {
+ function openScreen(screen) {
       google.script.run
          .withSuccessHandler(function (html) {
             document.getElementById("content").innerHTML = html;
@@ -564,22 +564,24 @@
                setTimeout(function () {
                   initializeReports();
                }, 100);
-            } else if (screen === "BusinessCosts") {
-               setTimeout(function () {
-                  initializeBusinessCosts();
-               }, 100);
-            } else if (screen === "PricingCalculator") {
-               setTimeout(function () {
-                  initializePricingCalculator();
-               }, 100);
             } else if (screen === "PersonalExpenses") {
                setTimeout(function () {
                   initializePersonalExpenses();
+               }, 100);
+            } else if (screen === "CostsAndPricing") {
+               // NEW COMBINED SCREEN LOGIC
+               setTimeout(function () {
+                  initializePricingCalculator();
+                  initializeBusinessCosts();
                }, 100);
             }
          })
          .loadScreen(screen);
    }
+
+
+   
+
 
    /**
     * ==========================================
