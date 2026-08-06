@@ -2051,8 +2051,8 @@ function savePersonalExpense() {
 
         saveButton.innerHTML =
             editingId
-                ? "⏳ Updating..."
-                : "⏳ Saving...";
+                ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...'
+                : '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
 
     }
 
@@ -2082,7 +2082,7 @@ function savePersonalExpense() {
                 false;
 
             saveButton.innerHTML =
-                "💾 Save Expense";
+                '💾 Save Expense';
 
         }
 
@@ -3579,10 +3579,10 @@ if (saveButton) {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * PERSONAL EXPENSES
  * LOAD DASHBOARD / RECENT EXPENSES
- * ==========================================================
+ * ==========================================
  */
 function loadPersonalExpenses() {
 
@@ -3703,9 +3703,9 @@ function loadPersonalExpenses() {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * UPDATE SUMMARY CARDS
- * ==========================================================
+ * ==========================================
  */
 function updatePersonalExpenseSummary(
     summary
@@ -3767,9 +3767,9 @@ if (today) {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * RENDER PERSONAL EXPENSES
- * ==========================================================
+ * ==========================================
  */
 function renderPersonalExpenses(
     expenses
@@ -3795,9 +3795,9 @@ function renderPersonalExpenses(
 
 
 /**
- * ==========================================================
+ * ==========================================
  * DESKTOP TABLE
- * ==========================================================
+ * ==========================================
  */
 function renderPersonalExpenseDesktopTable(
     expenses
@@ -3927,9 +3927,9 @@ function renderPersonalExpenseDesktopTable(
 
 
 /**
- * ==========================================================
+ * ==========================================
  * MOBILE CARDS
- * ==========================================================
+ * ==========================================
  */
 function renderPersonalExpenseMobileCards(expenses) {
 
@@ -4089,10 +4089,10 @@ function renderPersonalExpenseMobileCards(expenses) {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * PERSONAL EXPENSE HISTORY
  * Simple filters: Month + Category + Search
- * ==========================================================
+ * ==========================================
  */
 function loadPersonalExpenseHistory() {
 
@@ -4217,9 +4217,9 @@ function loadPersonalExpenseHistory() {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * CLEAR PERSONAL EXPENSE HISTORY FILTERS
- * ==========================================================
+ * ==========================================
  */
 function clearPersonalExpenseHistoryFilters() {
 
@@ -4257,9 +4257,9 @@ function clearPersonalExpenseHistoryFilters() {
 
 
 /**
- * ==========================================================
+ * ==========================================
  * FORMAT CURRENCY
- * ==========================================================
+ * ==========================================
  */
 function formatPersonalExpenseCurrency(
     amount
@@ -4299,9 +4299,9 @@ function formatPersonalExpenseCurrency(
 
 
 /**
- * ==========================================================
+ * ==========================================
  * ESCAPE HTML
- * ==========================================================
+ * ==========================================
  *
  * Important because Description / Paid To / Remarks
  * are user-entered text.
@@ -4309,7 +4309,7 @@ function formatPersonalExpenseCurrency(
  * Prevents entered HTML from being interpreted
  * as page markup.
  *
- * ==========================================================
+ * ==========================================
  */
 function escapePersonalExpenseHtml(
     value
@@ -5297,7 +5297,7 @@ function escapePersonalExpenseHtml(
       if (saveButton) {
          saveButton.disabled = true;
 
-         saveButton.textContent = "Saving...";
+         saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
       }
 
       // ------------------------------------------
@@ -5327,7 +5327,7 @@ function escapePersonalExpenseHtml(
                if (saveButton) {
                   saveButton.disabled = false;
 
-                  saveButton.textContent = "Save Order";
+                  saveButton.innerHTML = '💾 Save Order';
                }
 
                // ----------------------------------
@@ -5347,7 +5347,7 @@ function escapePersonalExpenseHtml(
                if (saveButton) {
                   saveButton.disabled = false;
 
-                  saveButton.textContent = "Save Order";
+                  saveButton.innerHTML = '💾 Save Order';
                }
 
                // ----------------------------------
@@ -5376,7 +5376,7 @@ function escapePersonalExpenseHtml(
             if (saveButton) {
                saveButton.disabled = false;
 
-               saveButton.textContent = "Save Order";
+               saveButton.innerHTML = '💾 Save Order';
             }
 
             // ----------------------------------
@@ -5739,7 +5739,7 @@ function escapePersonalExpenseHtml(
       if (saveButton) {
          saveButton.disabled = true;
 
-         saveButton.innerHTML = "Saving...";
+         saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
       }
 
       google.script.run
@@ -6240,6 +6240,7 @@ function escapePersonalExpenseHtml(
    }
 
 
+
 /**
  * ==========================================
  * BUILD INVOICE PDF BLOB
@@ -6289,6 +6290,32 @@ async function buildInvoicePdfBlob() {
       pdfInvoice.innerHTML = pdfInvoice.innerHTML
          .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/ug, "")
          .replace(/•/g, "-");
+
+      // ==========================================
+      // MOBILE RESPONSIVE CLASS NEUTRALIZER
+      // Neutralize Bootstrap 'd-none' classes and media query dependencies
+      // so desktop card headers and sub-addresses render properly on mobile exports.
+      // ==========================================
+      pdfInvoice.querySelectorAll('*').forEach(function(el) {
+         if (el.className && typeof el.className === 'string') {
+            el.className = el.className
+               .replace(/\bd-none\b/g, '')
+               .replace(/\bd-(sm|md|lg|xl)-(none|block|flex|inline)\b/g, '')
+               .trim();
+         }
+      });
+
+      pdfInvoice.querySelectorAll('.card-header, .card, .row').forEach(function(el) {
+         if (el.classList.contains('row')) {
+            el.style.setProperty('display', 'flex', 'important');
+         } else {
+            el.style.setProperty('display', 'block', 'important');
+         }
+         el.style.setProperty('visibility', 'visible', 'important');
+         el.style.setProperty('opacity', '1', 'important');
+      });
+      // ==========================================
+
 
       // ==========================================
       // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
@@ -6863,11 +6890,6 @@ async function buildInvoicePdfBlob() {
    }
 
 }
-
-
-
-
-
 
 
 
@@ -7595,6 +7617,9 @@ Thank you for choosing Smoky Swaad.
          html2pdf().set(options).from(element).save();
       }, 500);
    }
+
+
+
 
    /**
     * ==========================================

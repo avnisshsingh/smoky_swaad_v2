@@ -9,6 +9,31 @@
     --brand:#ff6b00;
 }
 
+/* ==========================================
+   SMOOTH MICRO-INTERACTIONS (Desktop & Mobile)
+========================================== */
+html {
+    scroll-behavior: smooth;
+}
+
+.btn, .card, .list-group-item, .form-control, .form-select {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn:active, 
+#sidebar .list-group-item:active, 
+.pe-quick-btn:active {
+    transform: scale(0.96) !important;
+    opacity: 0.9;
+}
+
+@media (min-width: 769px) {
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06) !important;
+    }
+}
+
 html, body{
     height:100%;
     margin:0;
@@ -293,24 +318,33 @@ html, body {
     color: #ffffff;
   }
 
-  /* ---------- CARDS ---------- */
-  .card {
+  /* ---------- CARDS (Shielded from Invoice Module) ----------
+     NOTE: ":not(#invoicePdfContainer) .card" does NOT actually
+     exclude cards inside the invoice - it only checks that SOME
+     ancestor (e.g. <body>) isn't #invoicePdfContainer, which is
+     always true. Use ":not([id^="invoicePdf"] *)" instead, which
+     correctly excludes descendants of the live invoice
+     (#invoicePdfContainer) AND the offscreen PDF export clone
+     buildInvoicePdfBlob() creates (#invoicePdfExport /
+     #invoicePdfExportHost) - both need shielding, since the PDF
+     clone is what actually gets rasterized into mobile.pdf. */
+  .card:not([id^="invoicePdf"] *) {
     border: none !important;
     border-radius: 14px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.04) !important;
     margin-bottom: 16px;
   }
 
-  .card-header { 
+  .card-header:not([id^="invoicePdf"] *) { 
     background: transparent !important;
     border-bottom: 1px solid #f1f3f5;
     padding: 14px 16px;
     border-radius: 14px 14px 0 0 !important;
   }
 
-  .card-header h4 { font-size: 1.15rem; font-weight: 700; color: #212529; }
-  .card-header h5 { font-size: 1rem; }
-  .card-body { padding: 16px !important; }
+  .card-header:not([id^="invoicePdf"] *) h4 { font-size: 1.15rem; font-weight: 700; color: #212529; }
+  .card-header:not([id^="invoicePdf"] *) h5 { font-size: 1rem; }
+  .card-body:not([id^="invoicePdf"] *) { padding: 16px !important; }
 
   /* ---------- FORMS & TOUCH TARGETS ---------- */
   .form-control,
@@ -352,8 +386,8 @@ html, body {
   .btn-sm { min-height: 38px; }
   .btn-lg { min-height: 52px; }
 
-  /* ---------- TABLES (SWIPE-FRIENDLY) ---------- */
-  .table-responsive {
+  /* ---------- TABLES (SWIPE-FRIENDLY - Shielded from Invoice Module) ---------- */
+  .table-responsive:not([id^="invoicePdf"] *) {
     width: 100%;
     border-radius: 10px;
     border: 1px solid #f1f3f5;
@@ -364,7 +398,7 @@ html, body {
     padding-bottom: 2px;
   }
 
-  .table-responsive > .table {
+  .table-responsive:not([id^="invoicePdf"] *) > .table {
     width: max-content;
     min-width: 100%;
     margin-bottom: 0;
