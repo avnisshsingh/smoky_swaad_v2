@@ -8161,4 +8161,1482 @@ function loadMonthlyProfit(){
 
 
 
+
+
+
+
+/**
+ * ==========================================================
+ * BULK INVOICE SEARCH MODULE
+ * ==========================================================
+ *
+ * Independent from the existing single invoice module.
+ * ==========================================================
+ */
+
+let bulkInvoiceSearchResults = [];
+
+
+/**
+ * ==========================================================
+ * SEARCH BULK INVOICE ORDERS
+ * ==========================================================
+ */
+
+function searchBulkInvoiceOrders() {
+
+    const fromDate =
+        document.getElementById(
+            "bulkInvoiceFromDate"
+        ).value;
+
+
+    const toDate =
+        document.getElementById(
+            "bulkInvoiceToDate"
+        ).value;
+
+
+    const mobile =
+        document.getElementById(
+            "bulkInvoiceMobile"
+        ).value.trim();
+
+
+    const orderId =
+        document.getElementById(
+            "bulkInvoiceOrderId"
+        ).value.trim();
+
+
+    const paymentStatus =
+        document.getElementById(
+            "bulkInvoicePaymentStatus"
+        ).value;
+
+
+    // ======================================================
+    // CLIENT VALIDATION
+    // ======================================================
+
+    if (
+        (fromDate && !toDate) ||
+        (!fromDate && toDate)
+    ) {
+
+        showBulkInvoiceMessage(
+            "Please select both From Date and To Date.",
+            "warning"
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // BUILD FILTER OBJECT
+    // ======================================================
+
+    const filters = {
+
+        fromDate:
+            fromDate,
+
+        toDate:
+            toDate,
+
+        mobile:
+            mobile,
+
+        orderId:
+            orderId,
+
+        paymentStatus:
+            paymentStatus
+
+    };
+
+
+    // ======================================================
+    // LOADING STATE
+    // ======================================================
+
+    const searchButton =
+        document.getElementById(
+            "bulkInvoiceSearchBtn"
+        );
+
+
+    if (searchButton) {
+
+        searchButton.disabled = true;
+
+        searchButton.innerHTML =
+            "Searching...";
+
+    }
+
+
+    showBulkInvoiceMessage(
+        "Searching orders...",
+        "info"
+    );
+
+
+    // ======================================================
+    // SERVER CALL
+    // ======================================================
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (searchButton) {
+
+                    searchButton.disabled = false;
+
+                    searchButton.innerHTML =
+                        "🔍 Search Orders";
+
+                }
+
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    bulkInvoiceSearchResults = [];
+
+
+                    renderBulkInvoiceResults(
+                        []
+                    );
+
+
+                    showBulkInvoiceMessage(
+
+                        response &&
+                        response.message
+                            ? response.message
+                            : "Unable to search orders.",
+
+                        "danger"
+
+                    );
+
+
+                    return;
+
+                }
+
+
+                bulkInvoiceSearchResults =
+                    Array.isArray(
+                        response.orders
+                    )
+                        ? response.orders
+                        : [];
+
+
+                renderBulkInvoiceResults(
+                    bulkInvoiceSearchResults
+                );
+
+
+                if (
+                    bulkInvoiceSearchResults.length === 0
+                ) {
+
+                    showBulkInvoiceMessage(
+                        "No matching orders found.",
+                        "warning"
+                    );
+
+                    return;
+
+                }
+
+
+                let message =
+                    bulkInvoiceSearchResults.length +
+                    " order";
+
+
+                if (
+                    bulkInvoiceSearchResults.length !== 1
+                ) {
+
+                    message += "s";
+
+                }
+
+
+                message +=
+                    " found";
+
+
+                if (
+                    response.usingCurrentMonth === true
+                ) {
+
+                    message +=
+                        " in the current month";
+
+                }
+
+
+                message += ".";
+
+
+                showBulkInvoiceMessage(
+                    message,
+                    "success"
+                );
+
+            }
+        )
+
+
+        .withFailureHandler(
+            function(error) {
+
+                if (searchButton) {
+
+                    searchButton.disabled = false;
+
+                    searchButton.innerHTML =
+                        "🔍 Search Orders";
+
+                }
+
+
+                bulkInvoiceSearchResults = [];
+
+
+                renderBulkInvoiceResults(
+                    []
+                );
+
+
+                showBulkInvoiceMessage(
+
+                    error &&
+                    error.message
+                        ? error.message
+                        : String(error),
+
+                    "danger"
+
+                );
+
+            }
+        )
+
+
+        .searchBulkInvoiceOrdersFromWeb(
+            filters
+        );
+
+}
+
+
+/**
+ * ==========================================================
+ * RENDER BULK INVOICE RESULTS
+ * ==========================================================
+ */
+
+function renderBulkInvoiceResults(
+    orders
+) {
+
+    orders =
+        Array.isArray(orders)
+            ? orders
+            : [];
+
+
+    const body =
+        document.getElementById(
+            "bulkInvoiceResultsBody"
+        );
+
+
+    const container =
+        document.getElementById(
+            "bulkInvoiceResultsContainer"
+        );
+
+
+    const countElement =
+        document.getElementById(
+            "bulkInvoiceOrderCount"
+        );
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            orders.length;
+
+    }
+
+
+    if (!body || !container) {
+
+        return;
+
+    }
+
+
+    body.innerHTML = "";
+
+
+    // ======================================================
+    // NO RESULTS
+    // ======================================================
+
+    if (
+        orders.length === 0
+    ) {
+
+        container.style.display =
+            "none";
+
+
+        resetBulkInvoiceSelection();
+
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // BUILD RESULTS
+    // ======================================================
+
+    const fragment =
+        document.createDocumentFragment();
+
+
+    for (
+        let i = 0;
+        i < orders.length;
+        i++
+    ) {
+
+        const order =
+            orders[i];
+
+
+        const row =
+            document.createElement(
+                "tr"
+            );
+
+
+        // --------------------------------------------------
+        // CHECKBOX
+        // --------------------------------------------------
+
+        const selectCell =
+            document.createElement(
+                "td"
+            );
+
+
+        selectCell.className =
+            "text-center";
+
+
+        const checkbox =
+            document.createElement(
+                "input"
+            );
+
+
+        checkbox.type =
+            "checkbox";
+
+
+        checkbox.className =
+            "bulk-invoice-order-checkbox";
+
+
+        checkbox.dataset.index =
+            String(i);
+
+
+        checkbox.addEventListener(
+            "change",
+            updateBulkInvoiceSelection
+        );
+
+
+        selectCell.appendChild(
+            checkbox
+        );
+
+
+        // --------------------------------------------------
+        // ORDER ID
+        // --------------------------------------------------
+
+        const orderIdCell =
+            document.createElement(
+                "td"
+            );
+
+
+        orderIdCell.textContent =
+            order.orderId || "";
+
+
+        // --------------------------------------------------
+        // DATE
+        // --------------------------------------------------
+
+        const dateCell =
+            document.createElement(
+                "td"
+            );
+
+
+        dateCell.textContent =
+            order.orderDate || "";
+
+
+        // --------------------------------------------------
+        // CUSTOMER
+        // --------------------------------------------------
+
+        const customerCell =
+            document.createElement(
+                "td"
+            );
+
+
+        customerCell.textContent =
+            order.customerName || "";
+
+
+        // --------------------------------------------------
+        // MOBILE
+        // --------------------------------------------------
+
+        const mobileCell =
+            document.createElement(
+                "td"
+            );
+
+
+        mobileCell.textContent =
+            order.mobile || "";
+
+
+        // --------------------------------------------------
+        // PAYMENT STATUS
+        // --------------------------------------------------
+
+        const paymentCell =
+            document.createElement(
+                "td"
+            );
+
+
+        const badge =
+            document.createElement(
+                "span"
+            );
+
+
+        const paymentStatus =
+            String(
+                order.paymentStatus || ""
+            );
+
+
+        badge.textContent =
+            paymentStatus || "-";
+
+
+        if (
+            paymentStatus
+                .toLowerCase() ===
+            "paid"
+        ) {
+
+            badge.className =
+                "badge bg-success";
+
+        }
+
+        else if (
+            paymentStatus
+                .toLowerCase() ===
+            "pending"
+        ) {
+
+            badge.className =
+                "badge bg-danger";
+
+        }
+
+        else {
+
+            badge.className =
+                "badge bg-secondary";
+
+        }
+
+
+        paymentCell.appendChild(
+            badge
+        );
+
+
+        // --------------------------------------------------
+        // AMOUNT
+        // --------------------------------------------------
+
+        const amountCell =
+            document.createElement(
+                "td"
+            );
+
+
+        amountCell.className =
+            "text-end fw-semibold";
+
+
+        amountCell.textContent =
+            "₹" +
+            Number(
+                order.grandTotal || 0
+            ).toFixed(2);
+
+
+        // --------------------------------------------------
+        // ADD CELLS
+        // --------------------------------------------------
+
+        row.appendChild(
+            selectCell
+        );
+
+        row.appendChild(
+            orderIdCell
+        );
+
+        row.appendChild(
+            dateCell
+        );
+
+        row.appendChild(
+            customerCell
+        );
+
+        row.appendChild(
+            mobileCell
+        );
+
+        row.appendChild(
+            paymentCell
+        );
+
+        row.appendChild(
+            amountCell
+        );
+
+
+        fragment.appendChild(
+            row
+        );
+
+    }
+
+
+    body.appendChild(
+        fragment
+    );
+
+
+    container.style.display =
+        "";
+
+
+    // ======================================================
+    // SELECT ALL
+    // ======================================================
+
+    const selectAll =
+        document.getElementById(
+            "bulkInvoiceSelectAll"
+        );
+
+
+    if (selectAll) {
+
+        selectAll.checked =
+            false;
+
+
+        selectAll.indeterminate =
+            false;
+
+
+        selectAll.onchange =
+            toggleAllBulkInvoiceOrders;
+
+    }
+
+
+    resetBulkInvoiceSelection();
+
+}
+
+
+/**
+ * ==========================================================
+ * SELECT / DESELECT ALL
+ * ==========================================================
+ */
+
+function toggleAllBulkInvoiceOrders() {
+
+    const selectAll =
+        document.getElementById(
+            "bulkInvoiceSelectAll"
+        );
+
+
+    if (!selectAll) {
+
+        return;
+
+    }
+
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".bulk-invoice-order-checkbox"
+        );
+
+
+    for (
+        let i = 0;
+        i < checkboxes.length;
+        i++
+    ) {
+
+        checkboxes[i].checked =
+            selectAll.checked;
+
+    }
+
+
+    updateBulkInvoiceSelection();
+
+}
+
+
+/**
+ * ==========================================================
+ * UPDATE SELECTED ORDERS
+ * ==========================================================
+ */
+
+function updateBulkInvoiceSelection() {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".bulk-invoice-order-checkbox"
+        );
+
+
+    let selectedCount = 0;
+
+    let selectedTotal = 0;
+
+
+    for (
+        let i = 0;
+        i < checkboxes.length;
+        i++
+    ) {
+
+        const checkbox =
+            checkboxes[i];
+
+
+        if (
+            checkbox.checked !== true
+        ) {
+
+            continue;
+
+        }
+
+
+        const index =
+            Number(
+                checkbox.dataset.index
+            );
+
+
+        const order =
+            bulkInvoiceSearchResults[
+                index
+            ];
+
+
+        if (!order) {
+
+            continue;
+
+        }
+
+
+        selectedCount++;
+
+
+        selectedTotal +=
+            Number(
+                order.grandTotal || 0
+            );
+
+    }
+
+
+    // ======================================================
+    // UPDATE SUMMARY
+    // ======================================================
+
+    const countElement =
+        document.getElementById(
+            "bulkInvoiceSelectedCount"
+        );
+
+
+    const totalElement =
+        document.getElementById(
+            "bulkInvoiceSelectedTotal"
+        );
+
+
+    const generateButton =
+        document.getElementById(
+            "bulkInvoiceGenerateBtn"
+        );
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            selectedCount;
+
+    }
+
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            "₹" +
+            selectedTotal.toFixed(2);
+
+    }
+
+
+    if (generateButton) {
+
+        generateButton.disabled =
+            selectedCount === 0;
+
+    }
+
+
+    // ======================================================
+    // UPDATE SELECT ALL STATE
+    // ======================================================
+
+    const selectAll =
+        document.getElementById(
+            "bulkInvoiceSelectAll"
+        );
+
+
+    if (
+        selectAll &&
+        checkboxes.length
+    ) {
+
+        selectAll.checked =
+            selectedCount ===
+            checkboxes.length;
+
+
+        selectAll.indeterminate =
+            selectedCount > 0 &&
+            selectedCount <
+                checkboxes.length;
+
+    }
+
+}
+
+
+/**
+ * ==========================================================
+ * RESET SELECTION
+ * ==========================================================
+ */
+
+function resetBulkInvoiceSelection() {
+
+    const countElement =
+        document.getElementById(
+            "bulkInvoiceSelectedCount"
+        );
+
+
+    const totalElement =
+        document.getElementById(
+            "bulkInvoiceSelectedTotal"
+        );
+
+
+    const generateButton =
+        document.getElementById(
+            "bulkInvoiceGenerateBtn"
+        );
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            "0";
+
+    }
+
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            "₹0.00";
+
+    }
+
+
+    if (generateButton) {
+
+        generateButton.disabled =
+            true;
+
+    }
+
+}
+
+
+/**
+ * ==========================================================
+ * CLEAR BULK INVOICE SEARCH
+ * ==========================================================
+ */
+
+function clearBulkInvoiceSearch() {
+
+    const ids = [
+
+        "bulkInvoiceFromDate",
+
+        "bulkInvoiceToDate",
+
+        "bulkInvoiceMobile",
+
+        "bulkInvoiceOrderId",
+
+        "bulkInvoicePaymentStatus"
+
+    ];
+
+
+    for (
+        let i = 0;
+        i < ids.length;
+        i++
+    ) {
+
+        const element =
+            document.getElementById(
+                ids[i]
+            );
+
+
+        if (element) {
+
+            element.value = "";
+
+        }
+
+    }
+
+
+    bulkInvoiceSearchResults = [];
+
+
+    renderBulkInvoiceResults(
+        []
+    );
+
+
+    const countElement =
+        document.getElementById(
+            "bulkInvoiceOrderCount"
+        );
+
+
+    if (countElement) {
+
+        countElement.textContent =
+            "0";
+
+    }
+
+
+    const message =
+        document.getElementById(
+            "bulkInvoiceMessage"
+        );
+
+
+    if (message) {
+
+        message.style.display =
+            "none";
+
+
+        message.innerHTML =
+            "";
+
+    }
+
+}
+
+
+/**
+ * ==========================================================
+ * BULK INVOICE MESSAGE
+ * ==========================================================
+ */
+
+function showBulkInvoiceMessage(
+    message,
+    type
+) {
+
+    const element =
+        document.getElementById(
+            "bulkInvoiceMessage"
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    const allowedTypes = [
+        "success",
+        "danger",
+        "warning",
+        "info"
+    ];
+
+
+    if (
+        allowedTypes.indexOf(type) === -1
+    ) {
+
+        type = "info";
+
+    }
+
+
+    element.className =
+        "mt-3 alert alert-" +
+        type +
+        " py-2 mb-0";
+
+
+    element.textContent =
+        message || "";
+
+
+    element.style.display =
+        "";
+
+}
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * SORT BULK INVOICE SEARCH RESULTS
+ * ==========================================================
+ */
+
+function sortBulkInvoiceResults() {
+
+    const sortElement =
+        document.getElementById(
+            "bulkInvoiceSort"
+        );
+
+
+    if (
+        !sortElement ||
+        !Array.isArray(bulkInvoiceSearchResults)
+    ) {
+
+        return;
+
+    }
+
+
+    const sortType =
+        sortElement.value;
+
+
+    // Work on a copy first.
+    const sortedOrders =
+        bulkInvoiceSearchResults.slice();
+
+
+    // ======================================================
+    // DATE HELPER
+    //
+    // Backend returns dd/MM/yyyy
+    // ======================================================
+
+    function getDateValue(order) {
+
+        const value =
+            String(
+                order.orderDate || ""
+            );
+
+
+        const parts =
+            value.split("/");
+
+
+        if (parts.length !== 3) {
+
+            return 0;
+
+        }
+
+
+        return new Date(
+            Number(parts[2]),
+            Number(parts[1]) - 1,
+            Number(parts[0])
+        ).getTime();
+
+    }
+
+
+    // ======================================================
+    // SORT
+    // ======================================================
+
+    sortedOrders.sort(
+        function(a, b) {
+
+            switch (sortType) {
+
+                // ------------------------------------------
+                // NEWEST FIRST
+                // ------------------------------------------
+
+                case "date-desc":
+
+                    return (
+                        getDateValue(b) -
+                        getDateValue(a)
+                    );
+
+
+                // ------------------------------------------
+                // OLDEST FIRST
+                // ------------------------------------------
+
+                case "date-asc":
+
+                    return (
+                        getDateValue(a) -
+                        getDateValue(b)
+                    );
+
+
+                // ------------------------------------------
+                // AMOUNT HIGH → LOW
+                // ------------------------------------------
+
+                case "amount-desc":
+
+                    return (
+                        Number(b.grandTotal || 0) -
+                        Number(a.grandTotal || 0)
+                    );
+
+
+                // ------------------------------------------
+                // AMOUNT LOW → HIGH
+                // ------------------------------------------
+
+                case "amount-asc":
+
+                    return (
+                        Number(a.grandTotal || 0) -
+                        Number(b.grandTotal || 0)
+                    );
+
+
+                // ------------------------------------------
+                // ORDER ID HIGH → LOW
+                // ------------------------------------------
+
+                case "order-desc":
+
+                    return String(
+                        b.orderId || ""
+                    ).localeCompare(
+                        String(a.orderId || ""),
+                        undefined,
+                        {
+                            numeric: true
+                        }
+                    );
+
+
+                // ------------------------------------------
+                // ORDER ID LOW → HIGH
+                // ------------------------------------------
+
+                case "order-asc":
+
+                    return String(
+                        a.orderId || ""
+                    ).localeCompare(
+                        String(b.orderId || ""),
+                        undefined,
+                        {
+                            numeric: true
+                        }
+                    );
+
+
+                default:
+
+                    return 0;
+
+            }
+
+        }
+    );
+
+
+    // ======================================================
+    // SAVE NEW ORDER
+    // ======================================================
+
+    bulkInvoiceSearchResults =
+        sortedOrders;
+
+
+    // ======================================================
+    // REDRAW TABLE
+    // ======================================================
+
+    renderBulkInvoiceResults(
+        bulkInvoiceSearchResults
+    );
+
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================================
+ * GENERATE BULK INVOICE
+ * STEP 1 - COLLECT AND VALIDATE SELECTED ORDERS
+ * ==========================================================
+ */
+function generateBulkInvoice() {
+
+    // ------------------------------------------
+    // Validate search results
+    // ------------------------------------------
+
+    if (
+        !Array.isArray(bulkInvoiceSearchResults) ||
+        bulkInvoiceSearchResults.length === 0
+    ) {
+
+        showBulkInvoiceMessage(
+            "No orders are available for bulk invoice.",
+            "warning"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // Find selected checkboxes
+    // ------------------------------------------
+
+    const checkedBoxes =
+        document.querySelectorAll(
+            ".bulk-invoice-order-checkbox:checked"
+        );
+
+
+    if (!checkedBoxes.length) {
+
+        showBulkInvoiceMessage(
+            "Please select at least one order.",
+            "warning"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // Collect selected Order IDs
+    // ------------------------------------------
+
+    const selectedOrderIds = [];
+
+
+checkedBoxes.forEach(function(checkbox) {
+
+    const index =
+        Number(
+            checkbox.dataset.index
+        );
+
+
+    const order =
+        bulkInvoiceSearchResults[
+            index
+        ];
+
+
+    if (
+        order &&
+        order.orderId
+    ) {
+
+        selectedOrderIds.push(
+            String(
+                order.orderId
+            )
+            .trim()
+            .toUpperCase()
+        );
+
+    }
+
+});
+
+
+    if (!selectedOrderIds.length) {
+
+        showBulkInvoiceMessage(
+            "Unable to identify the selected orders.",
+            "danger"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // Match selected orders with loaded data
+    // ------------------------------------------
+
+    const selectedOrders =
+        bulkInvoiceSearchResults.filter(
+            function(order) {
+
+                return selectedOrderIds.includes(
+                    String(order.orderId || "")
+                );
+
+            }
+        );
+
+
+    if (!selectedOrders.length) {
+
+        showBulkInvoiceMessage(
+            "Selected order data could not be found.",
+            "danger"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // Validate same mobile number
+    // ------------------------------------------
+
+    const firstMobile =
+        String(
+            selectedOrders[0].mobile || ""
+        ).trim();
+
+
+    const differentCustomer =
+        selectedOrders.some(
+            function(order) {
+
+                return String(
+                    order.mobile || ""
+                ).trim() !== firstMobile;
+
+            }
+        );
+
+
+    if (differentCustomer) {
+
+        showBulkInvoiceMessage(
+            "Bulk invoice can only be generated for orders belonging to the same mobile number.",
+            "warning"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------
+    // Disable button while loading
+    // ------------------------------------------
+
+    const button =
+        document.getElementById(
+            "bulkInvoiceGenerateBtn"
+        );
+
+if (button) {
+    button.disabled = true;
+    button.textContent = "⏳ Generating Bulk Invoice...";
+}
+
+
+    // ------------------------------------------
+    // Call NEW backend function
+    // ------------------------------------------
+
+    google.script.run
+
+        .withSuccessHandler(
+            function(response) {
+
+                if (button) {
+
+                    button.disabled = false;
+
+                    button.textContent =
+                    "🧾 Generate Bulk Invoice";
+
+                }
+
+
+                if (
+                    !response ||
+                    response.success !== true
+                ) {
+
+                    showBulkInvoiceMessage(
+                        response && response.message
+                            ? response.message
+                            : "Unable to generate bulk invoice.",
+                        "danger"
+                    );
+
+                    return;
+
+                }
+
+
+                console.log(
+                    "Bulk Invoice Data:",
+                    response
+                );
+
+
+                showBulkInvoiceMessage(
+                    response.orderCount +
+                    " orders loaded successfully for bulk invoice.",
+                    "success"
+                );
+
+            }
+        )
+
+        .withFailureHandler(
+            function(error) {
+
+                if (button) {
+
+                    button.disabled = false;
+
+                    button.textContent =
+                    "🧾 Generate Bulk Invoice";
+
+                }
+
+
+                showBulkInvoiceMessage(
+                    error && error.message
+                        ? error.message
+                        : String(error),
+                    "danger"
+                );
+
+            }
+        )
+
+        .getBulkInvoiceData(
+            selectedOrderIds
+        );
+
+}
+
+
+
+
+
 </script>
