@@ -1083,4 +1083,225 @@
          </div>
       </div>
    </div>
+
+<script>
+  // ==========================================
+  // BULK INVOICE CLIENT-SIDE LOGIC
+  // ==========================================
+  let currentBulkOrders = [];
+  let selectedBulkData = null;
+
+  function searchBulkInvoiceOrders() {
+    const fromDate = document.getElementById("bulkInvoiceFromDate").value;
+    const toDate = document.getElementById("bulkInvoiceToDate").value;
+    const mobile = document.getElementById("bulkInvoiceMobile").value;
+    const orderId = document.getElementById("bulkInvoiceOrderId").value;
+    const paymentStatus = document.getElementById("bulkInvoicePaymentStatus").value;
+
+    const filters = { fromDate, toDate, mobile, orderId, paymentStatus };
+    const searchBtn = document.getElementById("bulkInvoiceSearchBtn");
+    
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = "⏳ Searching...";
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = "🔍 Search Orders";
+
+        const msgDiv = document.getElementById("bulkInvoiceMessage");
+        const resultsContainer = document.getElementById("bulkInvoiceResultsContainer");
+
+        if (!response.success) {
+          msgDiv.className = "alert alert-danger mt-3";
+          msgDiv.innerText = response.message;
+          msgDiv.style.display = "block";
+          resultsContainer.style.display = "none";
+          return;
+        }
+
+        msgDiv.style.display = "none";
+        currentBulkOrders = response.orders || [];
+        document.getElementById("bulkInvoiceOrderCount").innerText = response.count;
+
+        if (currentBulkOrders.length === 0) {
+          msgDiv.className = "alert alert-warning mt-3";
+          msgDiv.innerText = "No orders found matching the criteria.";
+          msgDiv.style.display = "block";
+          resultsContainer.style.display = "none";
+          return;
+        }
+
+        resultsContainer.style.display = "block";
+        renderBulkInvoiceResults(currentBulkOrders);
+      })
+      .withFailureHandler(function(err) {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = "🔍 Search Orders";
+        alert("Error searching orders: " + err.message);
+      })
+      .searchBulkInvoiceOrdersFromWeb(filters);
+  }
+
+  function renderBulkInvoiceResults(orders) {
+    const tbody = document.getElementById("bulkInvoiceResultsBody");
+    tbody.innerHTML = "";
+
+    orders.forEach(function(order) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="text-center">
+          <input type="checkbox" class="bulk-order-checkbox" value="${order.orderId}" data-amount="${order.grandTotal}" onchange="updateBulkInvoiceSelectionSummary()" />
+        </td>
+        <td><strong>${order.orderId}</strong></td>
+        <td>${order.orderDate}</td>
+        <td>${order.customerName}</td>
+        <td>${order.mobile}</td>
+        <td>
+          <span class="badge ${order.paymentStatus.toLowerCase() === 'paid' ? 'bg-success' : 'bg-danger'}">
+            ${order.paymentStatus}
+          </span>
+        </td>
+        <td class="text-end">₹${order.grandTotal.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const selectAll = document.getElementById("bulkInvoiceSelectAll");
+    selectAll.checked = false;
+    selectAll.onclick = function() {
+      const checkboxes = document.querySelectorAll(".bulk-order-checkbox");
+      checkboxes.forEach(cb => cb.checked = selectAll.checked);
+      updateBulkInvoiceSelectionSummary();
+    };
+
+    updateBulkInvoiceSelectionSummary();
+  }
+
+  function updateBulkInvoiceSelectionSummary() {
+    const checkboxes = document.querySelectorAll(".bulk-order-checkbox:checked");
+    let selectedCount = checkboxes.length;
+    let selectedTotal = 0;
+
+    checkboxes.forEach(cb => {
+      selectedTotal += parseFloat(cb.getAttribute("data-amount")) || 0;
+    });
+
+    document.getElementById("bulkInvoiceSelectedCount").innerText = selectedCount;
+    document.getElementById("bulkInvoiceSelectedTotal").innerText = "₹" + selectedTotal.toFixed(2);
+    document.getElementById("bulkInvoiceGenerateBtn").disabled = selectedCount === 0;
+  }
+
+  function generateBulkInvoice() {
+    const checkboxes = document.querySelectorAll(".bulk-order-checkbox:checked");
+    const selectedOrderIds = Array.from(checkboxes).map(cb => cb.value);
+
+    if (selectedOrderIds.length === 0) {
+      alert("Please select at least one order.");
+      return;
+    }
+
+    const generateBtn = document.getElementById("bulkInvoiceGenerateBtn");
+    generateBtn.disabled = true;
+    generateBtn.innerText = "⌛ Generating Bulk Invoice...";
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        generateBtn.disabled = false;
+        generateBtn.innerText = "🧾 Generate Bulk Invoice";
+
+        if (!response.success) {
+          alert("Failed to generate bulk invoice: " + response.message);
+          return;
+        }
+
+        selectedBulkData = response;
+        showBulkInvoicePreview(response);
+      })
+      .withFailureHandler(function(err) {
+        generateBtn.disabled = false;
+        generateBtn.innerText = "🧾 Generate Bulk Invoice";
+        alert("Error: " + err.message);
+      })
+      .generateBulkInvoicePdf(selectedOrderIds);
+  }
+
+  function showBulkInvoicePreview(bulkResponse) {
+    const previewContainer = document.getElementById("bulkInvoicePreviewContainer");
+    previewContainer.style.display = "block";
+
+    const totals = bulkResponse.totals;
+    const cardBody = previewContainer.querySelector(".card-body");
+
+    cardBody.innerHTML = `
+      <div class="alert alert-success d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <strong>✅ Bulk Invoice Ready!</strong>
+          <br><small>Mobile: ${bulkResponse.customerMobile} | Total Orders: ${document.querySelectorAll('.bulk-order-checkbox:checked').length}</small>
+        </div>
+        <span class="fs-4 fw-bold text-success">₹${totals.grandTotal.toFixed(2)}</span>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="p-2 border rounded bg-light">
+            <small class="text-muted">Paid Amount</small>
+            <div class="fw-bold text-success">₹${totals.paidAmount.toFixed(2)}</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-2 border rounded bg-light">
+            <small class="text-muted">Pending Amount</small>
+            <div class="fw-bold text-danger">₹${totals.pendingAmount.toFixed(2)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="d-grid gap-2 d-md-flex justify-content-center">
+        <button class="btn btn-danger" onclick="downloadBulkPdf()">📄 Download Bulk PDF</button>
+        <button class="btn btn-success" onclick="shareBulkWhatsApp()">📲 Share via WhatsApp</button>
+      </div>
+    `;
+    previewContainer.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function downloadBulkPdf() {
+    if (!selectedBulkData || !selectedBulkData.base64Data) return;
+    const link = document.createElement("a");
+    link.href = "data:application/pdf;base64," + selectedBulkData.base64Data;
+    link.download = selectedBulkData.blobName;
+    link.click();
+  }
+
+  function shareBulkWhatsApp() {
+    if (!selectedBulkData) return;
+    const mobile = selectedBulkData.customerMobile;
+    const totals = selectedBulkData.totals;
+
+    let message = `*Smoky Swaad - Consolidated Statement*\n\n`;
+    message += `Grand Total: ₹${totals.grandTotal.toFixed(2)}\n`;
+    message += `Paid: ₹${totals.paidAmount.toFixed(2)}\n`;
+    if (totals.pendingAmount > 0) {
+      message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
+    }
+    message += `\nThank you for ordering with Smoky Swaad! ❤️`;
+
+    const url = `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  }
+
+  function clearBulkInvoiceSearch() {
+    document.getElementById("bulkInvoiceFromDate").value = "";
+    document.getElementById("bulkInvoiceToDate").value = "";
+    document.getElementById("bulkInvoiceMobile").value = "";
+    document.getElementById("bulkInvoiceOrderId").value = "";
+    document.getElementById("bulkInvoicePaymentStatus").value = "";
+    document.getElementById("bulkInvoiceResultsContainer").style.display = "none";
+    document.getElementById("bulkInvoiceMessage").style.display = "none";
+    currentBulkOrders = [];
+  }
+
+  function closeBulkInvoicePreview() {
+    document.getElementById("bulkInvoicePreviewContainer").style.display = "none";
+  }
+</script>
+
 </div>

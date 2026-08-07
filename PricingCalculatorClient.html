@@ -368,15 +368,13 @@ function calculateTotalCost() {
  * ==========================================
  */
 function calculateSellingPrice() {
+    
+    const sellingPriceEl = document.getElementById("sellingPrice");
 
-    const sellingPrice =
+    // Safety check: Default to 0 if the element doesn't exist
+    const sellingPrice = sellingPriceEl ? (Number(sellingPriceEl.value) || 0) : 0;
 
-        Number(
-            document.getElementById("sellingPrice").value
-        ) || 0;
-
-    window.pricingSummary.sellingPrice =
-        sellingPrice;
+    window.pricingSummary.sellingPrice = sellingPrice;
 
 }
 
@@ -480,57 +478,38 @@ function calculateFoodCostPercentage() {
  * ==========================================
  */
 function updateFoodCostStatus() {
+    const badge = document.getElementById("foodCostStatus");
 
-    const badge =
-        document.getElementById("foodCostStatus");
+    // Safety check: Exit if the user left the screen
+    if (!badge) {
+        return;
+    }
 
-    const percentage =
-        window.pricingSummary.foodCostPercentage;
+    const percentage = window.pricingSummary.foodCostPercentage;
 
     badge.className = "badge";
 
     if (percentage === 0) {
-
         badge.classList.add("bg-secondary");
-
         badge.innerText = "Not Calculated";
-
     }
-
     else if (percentage < 30) {
-
         badge.classList.add("bg-success");
-
         badge.innerText = "Excellent";
-
     }
-
     else if (percentage <= 40) {
-
         badge.classList.add("bg-primary");
-
         badge.innerText = "Good";
-
     }
-
     else if (percentage <= 50) {
-
         badge.classList.add("bg-warning", "text-dark");
-
         badge.innerText = "High";
-
     }
-
     else {
-
         badge.classList.add("bg-danger");
-
         badge.innerText = "Review Price";
-
     }
-
 }
-
 
 
 
@@ -544,35 +523,34 @@ function updateFoodCostStatus() {
  * ==========================================
  */
 function updateSummary() {
+    const ingredientTotalEl = document.getElementById("ingredientTotal");
+    const businessCostTotalEl = document.getElementById("businessCostTotal");
+    const totalCostEl = document.getElementById("totalCost");
+    const profitEl = document.getElementById("profit");
+    const profitPercentageEl = document.getElementById("profitPercentage");
+    const foodCostPercentageEl = document.getElementById("foodCostPercentage");
 
-    document.getElementById("ingredientTotal").value =
-        "₹" +
-        window.pricingSummary.ingredientTotal.toFixed(2);
-
-    document.getElementById("businessCostTotal").value =
-        "₹" +
-        window.pricingSummary.businessCost.toFixed(2);
-
-    document.getElementById("totalCost").value =
-        "₹" +
-        window.pricingSummary.totalCost.toFixed(2);
-
-        document.getElementById("profit").value =
-        "₹" +
-        window.pricingSummary.profit.toFixed(2);
-
-    document.getElementById("profitPercentage").value =
-        window.pricingSummary.profitPercentage.toFixed(2) + "%";
-
-    document.getElementById("foodCostPercentage").value =
-
-    window.pricingSummary.foodCostPercentage.toFixed(2) + "%";    
-
+    if (ingredientTotalEl) {
+        ingredientTotalEl.value = "₹" + window.pricingSummary.ingredientTotal.toFixed(2);
+    }
+    if (businessCostTotalEl) {
+        businessCostTotalEl.value = "₹" + window.pricingSummary.businessCost.toFixed(2);
+    }
+    if (totalCostEl) {
+        totalCostEl.value = "₹" + window.pricingSummary.totalCost.toFixed(2);
+    }
+    if (profitEl) {
+        profitEl.value = "₹" + window.pricingSummary.profit.toFixed(2);
+    }
+    if (profitPercentageEl) {
+        profitPercentageEl.value = window.pricingSummary.profitPercentage.toFixed(2) + "%";
+    }
+    if (foodCostPercentageEl) {
+        foodCostPercentageEl.value = window.pricingSummary.foodCostPercentage.toFixed(2) + "%";
+    }
 
     updateFoodCostStatus();
 }
-
-
 
 
 
@@ -772,32 +750,31 @@ function loadBusinessCosts() {
 
 
    /**
-    * ==========================================
-    * Render Menu Items
-    * ==========================================
-    */
-   function renderMenuItems(data) {
-      const menu = document.getElementById("pricingMenuItem");
+ * ==========================================
+ * Render Menu Items
+ * ==========================================
+ */
+function renderMenuItems(data) {
+    const menu = document.getElementById("pricingMenuItem");
 
-      menu.innerHTML = `<option value="">Select Menu Item</option>`;
+    // Safety check: Exit if the user left the screen
+    if (!menu) {
+        return;
+    }
 
-      data.menuItems.forEach(function (item) {
-         menu.innerHTML += `
+    menu.innerHTML = `<option value="">Select Menu Item</option>`;
 
+    data.menuItems.forEach(function (item) {
+        menu.innerHTML += `
             <option
                 value="${item.menuItem}"
                 data-category="${item.category}"
                 data-selling-price="${item.sellingPrice}">
-
                 ${item.menuItem}
-
             </option>
-
         `;
-      });
-   }
-
-
+    });
+}
 
 
 

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @page { margin: 15px 20px; }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #212529;
+      font-size: 11px;
+    }
+    .card, tr, .brand-header, .footer { page-break-inside: avoid; }
+    
+    .brand-header {
+      background-color: #ff6b00;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .brand-table { width: 100%; border-collapse: collapse; }
+    .brand-table td { border: none; padding: 0; vertical-align: middle; }
+    .brand-title { font-size: 22px; font-weight: bold; margin: 0 0 2px 0; line-height: 1.1; }
+    .brand-tagline { font-size: 13px; margin: 0 0 2px 0; }
+    .brand-address { font-size: 11px; opacity: 0.95; margin: 0; }
+    .brand-phone-label { font-size: 11px; opacity: 0.9; margin: 0 0 2px 0; }
+    .brand-phone { font-size: 15px; font-weight: bold; margin: 0; }
+
+    .card {
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .card-header { padding: 6px 12px; font-weight: bold; font-size: 12px; }
+    .card-body { padding: 8px 12px; }
+    
+    .bg-dark { background-color: #212529; color: white; }
+    .bg-primary { background-color: #0d6efd; color: white; }
+    .bg-success { background-color: #198754; color: white; }
+    .bg-warning { background-color: #ffc107; color: #000; }
+
+    .grid-table { width: 100%; border-collapse: collapse; }
+    .grid-table td { border: none; padding: 4px; vertical-align: top; }
+    .label { color: #6c757d; font-size: 10px; margin-bottom: 2px; display: block; }
+    .value { font-size: 12px; font-weight: bold; margin: 0; }
+
+    table.data-table { width: 100%; border-collapse: collapse; margin: 0; }
+    table.data-table th, table.data-table td {
+      padding: 6px 10px; border-bottom: 1px solid #dee2e6;
+      text-align: left; vertical-align: middle; font-size: 11px;
+    }
+    table.data-table th { background-color: #f8f9fa; color: #495057; font-weight: bold; border-bottom: 2px solid #dee2e6; }
+    table.data-table tr:last-child td { border-bottom: none; }
+    .text-end { text-align: right !important; }
+    .text-center { text-align: center !important; }
+
+    .badge { padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: white; display: inline-block; }
+    .badge-paid { background-color: #198754; }
+    .badge-pending { background-color: #6c757d; }
+
+    .summary-table { width: 100%; border-collapse: collapse; }
+    .summary-table td { padding: 4px 12px; font-size: 12px; border: none; }
+    .grand-total-row { background-color: #d1e7dd; }
+    .grand-total-row td { padding: 8px 12px; font-size: 14px; font-weight: bold; color: #0f5132; }
+
+    .footer { text-align: center; margin-top: 15px; }
+    .footer h5 { color: #198754; margin: 0 0 3px 0; font-size: 13px; font-weight: bold; }
+    .footer p { margin: 2px 0; font-size: 11px; color: #6c757d; }
+    .footer .phone { color: #212529; font-weight: bold; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <!-- COMPANY HEADER -->
+  <div class="brand-header">
+    <table class="brand-table">
+      <tr>
+        <? if (logoDataUrl) { ?>
+        <td width="70">
+          <img src="<?= logoDataUrl ?>" alt="" style="width: 62px; height: 62px; object-fit: contain; border-radius: 50%; background: white;" />
+        </td>
+        <? } ?>
+        <td style="text-align: left;">
+          <p class="brand-title">Smoky Swaad</p>
+          <p class="brand-tagline">Fresh • Hot • Homemade</p>
+          <p class="brand-address">Brajrajnagar, Odisha</p>
+        </td>
+        <td style="text-align: right;">
+          <p class="brand-phone-label">Call / WhatsApp</p>
+          <p class="brand-phone">☎ 7873337525</p>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- STATEMENT INFORMATION (Dark Card) -->
+  <div class="card">
+    <div class="card-header bg-dark">
+      🧾 Statement Information
+    </div>
+    <div class="card-body">
+      <table class="grid-table">
+        <tr>
+          <td width="33%">
+            <span class="label">Billing Period</span>
+            <p class="value"><?= billingPeriod.from ?> to <?= billingPeriod.to ?></p>
+          </td>
+          <td width="33%">
+            <span class="label">Total Orders</span>
+            <p class="value"><?= orderCount ?></p>
+          </td>
+          <td width="33%">
+            <span class="label">Statement Type</span>
+            <p class="value">Consolidated Bulk Invoice</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CUSTOMER INFORMATION (Primary Card) -->
+  <div class="card">
+    <div class="card-header bg-primary">
+      👤 Customer Information
+    </div>
+    <div class="card-body">
+      <table class="grid-table">
+        <tr>
+          <td width="50%">
+            <span class="label">Customer Name</span>
+            <p class="value"><?= customer.customerName ?></p>
+          </td>
+          <td width="50%">
+            <span class="label">Mobile Number</span>
+            <p class="value"><?= customer.mobile ?></p>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding-top: 8px;">
+            <span class="label">Delivery Area</span>
+            <p class="value"><?= customer.deliveryArea || '-' ?></p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ORDERED ITEMS (Success Card) -->
+  <div class="card">
+    <div class="card-header bg-success">
+      🍽 Order Details
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th width="80">Order ID</th>
+            <th width="70">Date</th>
+            <th>Items & Description</th>
+            <th width="60" class="text-center">Status</th>
+            <th width="80" class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <? orders.forEach(function(order) { ?>
+            <tr>
+              <td><strong><?= order.orderId ?></strong></td>
+              <td><?= order.orderDate ?></td>
+              <td>
+                <? order.items.forEach(function(item, idx) { ?>
+                  <?= item.itemName ?> (x<?= item.qty ?>)<?= idx < order.items.length - 1 ? ', ' : '' ?>
+                <? }); ?>
+                <? if (order.items.length === 0) { ?> - <? } ?>
+              </td>
+              <td class="text-center">
+                <span class="badge <?= order.paymentStatus.toLowerCase() === 'paid' ? 'badge-paid' : 'badge-pending' ?>">
+                  <?= order.paymentStatus ?>
+                </span>
+              </td>
+              <td class="text-end">₹<?= order.grandTotal.toFixed(2) ?></td>
+            </tr>
+          <? }); ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAYMENT SUMMARY (Warning Card) -->
+  <div class="card">
+    <div class="card-header bg-warning">
+      💰 Payment Summary
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <table class="summary-table">
+        <tr>
+          <td>Subtotal Orders</td>
+          <td class="text-end" style="font-weight: bold;">₹<?= totals.grandTotal.toFixed(2) ?></td>
+        </tr>
+        <? if (totals.deliveryCharge > 0) { ?>
+        <tr>
+          <td>Delivery Charges</td>
+          <td class="text-end" style="font-weight: bold;">₹<?= totals.deliveryCharge.toFixed(2) ?></td>
+        </tr>
+        <? } ?>
+        <? if (totals.discount > 0) { ?>
+        <tr>
+          <td>Discounts</td>
+          <td class="text-end" style="font-weight: bold; color: #dc3545;">-₹<?= totals.discount.toFixed(2) ?></td>
+        </tr>
+        <? } ?>
+        <tr>
+          <td>Paid Amount</td>
+          <td class="text-end" style="font-weight: bold; color: #198754;">₹<?= totals.paidAmount.toFixed(2) ?></td>
+        </tr>
+        <? if (totals.pendingAmount > 0) { ?>
+        <tr>
+          <td>Pending Due</td>
+          <td class="text-end" style="font-weight: bold; color: #dc3545;">₹<?= totals.pendingAmount.toFixed(2) ?></td>
+        </tr>
+        <? } ?>
+        <tr class="grand-total-row">
+          <td>Grand Total</td>
+          <td class="text-end">₹<?= totals.grandTotal.toFixed(2) ?></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <h5>❤️ Thank You For Ordering With Smoky Swaad</h5>
+    <p>Fresh • Hot • Homemade</p>
+    <p class="phone">☎ 7873337525</p>
+  </div>
+
+</body>
+</html>

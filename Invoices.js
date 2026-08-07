@@ -1932,4 +1932,54 @@ function getBulkInvoiceData(orderIds) {
 }
 
 
+/**
+ * ==========================================
+ * Generate Bulk Invoice PDF
+ * ==========================================
+ */
+function generateBulkInvoicePdf(orderIds) {
+  try {
+    const bulkData = getBulkInvoiceData(orderIds);
 
+    if (!bulkData.success) {
+      return bulkData;
+    }
+
+    const template = HtmlService.createTemplateFromFile("BulkInvoicePdf");
+
+    // Fetch the logo from Google Drive as Base64
+    const logoResponse = getSmokySwaadLogo();
+    template.logoDataUrl = logoResponse.success ? logoResponse.dataUrl : "";
+
+    // Attach data to template
+    template.customer = bulkData.customer;
+    template.billingPeriod = bulkData.billingPeriod;
+    template.orderCount = bulkData.orderCount;
+    template.orders = bulkData.orders;
+    template.totals = bulkData.totals;
+
+    const html = template.evaluate().getContent();
+
+    const pdfBlob = Utilities.newBlob(html, "text/html").getAs(MimeType.PDF);
+    const fileName = "Bulk_Invoice_" + bulkData.customer.mobile + ".pdf";
+    pdfBlob.setName(fileName);
+
+    return {
+      success: true,
+      message: "Bulk Invoice PDF generated successfully.",
+      blobName: pdfBlob.getName(),
+      blobSize: pdfBlob.getBytes().length,
+      // Pass base64 data for client download/sharing
+      base64Data: Utilities.base64Encode(pdfBlob.getBytes()),
+      customerMobile: bulkData.customer.mobile,
+      totals: bulkData.totals
+    };
+
+  } catch (err) {
+    console.error("generateBulkInvoicePdf Error:", err);
+    return {
+      success: false,
+      message: err.toString()
+    };
+  }
+}

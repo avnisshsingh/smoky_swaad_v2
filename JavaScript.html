@@ -735,7 +735,14 @@
       });
    }
 
-   function renderPersonalExpenseHistoryFromCache() {
+
+
+
+
+
+
+
+  function renderPersonalExpenseHistoryFromCache() {
       if (!personalExpenseBootstrapLoaded) {
          return;
       }
@@ -799,13 +806,30 @@
          }
       }
 
-      renderPersonalExpenseHistory({
-         success: true,
-         expenses: filtered,
-         total: total,
-         count: filtered.length,
-      });
+      // ==========================================
+      // FIX: Render filtered expenses to the UI
+      // ==========================================
+      renderPersonalExpenses(filtered);
+
+      // ==========================================
+      // FIX: Update transaction count and total text
+      // ==========================================
+      const info = document.getElementById("personalExpenseHistoryInfo");
+      if (info) {
+         info.textContent =
+            filtered.length +
+            (filtered.length === 1 ? " transaction" : " transactions") +
+            " • Total " +
+            formatPersonalExpenseCurrency(total);
+      }
    }
+
+
+
+
+
+
+
 
    function loadPersonalExpenseSetup() {
       google.script.run
@@ -5426,29 +5450,29 @@ Thank you for choosing Smoky Swaad.
       }
    }
 
-   /**
-    * ==========================================
-    * initializeReports
-    * ==========================================
-    */
 
-   function initializeReports() {
+
+
+
+
+function initializeReports() {
       console.log("Reports Module Loaded");
 
       const today = getToday();
-
       const fromDate = document.getElementById("reportFromDate");
-
       const toDate = document.getElementById("reportToDate");
+
+      // Ghost Element Check: Exit if user navigated away
+      if (!fromDate || !toDate) {
+         return; 
+      }
 
       // Set default values
       fromDate.value = today;
-
       toDate.value = today;
 
       // Restrict future dates
       fromDate.max = today;
-
       toDate.max = today;
 
       // Prevent To Date from being earlier than From Date
@@ -5457,47 +5481,65 @@ Thank you for choosing Smoky Swaad.
       // From Date Change
       fromDate.addEventListener("change", function () {
          toDate.min = this.value;
-
          if (toDate.value < this.value) {
             toDate.value = this.value;
          }
-
-         // Disable PDF until a new report is generated
-         document.getElementById("btnDownloadPDF").disabled = true;
+         const btn = document.getElementById("btnDownloadPDF");
+         if (btn) btn.disabled = true;
       });
 
       // To Date Change
       toDate.addEventListener("change", function () {
          fromDate.max = this.value > today ? today : this.value;
-
          if (fromDate.value > this.value) {
             fromDate.value = this.value;
          }
-
-         // Disable PDF until a new report is generated
-         document.getElementById("btnDownloadPDF").disabled = true;
+         const btn = document.getElementById("btnDownloadPDF");
+         if (btn) btn.disabled = true;
       });
 
       google.script.run
-
          .withSuccessHandler(renderReportDashboard)
-
          .withFailureHandler(function (error) {
             console.error(error);
          })
-
          .getReportsData(today, today);
    }
 
-   function renderReportDashboard(data) {
-      document.getElementById("todaySales").innerText =
-         "₹" + Number(data.todaySales).toFixed(2);
 
-      document.getElementById("todayOrders").innerText = data.todayOrders;
 
-      document.getElementById("todayProfit").innerText =
-         "₹" + Number(data.todayProfit).toFixed(2);
+
+
+
+
+
+
+function renderReportDashboard(data) {
+      const salesEl = document.getElementById("todaySales");
+      const ordersEl = document.getElementById("todayOrders");
+      const profitEl = document.getElementById("todayProfit");
+
+      // Ghost Element Check: Only update if elements exist
+      if (salesEl) {
+         salesEl.innerText = "₹" + Number(data.todaySales).toFixed(2);
+      }
+
+      if (ordersEl) {
+         ordersEl.innerText = data.todayOrders;
+      }
+
+      if (profitEl) {
+         profitEl.innerText = "₹" + Number(data.todayProfit).toFixed(2);
+      }
    }
+
+
+
+
+
+
+
+
 
    /**
     * ==========================================
@@ -5560,11 +5602,17 @@ Thank you for choosing Smoky Swaad.
     * ==========================================
     */
 
-   function renderSummary(data) {
-      document.getElementById("reportTotalOrders").innerText = data.totalOrders;
+function renderSummary(data) {
+      const totalOrdersEl = document.getElementById("reportTotalOrders");
+      const totalSalesEl = document.getElementById("reportTotalSales");
 
-      document.getElementById("reportTotalSales").innerText =
-         "₹" + Number(data.totalSales).toFixed(2);
+      if (totalOrdersEl) {
+          totalOrdersEl.innerText = data.totalOrders;
+      }
+      
+      if (totalSalesEl) {
+          totalSalesEl.innerText = "₹" + Number(data.totalSales).toFixed(2);
+      }
 
       renderOrderTable(data.orders);
    }
@@ -5574,8 +5622,11 @@ Thank you for choosing Smoky Swaad.
     * Render renderOrderTable
     * ==========================================
     */
-   function renderOrderTable(orders) {
+function renderOrderTable(orders) {
       const tbody = document.getElementById("reportOrdersBody");
+
+      // Ghost Element Check
+      if (!tbody) return; 
 
       tbody.innerHTML = "";
 
@@ -5587,12 +5638,10 @@ Thank you for choosing Smoky Swaad.
                 </td>
             </tr>
         `;
-
          return;
       }
 
       let html = "";
-
       orders.forEach(function (order) {
          html += `
         <tr>
@@ -5617,18 +5666,16 @@ Thank you for choosing Smoky Swaad.
     * Render Profit Summary
     * ==========================================
     */
-   function renderProfitSummary(data) {
-      document.getElementById("reportRevenue").innerText =
-         "₹" + Number(data.totalSales).toFixed(2);
+function renderProfitSummary(data) {
+      const revEl = document.getElementById("reportRevenue");
+      const foodCostEl = document.getElementById("reportFoodCost");
+      const grossProfitEl = document.getElementById("reportGrossProfit");
+      const profitPercentEl = document.getElementById("reportProfitPercentage");
 
-      document.getElementById("reportFoodCost").innerText =
-         "₹" + Number(data.totalCost).toFixed(2);
-
-      document.getElementById("reportGrossProfit").innerText =
-         "₹" + Number(data.grossProfit).toFixed(2);
-
-      document.getElementById("reportProfitPercentage").innerText =
-         data.profitPercentage + "%";
+      if (revEl) revEl.innerText = "₹" + Number(data.totalSales).toFixed(2);
+      if (foodCostEl) foodCostEl.innerText = "₹" + Number(data.totalCost).toFixed(2);
+      if (grossProfitEl) grossProfitEl.innerText = "₹" + Number(data.grossProfit).toFixed(2);
+      if (profitPercentEl) profitPercentEl.innerText = data.profitPercentage + "%";
    }
 
    /**
@@ -5636,8 +5683,11 @@ Thank you for choosing Smoky Swaad.
     * Render Top Selling Items
     * ==========================================
     */
-   function renderTopSellingItems(items) {
+function renderTopSellingItems(items) {
       const tbody = document.getElementById("topSellingItemsBody");
+
+      // Ghost Element Check
+      if (!tbody) return;
 
       tbody.innerHTML = "";
 
@@ -5649,29 +5699,19 @@ Thank you for choosing Smoky Swaad.
                 </td>
             </tr>
         `;
-
          return;
       }
 
       items.forEach(function (item, index) {
          tbody.innerHTML += `
-
             <tr>
-
                 <td>${index + 1}</td>
-
                 <td>${item.menuItem}</td>
-
                 <td class="text-end">${item.quantity}</td>
-
                 <td class="text-end">₹${Number(item.revenue).toFixed(2)}</td>
-
                 <td class="text-end">₹${Number(item.cost).toFixed(2)}</td>
-
                 <td class="text-end">₹${Number(item.profit).toFixed(2)}</td>
-
             </tr>
-
         `;
       });
    }
@@ -6213,31 +6253,38 @@ Thank you for choosing Smoky Swaad.
          .getAvailableProfitMonths();
    }
 
-   function loadMonthlyProfit() {
+
+
+
+
+
+
+
+function loadMonthlyProfit() {
       const ddl = document.getElementById("profitMonth");
 
       if (!ddl) return;
 
       google.script.run
-
          .withSuccessHandler(function (result) {
-            document.getElementById("monthlySales").innerHTML = formatCurrency(
-               result.sales,
-            );
+            const salesEl = document.getElementById("monthlySales");
+            const purchasesEl = document.getElementById("monthlyPurchases");
+            const profitEl = document.getElementById("monthlyProfit");
+            const marginEl = document.getElementById("monthlyMargin");
 
-            document.getElementById("monthlyPurchases").innerHTML =
-               formatCurrency(result.purchases);
-
-            document.getElementById("monthlyProfit").innerHTML = formatCurrency(
-               result.grossProfit,
-            );
-
-            document.getElementById("monthlyMargin").innerHTML =
-               result.profitMargin === null
-                  ? "—"
-                  : result.profitMargin.toFixed(1) + "%";
+            if (salesEl) {
+                salesEl.innerHTML = formatCurrency(result.sales);
+            }
+            if (purchasesEl) {
+                purchasesEl.innerHTML = formatCurrency(result.purchases);
+            }
+            if (profitEl) {
+                profitEl.innerHTML = formatCurrency(result.grossProfit);
+            }
+            if (marginEl) {
+                marginEl.innerHTML = result.profitMargin === null ? "—" : result.profitMargin.toFixed(1) + "%";
+            }
          })
-
          .getMonthlyProfitSummary(ddl.value);
    }
 
@@ -7038,6 +7085,284 @@ Thank you for choosing Smoky Swaad.
 
          .getBulkInvoiceData(selectedOrderIds);
    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Global variable to hold searched bulk orders
+let currentBulkOrders = [];
+let selectedBulkData = null;
+
+/**
+ * 1. Search Bulk Invoice Orders
+ */
+function searchBulkInvoiceOrders() {
+  const fromDate = document.getElementById("bulkInvoiceFromDate").value;
+  const toDate = document.getElementById("bulkInvoiceToDate").value;
+  const mobile = document.getElementById("bulkInvoiceMobile").value;
+  const orderId = document.getElementById("bulkInvoiceOrderId").value;
+  const paymentStatus = document.getElementById("bulkInvoicePaymentStatus").value;
+
+  const filters = {
+    fromDate: fromDate,
+    toDate: toDate,
+    mobile: mobile,
+    orderId: orderId,
+    paymentStatus: paymentStatus
+  };
+
+  const searchBtn = document.getElementById("bulkInvoiceSearchBtn");
+  searchBtn.disabled = true;
+  searchBtn.innerHTML = "⏳ Searching...";
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      searchBtn.disabled = false;
+      searchBtn.innerHTML = "🔍 Search Orders";
+
+      const msgDiv = document.getElementById("bulkInvoiceMessage");
+      const resultsContainer = document.getElementById("bulkInvoiceResultsContainer");
+
+      if (!response.success) {
+        msgDiv.className = "alert alert-danger mt-3";
+        msgDiv.innerText = response.message;
+        msgDiv.style.display = "block";
+        resultsContainer.style.display = "none";
+        return;
+      }
+
+      msgDiv.style.display = "none";
+      currentBulkOrders = response.orders || [];
+      document.getElementById("bulkInvoiceOrderCount").innerText = response.count;
+
+      if (currentBulkOrders.length === 0) {
+        msgDiv.className = "alert alert-warning mt-3";
+        msgDiv.innerText = "No orders found matching the criteria.";
+        msgDiv.style.display = "block";
+        resultsContainer.style.display = "none";
+        return;
+      }
+
+      resultsContainer.style.display = "block";
+      renderBulkInvoiceResults(currentBulkOrders);
+    })
+    .withFailureHandler(function(err) {
+      searchBtn.disabled = false;
+      searchBtn.innerHTML = "🔍 Search Orders";
+      alert("Error searching orders: " + err.message);
+    })
+    .searchBulkInvoiceOrdersFromWeb(filters);
+}
+
+/**
+ * 2. Render Results Table
+ */
+function renderBulkInvoiceResults(orders) {
+  const tbody = document.getElementById("bulkInvoiceResultsBody");
+  tbody.innerHTML = "";
+
+  orders.forEach(function(order) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="text-center">
+        <input type="checkbox" class="bulk-order-checkbox" value="${order.orderId}" data-amount="${order.grandTotal}" onchange="updateBulkInvoiceSelectionSummary()" />
+      </td>
+      <td><strong>${order.orderId}</strong></td>
+      <td>${order.orderDate}</td>
+      <td>${order.customerName}</td>
+      <td>${order.mobile}</td>
+      <td>
+        <span class="badge ${order.paymentStatus.toLowerCase() === 'paid' ? 'bg-success' : 'bg-danger'}">
+          ${order.paymentStatus}
+        </span>
+      </td>
+      <td class="text-end">₹${order.grandTotal.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Select all handler
+  const selectAll = document.getElementById("bulkInvoiceSelectAll");
+  selectAll.checked = false;
+  selectAll.onclick = function() {
+    const checkboxes = document.querySelectorAll(".bulk-order-checkbox");
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateBulkInvoiceSelectionSummary();
+  };
+
+  updateBulkInvoiceSelectionSummary();
+}
+
+/**
+ * 3. Update Selection Count & Total
+ */
+function updateBulkInvoiceSelectionSummary() {
+  const checkboxes = document.querySelectorAll(".bulk-order-checkbox:checked");
+  let selectedCount = checkboxes.length;
+  let selectedTotal = 0;
+
+  checkboxes.forEach(cb => {
+    selectedTotal += parseFloat(cb.getAttribute("data-amount")) || 0;
+  });
+
+  document.getElementById("bulkInvoiceSelectedCount").innerText = selectedCount;
+  document.getElementById("bulkInvoiceSelectedTotal").innerText = "₹" + selectedTotal.toFixed(2);
+
+  const generateBtn = document.getElementById("bulkInvoiceGenerateBtn");
+  generateBtn.disabled = selectedCount === 0;
+}
+
+/**
+ * 4. Generate Bulk Invoice Preview & PDF
+ */
+function generateBulkInvoice() {
+  const checkboxes = document.querySelectorAll(".bulk-order-checkbox:checked");
+  const selectedOrderIds = Array.from(checkboxes).map(cb => cb.value);
+
+  if (selectedOrderIds.length === 0) {
+    alert("Please select at least one order.");
+    return;
+  }
+
+  const generateBtn = document.getElementById("bulkInvoiceGenerateBtn");
+  generateBtn.disabled = true;
+  generateBtn.innerText = "⌛ Generating Bulk Invoice...";
+
+  google.script.run
+    .withSuccessHandler(function(response) {
+      generateBtn.disabled = false;
+      generateBtn.innerText = "🧾 Generate Bulk Invoice";
+
+      if (!response.success) {
+        alert("Failed to generate bulk invoice: " + response.message);
+        return;
+      }
+
+      selectedBulkData = response;
+      showBulkInvoicePreview(response);
+    })
+    .withFailureHandler(function(err) {
+      generateBtn.disabled = false;
+      generateBtn.innerText = "🧾 Generate Bulk Invoice";
+      alert("Error: " + err.message);
+    })
+    .generateBulkInvoicePdf(selectedOrderIds);
+}
+
+/**
+ * 5. Show Preview in Right Panel
+ */
+function showBulkInvoicePreview(bulkResponse) {
+  const previewContainer = document.getElementById("bulkInvoicePreviewContainer");
+  previewContainer.style.display = "block";
+
+  const totals = bulkResponse.totals;
+  const cardBody = previewContainer.querySelector(".card-body");
+
+  cardBody.innerHTML = `
+    <div class="alert alert-success d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <strong>✅ Bulk Invoice Ready!</strong>
+        <br><small>Mobile: ${bulkResponse.customerMobile} | Total Orders: ${document.querySelectorAll('.bulk-order-checkbox:checked').length}</small>
+      </div>
+      <span class="fs-4 fw-bold text-success">₹${totals.grandTotal.toFixed(2)}</span>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-6">
+        <div class="p-2 border rounded bg-light">
+          <small class="text-muted">Paid Amount</small>
+          <div class="fw-bold text-success">₹${totals.paidAmount.toFixed(2)}</div>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="p-2 border rounded bg-light">
+          <small class="text-muted">Pending Amount</small>
+          <div class="fw-bold text-danger">₹${totals.pendingAmount.toFixed(2)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-center">
+      <button class="btn btn-danger" onclick="downloadBulkPdf()">📄 Download Bulk PDF</button>
+      <button class="btn btn-success" onclick="shareBulkWhatsApp()">📲 Share via WhatsApp</button>
+    </div>
+  `;
+
+  previewContainer.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * 6. Download Bulk PDF File
+ */
+function downloadBulkPdf() {
+  if (!selectedBulkData || !selectedBulkData.base64Data) return;
+
+  const link = document.createElement("a");
+  link.href = "data:application/pdf;base64," + selectedBulkData.base64Data;
+  link.download = selectedBulkData.blobName;
+  link.click();
+}
+
+/**
+ * 7. Share Statement via WhatsApp
+ */
+function shareBulkWhatsApp() {
+  if (!selectedBulkData) return;
+
+  const mobile = selectedBulkData.customerMobile;
+  const totals = selectedBulkData.totals;
+
+  let message = `*Smoky Swaad - Consolidated Statement*\n\n`;
+  message += `Grand Total: ₹${totals.grandTotal.toFixed(2)}\n`;
+  message += `Paid: ₹${totals.paidAmount.toFixed(2)}\n`;
+  if (totals.pendingAmount > 0) {
+    message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
+  }
+  message += `\nThank you for ordering with Smoky Swaad! ❤️`;
+
+  const url = `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+}
+
+/**
+ * 8. Clear Filters
+ */
+function clearBulkInvoiceSearch() {
+  document.getElementById("bulkInvoiceFromDate").value = "";
+  document.getElementById("bulkInvoiceToDate").value = "";
+  document.getElementById("bulkInvoiceMobile").value = "";
+  document.getElementById("bulkInvoiceOrderId").value = "";
+  document.getElementById("bulkInvoicePaymentStatus").value = "";
+  document.getElementById("bulkInvoiceResultsContainer").style.display = "none";
+  document.getElementById("bulkInvoiceMessage").style.display = "none";
+  currentBulkOrders = [];
+}
+
+/**
+ * 9. Close Preview
+ */
+function closeBulkInvoicePreview() {
+  document.getElementById("bulkInvoicePreviewContainer").style.display = "none";
+}
+
+
+
+
+
+
 
 
 </script>

@@ -64,74 +64,46 @@ function openBusinessCostModal() {
  */
 function renderBusinessCosts(data) {
 
-    document.getElementById("totalBusinessCost").innerText =
-        "₹" + Number(data.totalBusinessCost).toFixed(2);
+    const totalEl = document.getElementById("totalBusinessCost");
+    const tbody = document.getElementById("businessCostsTableBody");
 
-    const tbody =
-        document.getElementById("businessCostsTableBody");
+    // Safety check: Exit if the user left the screen
+    if (!totalEl || !tbody) {
+        return;
+    }
+
+    totalEl.innerText = "₹" + Number(data.totalBusinessCost).toFixed(2);
 
     tbody.innerHTML = "";
 
     if (data.businessCosts.length === 0) {
-
         tbody.innerHTML = `
-
             <tr>
-
-                <td colspan="6"
-                    class="text-center text-muted">
-
+                <td colspan="6" class="text-center text-muted">
                     No Business Costs Found.
-
                 </td>
-
             </tr>
-
         `;
-
         return;
-
     }
 
     data.businessCosts.forEach(function(cost){
-
         tbody.innerHTML += `
-
             <tr>
-
                 <td>${cost.costHead}</td>
-
-                <td class="text-end">
-                    ₹${cost.amount.toFixed(2)}
-                </td>
-
+                <td class="text-end">₹${cost.amount.toFixed(2)}</td>
                 <td>${cost.unit}</td>
-
                 <td>${cost.active}</td>
-
                 <td>${cost.remarks || ""}</td>
-
                 <td class="text-center">
-
-<button
-    class="btn btn-sm btn-primary"
-    onclick="editBusinessCost(${cost.rowNumber})">
-
-    ✏️ Edit
-
-</button>
-
+                    <button class="btn btn-sm btn-primary" onclick="editBusinessCost(${cost.rowNumber})">
+                        ✏️ Edit
+                    </button>
                 </td>
-
             </tr>
-
         `;
-
     });
-
 }
-
-
 
 
 
