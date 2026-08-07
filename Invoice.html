@@ -1,1491 +1,1086 @@
-
 <style>
-/* =========================================================
+   /* =========================================================
    INVOICE MODULE — MOBILE POLISH
    Scoped to .invoice-screen so other ERP modules are untouched.
    ========================================================= */
 
-@media (max-width: 767.98px) {
+   @media (max-width: 767.98px) {
+      .invoice-screen {
+         padding-left: 0 !important;
+         padding-right: 0 !important;
+      }
 
-  .invoice-screen {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+      .invoice-screen > .row {
+         --bs-gutter-x: 0;
+      }
 
-  .invoice-screen > .row {
-    --bs-gutter-x: 0;
-  }
+      /* ---------- Top cards ---------- */
 
-  /* ---------- Top cards ---------- */
+      .invoice-screen .invoice-search-card,
+      .invoice-screen .invoice-profit-card {
+         margin-bottom: 10px !important;
+         border-radius: 10px;
+         overflow: hidden;
+      }
 
-  .invoice-screen .invoice-search-card,
-  .invoice-screen .invoice-profit-card {
-    margin-bottom: 10px !important;
-    border-radius: 10px;
-    overflow: hidden;
-  }
+      .invoice-screen .invoice-search-card .card-header,
+      .invoice-screen .invoice-profit-card .card-header {
+         padding: 9px 12px;
+      }
 
-  .invoice-screen .invoice-search-card .card-header,
-  .invoice-screen .invoice-profit-card .card-header {
-    padding: 9px 12px;
-  }
+      .invoice-screen .invoice-search-card .card-header h4,
+      .invoice-screen .invoice-profit-card .card-header h4 {
+         font-size: 1rem;
+         line-height: 1.25;
+      }
 
-  .invoice-screen .invoice-search-card .card-header h4,
-  .invoice-screen .invoice-profit-card .card-header h4 {
-    font-size: 1rem;
-    line-height: 1.25;
-  }
+      .invoice-screen .invoice-search-card .card-body,
+      .invoice-screen .invoice-profit-card .card-body {
+         padding: 10px 12px;
+      }
 
-  .invoice-screen .invoice-search-card .card-body,
-  .invoice-screen .invoice-profit-card .card-body {
-    padding: 10px 12px;
-  }
+      .invoice-screen .invoice-search-card h5 {
+         display: none;
+      }
 
-  .invoice-screen .invoice-search-card h5 {
-    display: none;
-  }
+      .invoice-screen .invoice-search-card .mb-3 {
+         margin-bottom: 8px !important;
+      }
 
-  .invoice-screen .invoice-search-card .mb-3 {
-    margin-bottom: 8px !important;
-  }
+      .invoice-screen .invoice-search-card .form-label,
+      .invoice-screen .invoice-profit-card .form-label {
+         margin-bottom: 3px;
+         font-size: 12px;
+      }
 
-  .invoice-screen .invoice-search-card .form-label,
-  .invoice-screen .invoice-profit-card .form-label {
-    margin-bottom: 3px;
-    font-size: 12px;
-  }
+      .invoice-screen #searchOrderId,
+      .invoice-screen #profitMonth {
+         min-height: 42px;
+      }
 
-  .invoice-screen #searchOrderId,
-  .invoice-screen #profitMonth {
-    min-height: 42px;
-  }
+      .invoice-screen #btnSearchInvoice {
+         min-height: 42px;
+         padding-top: 7px;
+         padding-bottom: 7px;
+      }
 
-  .invoice-screen #btnSearchInvoice {
-    min-height: 42px;
-    padding-top: 7px;
-    padding-bottom: 7px;
-  }
+      /* ---------- Profit snapshot ---------- */
 
-  /* ---------- Profit snapshot ---------- */
+      .invoice-screen .invoice-profit-card .mb-3 {
+         margin-bottom: 8px !important;
+      }
 
-  .invoice-screen .invoice-profit-card .mb-3 {
-    margin-bottom: 8px !important;
-  }
+      .invoice-screen .invoice-profit-card .row.g-3 {
+         --bs-gutter-x: 8px;
+         --bs-gutter-y: 8px;
+      }
 
-  .invoice-screen .invoice-profit-card .row.g-3 {
-    --bs-gutter-x: 8px;
-    --bs-gutter-y: 8px;
-  }
+      .invoice-screen .invoice-profit-card .border {
+         padding: 9px 10px !important;
+         min-height: 64px;
+      }
 
-  .invoice-screen .invoice-profit-card .border {
-    padding: 9px 10px !important;
-    min-height: 64px;
-  }
+      .invoice-screen .invoice-profit-card .text-muted.small {
+         font-size: 11px;
+         line-height: 1.15;
+         margin-bottom: 3px;
+      }
 
-  .invoice-screen .invoice-profit-card .text-muted.small {
-    font-size: 11px;
-    line-height: 1.15;
-    margin-bottom: 3px;
-  }
+      .invoice-screen #monthlySales,
+      .invoice-screen #monthlyPurchases,
+      .invoice-screen #monthlyProfit,
+      .invoice-screen #monthlyMargin {
+         font-size: 1rem !important;
+         line-height: 1.2;
+         white-space: nowrap;
+      }
 
-  .invoice-screen #monthlySales,
-  .invoice-screen #monthlyPurchases,
-  .invoice-screen #monthlyProfit,
-  .invoice-screen #monthlyMargin {
-    font-size: 1rem !important;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
+      /* ---------- Invoice / PDF visual area ---------- */
 
-  /* ---------- Invoice / PDF visual area ---------- */
+      .invoice-screen #invoicePdfContainer > .card {
+         border-radius: 10px;
+         overflow: hidden;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card {
-    border-radius: 10px;
-    overflow: hidden;
-  }
+      .invoice-screen #invoicePdfContainer > .card > .card-header {
+         padding: 8px 10px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header {
-    padding: 8px 10px !important;
-  }
+      .invoice-screen #invoiceCompanyLogo {
+         width: 46px !important;
+         height: 46px !important;
+      }
 
-  .invoice-screen #invoiceCompanyLogo {
-    width: 46px !important;
-    height: 46px !important;
-  }
+      .invoice-screen #invoicePdfContainer > .card > .card-header > div {
+         gap: 8px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div {
-    gap: 8px !important;
-  }
+      /* Brand title/tagline/address */
+      .invoice-screen
+         #invoicePdfContainer
+         > .card
+         > .card-header
+         > div
+         > div:nth-child(2)
+         > div:nth-child(1) {
+         font-size: 17px !important;
+      }
 
-  /* Brand title/tagline/address */
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(1) {
-    font-size: 17px !important;
-  }
+      .invoice-screen
+         #invoicePdfContainer
+         > .card
+         > .card-header
+         > div
+         > div:nth-child(2)
+         > div:nth-child(2) {
+         font-size: 11px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(2) {
-    font-size: 11px !important;
-  }
+      .invoice-screen
+         #invoicePdfContainer
+         > .card
+         > .card-header
+         > div
+         > div:nth-child(2)
+         > div:nth-child(3) {
+         font-size: 10px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(2) > div:nth-child(3) {
-    font-size: 10px !important;
-  }
+      .invoice-screen
+         #invoicePdfContainer
+         > .card
+         > .card-header
+         > div
+         > div:nth-child(3)
+         > div:first-child {
+         font-size: 9px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(3) > div:first-child {
-    font-size: 9px !important;
-  }
+      .invoice-screen
+         #invoicePdfContainer
+         > .card
+         > .card-header
+         > div
+         > div:nth-child(3)
+         > div:last-child {
+         font-size: 12px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-header > div > div:nth-child(3) > div:last-child {
-    font-size: 12px !important;
-  }
+      .invoice-screen #invoicePdfContainer > .card > .card-body {
+         padding: 8px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer > .card > .card-body {
-    padding: 8px !important;
-  }
+      .invoice-screen #invoicePdfContainer .card.mb-3 {
+         margin-bottom: 8px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer .card.mb-3 {
-    margin-bottom: 8px !important;
-  }
+      .invoice-screen #invoicePdfContainer .card.mb-3 > .card-header {
+         padding: 7px 10px;
+         font-size: 13px;
+      }
 
-  .invoice-screen #invoicePdfContainer .card.mb-3 > .card-header {
-    padding: 7px 10px;
-    font-size: 13px;
-  }
+      .invoice-screen #invoicePdfContainer .card.mb-3 > .card-body {
+         padding: 9px 10px;
+      }
 
-  .invoice-screen #invoicePdfContainer .card.mb-3 > .card-body {
-    padding: 9px 10px;
-  }
+      /* Bootstrap md columns stack on phones; tighten their vertical spacing. */
+      .invoice-screen
+         #invoicePdfContainer
+         .card-body
+         .row
+         > [class*="col-md-"] {
+         margin-bottom: 7px;
+      }
 
-  /* Bootstrap md columns stack on phones; tighten their vertical spacing. */
-  .invoice-screen #invoicePdfContainer .card-body .row > [class*="col-md-"] {
-    margin-bottom: 7px;
-  }
+      .invoice-screen
+         #invoicePdfContainer
+         .card-body
+         .row
+         > [class*="col-md-"]:last-child {
+         margin-bottom: 0;
+      }
 
-  .invoice-screen #invoicePdfContainer .card-body .row > [class*="col-md-"]:last-child {
-    margin-bottom: 0;
-  }
+      .invoice-screen #invoicePdfContainer label.text-muted {
+         display: block;
+         font-size: 11px;
+         line-height: 1.15;
+         margin-bottom: 1px;
+      }
 
-  .invoice-screen #invoicePdfContainer label.text-muted {
-    display: block;
-    font-size: 11px;
-    line-height: 1.15;
-    margin-bottom: 1px;
-  }
+      .invoice-screen #invoicePdfContainer h5,
+      .invoice-screen #invoicePdfContainer h6 {
+         font-size: 13px;
+         line-height: 1.25;
+      }
 
-  .invoice-screen #invoicePdfContainer h5,
-  .invoice-screen #invoicePdfContainer h6 {
-    font-size: 13px;
-    line-height: 1.25;
-  }
+      .invoice-screen #invAddress {
+         padding: 8px !important;
+         font-size: 13px;
+      }
 
-  .invoice-screen #invAddress {
-    padding: 8px !important;
-    font-size: 13px;
-  }
+      /* ---------- Ordered items ---------- */
 
-  /* ---------- Ordered items ---------- */
+      .invoice-screen #invoicePdfContainer table {
+         table-layout: fixed;
+         width: 100%;
+      }
 
-  .invoice-screen #invoicePdfContainer table {
-    table-layout: fixed;
-    width: 100%;
-  }
+      .invoice-screen #invoicePdfContainer table th,
+      .invoice-screen #invoicePdfContainer table td {
+         padding: 6px 4px;
+         font-size: 11px;
+         vertical-align: middle;
+      }
 
-  .invoice-screen #invoicePdfContainer table th,
-  .invoice-screen #invoicePdfContainer table td {
-    padding: 6px 4px;
-    font-size: 11px;
-    vertical-align: middle;
-  }
+      .invoice-screen #invoicePdfContainer table th:first-child,
+      .invoice-screen #invoicePdfContainer table td:first-child {
+         width: 42%;
+         overflow-wrap: anywhere;
+      }
 
-  .invoice-screen #invoicePdfContainer table th:first-child,
-  .invoice-screen #invoicePdfContainer table td:first-child {
-    width: 42%;
-    overflow-wrap: anywhere;
-  }
+      .invoice-screen #invoicePdfContainer table th:nth-child(2),
+      .invoice-screen #invoicePdfContainer table td:nth-child(2) {
+         width: 12% !important;
+      }
 
-  .invoice-screen #invoicePdfContainer table th:nth-child(2),
-  .invoice-screen #invoicePdfContainer table td:nth-child(2) {
-    width: 12% !important;
-  }
+      .invoice-screen #invoicePdfContainer table th:nth-child(3),
+      .invoice-screen #invoicePdfContainer table td:nth-child(3),
+      .invoice-screen #invoicePdfContainer table th:nth-child(4),
+      .invoice-screen #invoicePdfContainer table td:nth-child(4) {
+         width: 23% !important;
+      }
 
-  .invoice-screen #invoicePdfContainer table th:nth-child(3),
-  .invoice-screen #invoicePdfContainer table td:nth-child(3),
-  .invoice-screen #invoicePdfContainer table th:nth-child(4),
-  .invoice-screen #invoicePdfContainer table td:nth-child(4) {
-    width: 23% !important;
-  }
+      .invoice-screen #invoiceItemsBody td.py-5 {
+         padding-top: 18px !important;
+         padding-bottom: 18px !important;
+      }
 
-  .invoice-screen #invoiceItemsBody td.py-5 {
-    padding-top: 18px !important;
-    padding-bottom: 18px !important;
-  }
+      /* ---------- Payment summary ---------- */
 
-  /* ---------- Payment summary ---------- */
+      .invoice-screen #invoicePdfContainer .table-borderless td,
+      .invoice-screen #invoicePdfContainer .table-borderless th {
+         padding-top: 5px;
+         padding-bottom: 5px;
+      }
 
-  .invoice-screen #invoicePdfContainer .table-borderless td,
-  .invoice-screen #invoicePdfContainer .table-borderless th {
-    padding-top: 5px;
-    padding-bottom: 5px;
-  }
+      .invoice-screen #invGrandTotal {
+         font-size: 1.05rem !important;
+      }
 
-  .invoice-screen #invGrandTotal {
-    font-size: 1.05rem !important;
-  }
+      /* ---------- Thank-you block ---------- */
 
-  /* ---------- Thank-you block ---------- */
+      .invoice-screen #invoicePdfContainer .text-center.mt-3 {
+         margin-top: 8px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer .text-center.mt-3 {
-    margin-top: 8px !important;
-  }
+      .invoice-screen #invoicePdfContainer .text-center.mt-3 h5 {
+         font-size: 13px !important;
+      }
 
-  .invoice-screen #invoicePdfContainer .text-center.mt-3 h5 {
-    font-size: 13px !important;
-  }
+      /* ---------- Action buttons ---------- */
 
-  /* ---------- Action buttons ---------- */
+      .invoice-screen #invoicePdfContainer + .d-grid {
+         display: grid !important;
+         grid-template-columns: 1fr 1fr;
+         gap: 8px !important;
+         margin-top: 10px;
+      }
 
-  .invoice-screen #invoicePdfContainer + .d-grid {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px !important;
-    margin-top: 10px;
-  }
+      .invoice-screen #invoicePdfContainer + .d-grid .btn {
+         width: 100%;
+         min-height: 42px;
+         padding: 7px 8px;
+         font-size: 12px;
+      }
 
-  .invoice-screen #invoicePdfContainer + .d-grid .btn {
-    width: 100%;
-    min-height: 42px;
-    padding: 7px 8px;
-    font-size: 12px;
-  }
-
-  .invoice-screen #btnShareInvoice {
-    grid-column: 1 / -1;
-  }
-}
+      .invoice-screen #btnShareInvoice {
+         grid-column: 1 / -1;
+      }
+   }
 </style>
 
 <div class="container-fluid invoice-screen">
-
-    <div class="row">
-
-        <!-- ==========================================
+   <div class="row">
+      <!-- ==========================================
              LEFT PANEL
         =========================================== -->
 
-        <div class="col-lg-4">
-
-            <div class="card shadow-sm mb-4 invoice-search-card">
-
-                <div class="card-header bg-primary text-white">
-
-                    <h4 class="mb-0">
-                        🧾 Invoice Search
-                    </h4>
-
-                </div>
-
-                <div class="card-body">
-
-                    <h5 class="mb-3">
-                        Search Invoice
-                    </h5>
-
-                    <div class="mb-3">
-
-                        <label class="form-label">
-                            Order ID
-                        </label>
-
-                        <input
-                            type="text"
-                            id="searchOrderId"
-                            class="form-control"
-                            placeholder="Enter Order ID">
-
-                    </div>
-
-                    <button
-                        id="btnSearchInvoice"
-                        class="btn btn-primary w-100"
-                        onclick="searchInvoice()">
-
-                        🔍 Search Invoice
-
-                    </button>
-
-                </div>
-
-            </div>
-            
-
-            <div class="card shadow-sm mb-4 invoice-profit-card" id="monthlyProfitCard">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">💰 Monthly Profit Snapshot</h4>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="profitMonth" class="form-label">Month</label>
-                        <select id="profitMonth" class="form-select" aria-label="Profit Month">
-                            <option value="">Loading...</option>
-                        </select>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Sales</div>
-                                <div id="monthlySales" class="fw-bold fs-5">₹0.00</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Purchases</div>
-                                <div id="monthlyPurchases" class="fw-bold fs-5">₹0.00</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Profit</div>
-                                <div id="monthlyProfit" class="fw-bold fs-5 text-success">₹0.00</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Profit Margin</div>
-                                <div id="monthlyMargin" class="fw-bold fs-5">0.0%</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <div class="col-lg-4">
+         <div class="card shadow-sm mb-4 invoice-search-card">
+            <div class="card-header bg-primary text-white">
+               <h4 class="mb-0">🧾 Invoice Search</h4>
             </div>
 
-<!-- ==========================================
+            <div class="card-body">
+               <h5 class="mb-3">Search Invoice</h5>
+
+               <div class="mb-3">
+                  <label class="form-label"> Order ID </label>
+
+                  <input
+                     type="text"
+                     id="searchOrderId"
+                     class="form-control"
+                     placeholder="Enter Order ID"
+                  />
+               </div>
+
+               <button
+                  id="btnSearchInvoice"
+                  class="btn btn-primary w-100"
+                  onclick="searchInvoice()"
+               >
+                  🔍 Search Invoice
+               </button>
+            </div>
+         </div>
+
+         <div
+            class="card shadow-sm mb-4 invoice-profit-card"
+            id="monthlyProfitCard"
+         >
+            <div class="card-header bg-success text-white">
+               <h4 class="mb-0">💰 Monthly Profit Snapshot</h4>
+            </div>
+            <div class="card-body">
+               <div class="mb-3">
+                  <label for="profitMonth" class="form-label">Month</label>
+                  <select
+                     id="profitMonth"
+                     class="form-select"
+                     aria-label="Profit Month"
+                  >
+                     <option value="">Loading...</option>
+                  </select>
+               </div>
+               <div class="row g-3">
+                  <div class="col-6">
+                     <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Sales</div>
+                        <div id="monthlySales" class="fw-bold fs-5">₹0.00</div>
+                     </div>
+                  </div>
+                  <div class="col-6">
+                     <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Purchases</div>
+                        <div id="monthlyPurchases" class="fw-bold fs-5">
+                           ₹0.00
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-6">
+                     <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Profit</div>
+                        <div
+                           id="monthlyProfit"
+                           class="fw-bold fs-5 text-success"
+                        >
+                           ₹0.00
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-6">
+                     <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Profit Margin</div>
+                        <div id="monthlyMargin" class="fw-bold fs-5">0.0%</div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- ==========================================
      BULK INVOICE / ORDER SEARCH
      NEW MODULE - INDEPENDENT OF SINGLE INVOICE
 =========================================== -->
 
-<div
-    class="card shadow-sm mb-4"
-    id="bulkInvoiceSearchCard">
+         <div class="card shadow-sm mb-4" id="bulkInvoiceSearchCard">
+            <div class="card-header bg-dark text-white">
+               <h4 class="mb-0">📚 Bulk Invoice Search</h4>
+            </div>
 
-    <div class="card-header bg-dark text-white">
-
-        <h4 class="mb-0">
-            📚 Bulk Invoice Search
-        </h4>
-
-    </div>
-
-
-    <div class="card-body">
-
-        <!-- ======================================
+            <div class="card-body">
+               <!-- ======================================
              DATE FILTERS
         ======================================= -->
 
-        <div class="row g-2 mb-3">
+               <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                     <label for="bulkInvoiceFromDate" class="form-label">
+                        From Date
+                     </label>
 
-            <div class="col-md-6">
+                     <input
+                        type="date"
+                        id="bulkInvoiceFromDate"
+                        class="form-control"
+                     />
+                  </div>
 
-                <label
-                    for="bulkInvoiceFromDate"
-                    class="form-label">
+                  <div class="col-md-6">
+                     <label for="bulkInvoiceToDate" class="form-label">
+                        To Date
+                     </label>
 
-                    From Date
+                     <input
+                        type="date"
+                        id="bulkInvoiceToDate"
+                        class="form-control"
+                     />
+                  </div>
+               </div>
 
-                </label>
-
-                <input
-                    type="date"
-                    id="bulkInvoiceFromDate"
-                    class="form-control">
-
-            </div>
-
-
-            <div class="col-md-6">
-
-                <label
-                    for="bulkInvoiceToDate"
-                    class="form-label">
-
-                    To Date
-
-                </label>
-
-                <input
-                    type="date"
-                    id="bulkInvoiceToDate"
-                    class="form-control">
-
-            </div>
-
-        </div>
-
-
-        <!-- ======================================
+               <!-- ======================================
              MOBILE NUMBER
         ======================================= -->
 
-        <div class="mb-3">
+               <div class="mb-3">
+                  <label for="bulkInvoiceMobile" class="form-label">
+                     Mobile Number
+                  </label>
 
-            <label
-                for="bulkInvoiceMobile"
-                class="form-label">
+                  <input
+                     type="tel"
+                     id="bulkInvoiceMobile"
+                     class="form-control"
+                     inputmode="numeric"
+                     maxlength="10"
+                     placeholder="Enter mobile number"
+                  />
+               </div>
 
-                Mobile Number
-
-            </label>
-
-            <input
-                type="tel"
-                id="bulkInvoiceMobile"
-                class="form-control"
-                inputmode="numeric"
-                maxlength="10"
-                placeholder="Enter mobile number">
-
-        </div>
-
-
-        <!-- ======================================
+               <!-- ======================================
              ORDER ID
         ======================================= -->
 
-        <div class="mb-3">
+               <div class="mb-3">
+                  <label for="bulkInvoiceOrderId" class="form-label">
+                     Order ID
+                  </label>
 
-            <label
-                for="bulkInvoiceOrderId"
-                class="form-label">
+                  <input
+                     type="text"
+                     id="bulkInvoiceOrderId"
+                     class="form-control"
+                     placeholder="Enter Order ID"
+                  />
+               </div>
 
-                Order ID
-
-            </label>
-
-            <input
-                type="text"
-                id="bulkInvoiceOrderId"
-                class="form-control"
-                placeholder="Enter Order ID">
-
-        </div>
-
-
-        <!-- ======================================
+               <!-- ======================================
              PAYMENT STATUS
         ======================================= -->
 
-        <div class="mb-3">
+               <div class="mb-3">
+                  <label for="bulkInvoicePaymentStatus" class="form-label">
+                     Payment Status
+                  </label>
 
-            <label
-                for="bulkInvoicePaymentStatus"
-                class="form-label">
+                  <select id="bulkInvoicePaymentStatus" class="form-select">
+                     <option value="">All</option>
 
-                Payment Status
+                     <option value="Paid">Paid</option>
 
-            </label>
+                     <option value="Pending">Pending</option>
+                  </select>
+               </div>
 
-            <select
-                id="bulkInvoicePaymentStatus"
-                class="form-select">
-
-                <option value="">
-                    All
-                </option>
-
-                <option value="Paid">
-                    Paid
-                </option>
-
-                <option value="Pending">
-                    Pending
-                </option>
-
-            </select>
-
-        </div>
-
-
-        <!-- ======================================
+               <!-- ======================================
              SEARCH BUTTONS
         ======================================= -->
 
-        <div class="d-grid gap-2">
+               <div class="d-grid gap-2">
+                  <button
+                     type="button"
+                     id="bulkInvoiceSearchBtn"
+                     class="btn btn-dark"
+                     onclick="searchBulkInvoiceOrders()"
+                  >
+                     🔍 Search Orders
+                  </button>
 
-<button
-    type="button"
-    id="bulkInvoiceSearchBtn"
-    class="btn btn-dark"
-    onclick="searchBulkInvoiceOrders()">
+                  <button
+                     type="button"
+                     id="bulkInvoiceClearBtn"
+                     class="btn btn-outline-secondary"
+                     onclick="clearBulkInvoiceSearch()"
+                  >
+                     Clear Filters
+                  </button>
+               </div>
 
-    🔍 Search Orders
-
-</button>
-
-
-<button
-    type="button"
-    id="bulkInvoiceClearBtn"
-    class="btn btn-outline-secondary"
-    onclick="clearBulkInvoiceSearch()">
-
-    Clear Filters
-
-</button>
-
-        </div>
-
-
-        <!-- ======================================
+               <!-- ======================================
              SEARCH SUMMARY
         ======================================= -->
 
-        <div
-            id="bulkInvoiceSearchSummary"
-            class="mt-3 p-2 border rounded bg-light">
+               <div
+                  id="bulkInvoiceSearchSummary"
+                  class="mt-3 p-2 border rounded bg-light"
+               >
+                  <div class="d-flex justify-content-between">
+                     <span class="text-muted"> Orders Found </span>
 
-            <div class="d-flex justify-content-between">
+                     <strong id="bulkInvoiceOrderCount"> 0 </strong>
+                  </div>
+               </div>
 
-                <span class="text-muted">
-                    Orders Found
-                </span>
-
-                <strong id="bulkInvoiceOrderCount">
-                    0
-                </strong>
-
-            </div>
-
-        </div>
-
-
-<!-- ==========================================
+               <!-- ==========================================
      BULK INVOICE SEARCH MESSAGE
 =========================================== -->
 
-<div
-    id="bulkInvoiceMessage"
-    class="mt-3"
-    style="display:none;">
-</div>
+               <div
+                  id="bulkInvoiceMessage"
+                  class="mt-3"
+                  style="display: none"
+               ></div>
 
-
-<!-- ==========================================
+               <!-- ==========================================
      BULK INVOICE RESULTS
 =========================================== -->
 
-<div
-    id="bulkInvoiceResultsContainer"
-    class="mt-3"
-    style="display:none;">
-
-<!-- ==========================================
+               <div
+                  id="bulkInvoiceResultsContainer"
+                  class="mt-3"
+                  style="display: none"
+               >
+                  <!-- ==========================================
      BULK INVOICE SORT
 =========================================== -->
 
-<div class="d-flex justify-content-end mb-2">
+                  <div class="d-flex justify-content-end mb-2">
+                     <select
+                        id="bulkInvoiceSort"
+                        class="form-select form-select-sm"
+                        style="width: auto"
+                        onchange="sortBulkInvoiceResults()"
+                     >
+                        <option value="date-desc">Date ↓ Newest First</option>
 
-    <select
-        id="bulkInvoiceSort"
-        class="form-select form-select-sm"
-        style="width:auto;"
-        onchange="sortBulkInvoiceResults()">
+                        <option value="date-asc">Date ↑ Oldest First</option>
 
-        <option value="date-desc">
-            Date ↓ Newest First
-        </option>
+                        <option value="amount-desc">
+                           Amount ↓ High to Low
+                        </option>
 
-        <option value="date-asc">
-            Date ↑ Oldest First
-        </option>
+                        <option value="amount-asc">Amount ↑ Low to High</option>
 
-        <option value="amount-desc">
-            Amount ↓ High to Low
-        </option>
+                        <option value="order-desc">Order ID ↓</option>
 
-        <option value="amount-asc">
-            Amount ↑ Low to High
-        </option>
+                        <option value="order-asc">Order ID ↑</option>
+                     </select>
+                  </div>
 
-        <option value="order-desc">
-            Order ID ↓
-        </option>
+                  <div class="table-responsive">
+                     <table
+                        class="table table-sm table-bordered align-middle mb-2"
+                     >
+                        <thead class="table-light">
+                           <tr>
+                              <th class="text-center" style="width: 45px">
+                                 <input
+                                    type="checkbox"
+                                    id="bulkInvoiceSelectAll"
+                                 />
+                              </th>
 
-        <option value="order-asc">
-            Order ID ↑
-        </option>
+                              <th>Order</th>
 
-    </select>
+                              <th>Date</th>
 
-</div>
+                              <th>Customer</th>
 
+                              <th>Mobile</th>
 
-    <div class="table-responsive">
+                              <th>Payment</th>
 
-        <table
-            class="table table-sm table-bordered align-middle mb-2">
+                              <th class="text-end">Amount</th>
+                           </tr>
+                        </thead>
 
-            <thead class="table-light">
+                        <tbody id="bulkInvoiceResultsBody"></tbody>
+                     </table>
+                  </div>
 
-                <tr>
-
-                    <th
-                        class="text-center"
-                        style="width:45px;">
-
-                        <input
-                            type="checkbox"
-                            id="bulkInvoiceSelectAll">
-
-                    </th>
-
-                    <th>
-                        Order
-                    </th>
-
-                    <th>
-                        Date
-                    </th>
-
-                    <th>
-                        Customer
-                    </th>
-
-                    <th>
-                        Mobile
-                    </th>
-
-                    <th>
-                        Payment
-                    </th>
-
-                    <th class="text-end">
-                        Amount
-                    </th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody id="bulkInvoiceResultsBody">
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-
-    <!-- ======================================
+                  <!-- ======================================
          SELECTED SUMMARY
     ======================================= -->
 
-    <div
-        class="border rounded bg-light p-2 mt-2">
+                  <div class="border rounded bg-light p-2 mt-2">
+                     <div class="d-flex justify-content-between">
+                        <span> Selected Orders </span>
 
-        <div class="d-flex justify-content-between">
+                        <strong id="bulkInvoiceSelectedCount"> 0 </strong>
+                     </div>
 
-            <span>
-                Selected Orders
-            </span>
+                     <div class="d-flex justify-content-between">
+                        <span> Selected Total </span>
 
-            <strong id="bulkInvoiceSelectedCount">
-                0
-            </strong>
+                        <strong
+                           id="bulkInvoiceSelectedTotal"
+                           class="text-success"
+                        >
+                           ₹0.00
+                        </strong>
+                     </div>
+                  </div>
 
-        </div>
-
-
-        <div class="d-flex justify-content-between">
-
-            <span>
-                Selected Total
-            </span>
-
-            <strong
-                id="bulkInvoiceSelectedTotal"
-                class="text-success">
-
-                ₹0.00
-
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- ======================================
+                  <!-- ======================================
          GENERATE BUTTON
     ======================================= -->
 
-<button
-    type="button"
-    id="bulkInvoiceGenerateBtn"
-    class="btn btn-success w-100 mt-3"
-    onclick="generateBulkInvoice()"
-    disabled>
+                  <button
+                     type="button"
+                     id="bulkInvoiceGenerateBtn"
+                     class="btn btn-success w-100 mt-3"
+                     onclick="generateBulkInvoice()"
+                     disabled
+                  >
+                     🧾 Generate Bulk Invoice
+                  </button>
+               </div>
+            </div>
+         </div>
 
-    🧾 Generate Bulk Invoice
+         <!-- END BULK INVOICE / ORDER SEARCH -->
+      </div>
+      <!-- END LEFT PANEL -->
 
-</button>
-
-</div>
-
-
-
-
-    </div>
-
-</div>
-
-<!-- END BULK INVOICE / ORDER SEARCH -->
-
-
-
-        </div>
-        <!-- END LEFT PANEL -->
-
-
-        <!-- ==========================================
+      <!-- ==========================================
              RIGHT PANEL
         =========================================== -->
 
-        <div class="col-lg-8">
-
-
-            <!-- ======================================
+      <div class="col-lg-8">
+         <!-- ======================================
                  PDF CONTENT START
             ======================================= -->
 
-            <div id="invoicePdfContainer">
+         <!-- ========================================== BULK INVOICE PREVIEW =========================================== -->
+         <div
+            id="bulkInvoicePreviewContainer"
+            class="card shadow-sm mt-3"
+            style="display: none"
+         >
+            <div
+               class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+            >
+               <strong>🧾 Bulk Invoice Preview</strong>
+               <button
+                  type="button"
+                  class="btn btn-sm btn-outline-light"
+                  onclick="closeBulkInvoicePreview()"
+               >
+                  ✕
+               </button>
+            </div>
+            <div class="card-body">
+               <div class="text-center py-4 text-muted">
+                  Select orders and click
+                  <strong>Generate Bulk Invoice</strong> to preview the combined
+                  bill.
+               </div>
+            </div>
+         </div>
 
-                <div class="card shadow border-0">
-
-
-                    <!-- ==================================
+         <div id="invoicePdfContainer">
+            <div class="card shadow border-0">
+               <!-- ==================================
                          COMPACT COMPANY HEADER
                     =================================== -->
 
-                    <div
-                        class="card-header"
+               <div
+                  class="card-header"
+                  style="background: #ff6b00; color: white; padding: 10px 18px"
+               >
+                  <div
+                     style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 15px;
+                     "
+                  >
+                     <!-- LEFT: LOGO -->
+
+                     <div
                         style="
-                            background:#ff6b00;
-                            color:white;
-                            padding:10px 18px;
-                        ">
+                           flex: 0 0 auto;
+                           display: flex;
+                           align-items: center;
+                        "
+                     >
+                        <img
+                           id="invoiceCompanyLogo"
+                           alt="Smoky Swaad Logo"
+                           style="
+                              width: 62px;
+                              height: 62px;
+                              object-fit: contain;
+                              border-radius: 50%;
+                              background: white;
+                              display: none;
+                           "
+                        />
+                     </div>
 
+                     <!-- CENTER: BRAND -->
+
+                     <div style="flex: 1; text-align: left">
                         <div
-                            style="
-                                display:flex;
-                                align-items:center;
-                                justify-content:space-between;
-                                gap:15px;
-                            ">
-
-
-                            <!-- LEFT: LOGO -->
-
-                            <div
-                                style="
-                                    flex:0 0 auto;
-                                    display:flex;
-                                    align-items:center;
-                                ">
-
-                                <img
-                                    id="invoiceCompanyLogo"
-                                    alt="Smoky Swaad Logo"
-                                    style="
-                                        width:62px;
-                                        height:62px;
-                                        object-fit:contain;
-                                        border-radius:50%;
-                                        background:white;
-                                        display:none;
-                                    ">
-
-                            </div>
-
-
-                            <!-- CENTER: BRAND -->
-
-                            <div
-                                style="
-                                    flex:1;
-                                    text-align:left;
-                                ">
-
-                                <div
-                                    style="
-                                        font-size:22px;
-                                        font-weight:700;
-                                        line-height:1.1;
-                                    ">
-
-                                    Smoky Swaad
-
-                                </div>
-
-
-                                <div
-                                    style="
-                                        font-size:13px;
-                                        margin-top:3px;
-                                    ">
-
-                                    Fresh • Hot • Homemade
-
-                                </div>
-
-
-                                <div
-                                    style="
-                                        font-size:11px;
-                                        margin-top:2px;
-                                        opacity:0.95;
-                                    ">
-
-                                    Brajrajnagar, Odisha
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- RIGHT: PHONE -->
-
-                            <div
-                                style="
-                                    flex:0 0 auto;
-                                    text-align:right;
-                                    white-space:nowrap;
-                                ">
-
-                                <div
-                                    style="
-                                        font-size:11px;
-                                        opacity:0.9;
-                                    ">
-
-                                    Call / WhatsApp
-
-                                </div>
-
-
-                                <div
-                                    style="
-                                        font-size:15px;
-                                        font-weight:700;
-                                    ">
-
-                                    ☎ 7873337525
-
-                                </div>
-
-                            </div>
-
-
+                           style="
+                              font-size: 22px;
+                              font-weight: 700;
+                              line-height: 1.1;
+                           "
+                        >
+                           Smoky Swaad
                         </div>
 
-                    </div>
+                        <div style="font-size: 13px; margin-top: 3px">
+                           Fresh • Hot • Homemade
+                        </div>
 
+                        <div
+                           style="
+                              font-size: 11px;
+                              margin-top: 2px;
+                              opacity: 0.95;
+                           "
+                        >
+                           Brajrajnagar, Odisha
+                        </div>
+                     </div>
 
-                    <!-- ==================================
+                     <!-- RIGHT: PHONE -->
+
+                     <div
+                        style="
+                           flex: 0 0 auto;
+                           text-align: right;
+                           white-space: nowrap;
+                        "
+                     >
+                        <div style="font-size: 11px; opacity: 0.9">
+                           Call / WhatsApp
+                        </div>
+
+                        <div style="font-size: 15px; font-weight: 700">
+                           ☎ 7873337525
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <!-- ==================================
                          INVOICE BODY
                     =================================== -->
 
-                    <div class="card-body p-4 bg-light">
-
-
-                        <!-- ==============================
+               <div class="card-body p-4 bg-light">
+                  <!-- ==============================
                              INVOICE INFORMATION
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-dark text-white">
+                        <strong> 🧾 Invoice Information </strong>
+                     </div>
 
-                            <div class="card-header bg-dark text-white">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-4">
+                              <label class="text-muted"> Invoice No </label>
 
-                                <strong>
-                                    🧾 Invoice Information
-                                </strong>
+                              <h5 id="invOrderId" class="mb-0">-</h5>
+                           </div>
 
-                            </div>
+                           <div class="col-md-4">
+                              <label class="text-muted"> Order Date </label>
 
+                              <h5 id="invDate" class="mb-0">-</h5>
+                           </div>
 
-                            <div class="card-body">
+                           <div class="col-md-4">
+                              <label class="text-muted"> Status </label>
 
-                                <div class="row">
-
-                                    <div class="col-md-4">
-
-                                        <label class="text-muted">
-                                            Invoice No
-                                        </label>
-
-                                        <h5
-                                            id="invOrderId"
-                                            class="mb-0">
-
-                                            -
-
-                                        </h5>
-
-                                    </div>
-
-
-                                    <div class="col-md-4">
-
-                                        <label class="text-muted">
-                                            Order Date
-                                        </label>
-
-                                        <h5
-                                            id="invDate"
-                                            class="mb-0">
-
-                                            -
-
-                                        </h5>
-
-                                    </div>
-
-
-                                    <div class="col-md-4">
-
-                                        <label class="text-muted">
-                                            Status
-                                        </label>
-
-                                        <div id="invStatus">
-
-                                            <span class="badge bg-secondary">
-                                                -
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
+                              <div id="invStatus">
+                                 <span class="badge bg-secondary"> - </span>
+                              </div>
+                           </div>
                         </div>
+                     </div>
+                  </div>
 
-
-                        <!-- ==============================
+                  <!-- ==============================
                              CUSTOMER INFORMATION
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-primary text-white">
+                        <strong> 👤 Customer Information </strong>
+                     </div>
 
-                            <div class="card-header bg-primary text-white">
+                     <div class="card-body">
+                        <div class="row g-2">
+                           <!-- Customer Name -->
 
-                                <strong>
-                                    👤 Customer Information
-                                </strong>
+                           <div class="col-md-6">
+                              <label class="text-muted"> Customer Name </label>
 
-                            </div>
+                              <h6 id="invCustomer" class="mb-1">-</h6>
+                           </div>
 
+                           <!-- Mobile -->
 
-                            <div class="card-body">
+                           <div class="col-md-6">
+                              <label class="text-muted"> Mobile Number </label>
 
-                                <div class="row g-2">
+                              <h6 id="invMobile" class="mb-1">-</h6>
+                           </div>
 
+                           <!-- Delivery Area -->
 
-                                    <!-- Customer Name -->
+                           <div class="col-md-6">
+                              <label class="text-muted"> Delivery Area </label>
 
-                                    <div class="col-md-6">
+                              <h6 id="invDeliveryArea" class="mb-0">-</h6>
+                           </div>
 
-                                        <label class="text-muted">
-                                            Customer Name
-                                        </label>
+                           <!-- Order Type -->
 
-                                        <h6
-                                            id="invCustomer"
-                                            class="mb-1">
+                           <div class="col-md-6">
+                              <label class="text-muted"> Order Type </label>
 
-                                            -
-
-                                        </h6>
-
-                                    </div>
-
-
-                                    <!-- Mobile -->
-
-                                    <div class="col-md-6">
-
-                                        <label class="text-muted">
-                                            Mobile Number
-                                        </label>
-
-                                        <h6
-                                            id="invMobile"
-                                            class="mb-1">
-
-                                            -
-
-                                        </h6>
-
-                                    </div>
-
-
-                                    <!-- Delivery Area -->
-
-                                    <div class="col-md-6">
-
-                                        <label class="text-muted">
-                                            Delivery Area
-                                        </label>
-
-                                        <h6
-                                            id="invDeliveryArea"
-                                            class="mb-0">
-
-                                            -
-
-                                        </h6>
-
-                                    </div>
-
-
-                                    <!-- Order Type -->
-
-                                    <div class="col-md-6">
-
-                                        <label class="text-muted">
-                                            Order Type
-                                        </label>
-
-                                        <h6
-                                            id="invOrderType"
-                                            class="mb-0">
-
-                                            -
-
-                                        </h6>
-
-                                    </div>
-
-
-                                </div>
-
-                            </div>
-
+                              <h6 id="invOrderType" class="mb-0">-</h6>
+                           </div>
                         </div>
+                     </div>
+                  </div>
 
-
-                        <!-- ==============================
+                  <!-- ==============================
                              DELIVERY ADDRESS
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-info text-white">
+                        <strong> 📍 Delivery Address </strong>
+                     </div>
 
-                            <div class="card-header bg-info text-white">
-
-                                <strong>
-                                    📍 Delivery Address
-                                </strong>
-
-                            </div>
-
-
-                            <div class="card-body">
-
-                                <div
-                                    id="invAddress"
-                                    class="border rounded p-3 bg-white">
-
-                                    -
-
-                                </div>
-
-                            </div>
-
+                     <div class="card-body">
+                        <div
+                           id="invAddress"
+                           class="border rounded p-3 bg-white"
+                        >
+                           -
                         </div>
+                     </div>
+                  </div>
 
-
-                        <!-- ==============================
+                  <!-- ==============================
                              ORDERED ITEMS
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-success text-white">
+                        <strong> 🍽 Ordered Items </strong>
+                     </div>
 
-                            <div class="card-header bg-success text-white">
+                     <div class="card-body p-0">
+                        <table
+                           class="table table-hover table-bordered align-middle mb-0"
+                        >
+                           <thead class="table-light">
+                              <tr>
+                                 <th>Item</th>
 
-                                <strong>
-                                    🍽 Ordered Items
-                                </strong>
+                                 <th width="80" class="text-center">Qty</th>
 
-                            </div>
+                                 <th width="120" class="text-end">Price</th>
 
+                                 <th width="120" class="text-end">Amount</th>
+                              </tr>
+                           </thead>
 
-                            <div class="card-body p-0">
+                           <tbody id="invoiceItemsBody">
+                              <tr>
+                                 <td
+                                    colspan="4"
+                                    class="text-center text-muted py-5"
+                                 >
+                                    Search an invoice to load items
+                                 </td>
+                              </tr>
+                           </tbody>
+                        </table>
+                     </div>
+                  </div>
 
-                                <table
-                                    class="table table-hover table-bordered align-middle mb-0">
-
-                                    <thead class="table-light">
-
-                                        <tr>
-
-                                            <th>
-                                                Item
-                                            </th>
-
-                                            <th
-                                                width="80"
-                                                class="text-center">
-
-                                                Qty
-
-                                            </th>
-
-                                            <th
-                                                width="120"
-                                                class="text-end">
-
-                                                Price
-
-                                            </th>
-
-                                            <th
-                                                width="120"
-                                                class="text-end">
-
-                                                Amount
-
-                                            </th>
-
-                                        </tr>
-
-                                    </thead>
-
-
-                                    <tbody id="invoiceItemsBody">
-
-                                        <tr>
-
-                                            <td
-                                                colspan="4"
-                                                class="text-center text-muted py-5">
-
-                                                Search an invoice to load items
-
-                                            </td>
-
-                                        </tr>
-
-                                    </tbody>
-
-                                </table>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- ==============================
+                  <!-- ==============================
                              PAYMENT SUMMARY
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-warning">
+                        <strong> 💰 Payment Summary </strong>
+                     </div>
 
-                            <div class="card-header bg-warning">
+                     <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                           <!-- Subtotal -->
 
-                                <strong>
-                                    💰 Payment Summary
-                                </strong>
+                           <tr>
+                              <td>Subtotal</td>
 
-                            </div>
+                              <td class="text-end fw-bold" id="invSubtotal">
+                                 ₹0.00
+                              </td>
+                           </tr>
 
+                           <!-- Add-ons -->
 
-                            <div class="card-body">
+                           <tr id="invAddonsRow" style="display: none">
+                              <td>
+                                 <div class="fw-semibold">➕ Add-ons</div>
 
-                                <table class="table table-borderless mb-0">
+                                 <small id="invAddons" class="text-muted">
+                                 </small>
+                              </td>
 
+                              <td class="text-end fw-bold" id="invAddonTotal">
+                                 ₹0.00
+                              </td>
+                           </tr>
 
-                                    <!-- Subtotal -->
+                           <!-- Delivery Charge -->
 
-                                    <tr>
+                           <tr>
+                              <td>Delivery Charge</td>
 
-                                        <td>
-                                            Subtotal
-                                        </td>
+                              <td
+                                 class="text-end fw-bold"
+                                 id="invDeliveryCharge"
+                              >
+                                 ₹0.00
+                              </td>
+                           </tr>
 
-                                        <td
-                                            class="text-end fw-bold"
-                                            id="invSubtotal">
+                           <!-- Discount -->
 
-                                            ₹0.00
+                           <tr>
+                              <td>Discount</td>
 
-                                        </td>
+                              <td
+                                 class="text-end fw-bold text-danger"
+                                 id="invDiscount"
+                              >
+                                 ₹0.00
+                              </td>
+                           </tr>
 
-                                    </tr>
+                           <!-- Grand Total -->
 
+                           <tr class="table-success">
+                              <th class="fs-5">Grand Total</th>
 
-                                    <!-- Add-ons -->
+                              <th
+                                 class="text-end fs-4 text-success"
+                                 id="invGrandTotal"
+                              >
+                                 ₹0.00
+                              </th>
+                           </tr>
+                        </table>
+                     </div>
+                  </div>
 
-                                    <tr
-                                        id="invAddonsRow"
-                                        style="display:none;">
-
-                                        <td>
-
-                                            <div class="fw-semibold">
-                                                ➕ Add-ons
-                                            </div>
-
-                                            <small
-                                                id="invAddons"
-                                                class="text-muted">
-                                            </small>
-
-                                        </td>
-
-
-                                        <td
-                                            class="text-end fw-bold"
-                                            id="invAddonTotal">
-
-                                            ₹0.00
-
-                                        </td>
-
-                                    </tr>
-
-
-                                    <!-- Delivery Charge -->
-
-                                    <tr>
-
-                                        <td>
-                                            Delivery Charge
-                                        </td>
-
-                                        <td
-                                            class="text-end fw-bold"
-                                            id="invDeliveryCharge">
-
-                                            ₹0.00
-
-                                        </td>
-
-                                    </tr>
-
-
-                                    <!-- Discount -->
-
-                                    <tr>
-
-                                        <td>
-                                            Discount
-                                        </td>
-
-                                        <td
-                                            class="text-end fw-bold text-danger"
-                                            id="invDiscount">
-
-                                            ₹0.00
-
-                                        </td>
-
-                                    </tr>
-
-
-                                    <!-- Grand Total -->
-
-                                    <tr class="table-success">
-
-                                        <th class="fs-5">
-
-                                            Grand Total
-
-                                        </th>
-
-                                        <th
-                                            class="text-end fs-4 text-success"
-                                            id="invGrandTotal">
-
-                                            ₹0.00
-
-                                        </th>
-
-                                    </tr>
-
-                                </table>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- ==============================
+                  <!-- ==============================
                              PAYMENT INFORMATION
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-secondary text-white">
+                        <strong> 💳 Payment Information </strong>
+                     </div>
 
-                            <div class="card-header bg-secondary text-white">
+                     <div class="card-body">
+                        <div class="row">
+                           <div class="col-md-6">
+                              <label class="text-muted"> Payment Mode </label>
 
-                                <strong>
-                                    💳 Payment Information
-                                </strong>
+                              <h6 id="invPaymentMode2" class="mb-0">-</h6>
+                           </div>
 
-                            </div>
+                           <div class="col-md-6">
+                              <label class="text-muted"> Payment Status </label>
 
-
-                            <div class="card-body">
-
-                                <div class="row">
-
-                                    <div class="col-md-6">
-
-                                        <label class="text-muted">
-                                            Payment Mode
-                                        </label>
-
-                                        <h6
-                                            id="invPaymentMode2"
-                                            class="mb-0">
-
-                                            -
-
-                                        </h6>
-
-                                    </div>
-
-
-                                    <div class="col-md-6">
-
-                                        <label class="text-muted">
-                                            Payment Status
-                                        </label>
-
-                                        <div id="invPaymentStatus">
-
-                                            <span class="badge bg-secondary">
-                                                -
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
+                              <div id="invPaymentStatus">
+                                 <span class="badge bg-secondary"> - </span>
+                              </div>
+                           </div>
                         </div>
+                     </div>
+                  </div>
 
-
-                        <!-- ==============================
+                  <!-- ==============================
                              SPECIAL INSTRUCTIONS
                         =============================== -->
 
-                        <div class="card mb-3 shadow-sm">
+                  <div class="card mb-3 shadow-sm">
+                     <div class="card-header bg-danger text-white">
+                        <strong> 📝 Special Instructions </strong>
+                     </div>
 
-                            <div class="card-header bg-danger text-white">
+                     <div class="card-body">
+                        <div id="invInstructions">-</div>
+                     </div>
+                  </div>
 
-                                <strong>
-                                    📝 Special Instructions
-                                </strong>
+                  <div class="text-center mt-3">
+                     <h5 class="fw-bold text-success mb-1">
+                        ❤️ Thank You For Ordering With Smoky Swaad
+                     </h5>
 
-                            </div>
+                     <div class="text-muted mb-1">Fresh • Hot • Homemade</div>
 
-
-                            <div class="card-body">
-
-                                <div id="invInstructions">
-
-                                    -
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                      <div class="text-center mt-3">
-
-    <h5 class="fw-bold text-success mb-1">
-
-        ❤️ Thank You For Ordering With Smoky Swaad
-
-    </h5>
-
-    <div class="text-muted mb-1">
-
-        Fresh • Hot • Homemade
-
-    </div>
-
-    <div
-        style="
-            font-size:15px;
-            font-weight:700;
-            color:#212529;
-            margin-bottom:3px;
-        ">
-
-        ☎ 7873337525
-
-    </div>
-
-</div>
-
-
-                    </div>
-
-                </div>
-
+                     <div
+                        style="
+                           font-size: 15px;
+                           font-weight: 700;
+                           color: #212529;
+                           margin-bottom: 3px;
+                        "
+                     >
+                        ☎ 7873337525
+                     </div>
+                  </div>
+               </div>
             </div>
+         </div>
 
-            <!-- ======================================
+         <!-- ======================================
                  PDF CONTENT END
             ======================================= -->
 
-
-            <!-- ======================================
+         <!-- ======================================
                  ACTION BUTTONS
             ======================================= -->
 
-            <div
-                class="d-grid gap-2 d-md-flex justify-content-center mb-3">
+         <div class="d-grid gap-2 d-md-flex justify-content-center mb-3">
+            <button class="btn btn-primary">🖨 Print Invoice</button>
 
-                <button class="btn btn-primary">
+            <button
+               id="btnDownloadPdf"
+               class="btn btn-danger"
+               onclick="downloadInvoicePdf()"
+            >
+               📄 Download PDF
+            </button>
 
-                    🖨 Print Invoice
-
-                </button>
-
-
-                <button
-                    id="btnDownloadPdf"
-                    class="btn btn-danger"
-                    onclick="downloadInvoicePdf()">
-
-                    📄 Download PDF
-
-                </button>
-
-
-                <button
-                    id="btnShareInvoice"
-                    class="btn btn-success"
-                    onclick="shareInvoiceWhatsApp()">
-
-                    📲 Share Invoice
-
-                </button>
-
-            </div>
-
-
-        </div>
-
-    </div>
-
+            <button
+               id="btnShareInvoice"
+               class="btn btn-success"
+               onclick="shareInvoiceWhatsApp()"
+            >
+               📲 Share Invoice
+            </button>
+         </div>
+      </div>
+   </div>
 </div>
