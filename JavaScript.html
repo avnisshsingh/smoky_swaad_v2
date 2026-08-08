@@ -242,9 +242,13 @@
 
             for (let i = 0; i < personalExpenseHistoryCache.length; i++) {
                const expense = personalExpenseHistoryCache[i];
-               expense._month = String(expense.expenseDateKey || "").slice(0, 7);
+               expense._month = String(expense.expenseDateKey || "").slice(
+                  0,
+                  7,
+               );
                expense._category = String(expense.category || "");
-               expense._isExpense = String(expense.nature || "").toLowerCase() === "expense";
+               expense._isExpense =
+                  String(expense.nature || "").toLowerCase() === "expense";
                expense._amount = Number(expense.amount || 0);
                expense._search = [
                   expense.expenseId,
@@ -256,7 +260,9 @@
                   expense.remarks,
                   expense.unit,
                   expense.quantity,
-               ].join(" ").toLowerCase();
+               ]
+                  .join(" ")
+                  .toLowerCase();
             }
 
             personalExpenseLastHistorySignature = "";
@@ -301,9 +307,20 @@
 
       const month = monthEl ? String(monthEl.value || "") : "";
       const category = categoryEl ? String(categoryEl.value || "") : "";
-      const search = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
+      const search = searchEl
+         ? String(searchEl.value || "")
+              .trim()
+              .toLowerCase()
+         : "";
 
-      const signature = month + "\u0001" + category + "\u0001" + search + "\u0001" + personalExpenseHistoryCache.length;
+      const signature =
+         month +
+         "\u0001" +
+         category +
+         "\u0001" +
+         search +
+         "\u0001" +
+         personalExpenseHistoryCache.length;
       if (signature === personalExpenseLastHistorySignature) return;
 
       personalExpenseLastHistorySignature = signature;
@@ -324,7 +341,11 @@
 
       const info = document.getElementById("personalExpenseHistoryInfo");
       if (info) {
-         info.textContent = filtered.length + (filtered.length === 1 ? " transaction" : " transactions") + " • Total " + formatPersonalExpenseCurrency(total);
+         info.textContent =
+            filtered.length +
+            (filtered.length === 1 ? " transaction" : " transactions") +
+            " • Total " +
+            formatPersonalExpenseCurrency(total);
       }
    }
 
@@ -337,7 +358,12 @@
       (Array.isArray(units) ? units : []).forEach(function (unit) {
          unit = String(unit || "").trim();
          if (!unit) return;
-         html += '<option value="' + escapePersonalExpenseHtml(unit) + '">' + escapePersonalExpenseHtml(unit) + "</option>";
+         html +=
+            '<option value="' +
+            escapePersonalExpenseHtml(unit) +
+            '">' +
+            escapePersonalExpenseHtml(unit) +
+            "</option>";
       });
 
       select.innerHTML = html;
@@ -345,18 +371,23 @@
    }
 
    function preparePersonalExpenseDescriptionSearchCache() {
-      personalExpenseDescriptionCache = personalExpenseDescriptionCache.map(function (item) {
-         const description = String(item.description || "").trim();
-         return {
-            description: description,
-            category: String(item.category || "").trim(),
-            quantity: item.quantity === null || item.quantity === undefined ? "" : String(item.quantity).trim(),
-            unit: String(item.unit || "").trim(),
-            searchText: description.toLowerCase(),
-         };
-      }).filter(function (item) {
-         return item.description !== "";
-      });
+      personalExpenseDescriptionCache = personalExpenseDescriptionCache
+         .map(function (item) {
+            const description = String(item.description || "").trim();
+            return {
+               description: description,
+               category: String(item.category || "").trim(),
+               quantity:
+                  item.quantity === null || item.quantity === undefined
+                     ? ""
+                     : String(item.quantity).trim(),
+               unit: String(item.unit || "").trim(),
+               searchText: description.toLowerCase(),
+            };
+         })
+         .filter(function (item) {
+            return item.description !== "";
+         });
 
       personalExpenseDescriptionMap = Object.create(null);
       personalExpenseDescriptionCache.forEach(function (item) {
@@ -371,10 +402,16 @@
       const html = [];
 
       for (let i = 0; i < personalExpenseDescriptionCache.length; i++) {
-         const value = String(personalExpenseDescriptionCache[i].quantity || "").trim();
+         const value = String(
+            personalExpenseDescriptionCache[i].quantity || "",
+         ).trim();
          if (!value || seen[value]) continue;
          seen[value] = true;
-         html.push('<option value="' + escapePersonalExpenseHtml(value) + '"></option>');
+         html.push(
+            '<option value="' +
+               escapePersonalExpenseHtml(value) +
+               '"></option>',
+         );
       }
       list.innerHTML = html.join("");
    }
@@ -401,7 +438,8 @@
       });
 
       input.addEventListener("keydown", function (event) {
-         if (event.key === "Escape") hidePersonalExpenseDescriptionSuggestions();
+         if (event.key === "Escape")
+            hidePersonalExpenseDescriptionSuggestions();
       });
    }
 
@@ -409,13 +447,19 @@
       const box = peEl("personalExpenseDescriptionSuggestions");
       if (!box) return;
 
-      const search = String(query || "").trim().toLowerCase();
+      const search = String(query || "")
+         .trim()
+         .toLowerCase();
       if (search.length < 2) {
          hidePersonalExpenseDescriptionSuggestions();
          return;
       }
 
-      if (search === personalExpenseLastDescriptionQuery && box.style.display === "block") return;
+      if (
+         search === personalExpenseLastDescriptionQuery &&
+         box.style.display === "block"
+      )
+         return;
       personalExpenseLastDescriptionQuery = search;
 
       const startsWith = [];
@@ -433,14 +477,17 @@
       }
 
       const matches = [];
-      for (let i = 0; i < startsWith.length && matches.length < 6; i++) matches.push(startsWith[i]);
-      for (let i = 0; i < contains.length && matches.length < 6; i++) matches.push(contains[i]);
+      for (let i = 0; i < startsWith.length && matches.length < 6; i++)
+         matches.push(startsWith[i]);
+      for (let i = 0; i < contains.length && matches.length < 6; i++)
+         matches.push(contains[i]);
 
       personalExpenseVisibleDescriptionMatches = matches;
       let html = "";
 
       if (!matches.length) {
-         html = '<div class="list-group-item text-muted small">No previous match — continue typing to add a new description.</div>';
+         html =
+            '<div class="list-group-item text-muted small">No previous match — continue typing to add a new description.</div>';
       } else {
          const parts = [];
          for (let i = 0; i < matches.length; i++) {
@@ -448,17 +495,26 @@
             let detail = "";
             if (item.category) detail = item.category;
             if (item.quantity) {
-               const quantityText = item.quantity + (item.unit ? " " + item.unit : "");
+               const quantityText =
+                  item.quantity + (item.unit ? " " + item.unit : "");
                detail = detail ? detail + " • " + quantityText : quantityText;
             } else if (item.unit) {
                detail = detail ? detail + " • " + item.unit : item.unit;
             }
 
             parts.push(
-               '<button type="button" class="list-group-item list-group-item-action pe-description-result" data-pe-index="' + i + '">' +
-               '<div class="fw-semibold">' + escapePersonalExpenseHtml(item.description) + "</div>" +
-               (detail ? '<div class="small text-muted">' + escapePersonalExpenseHtml(detail) + "</div>" : "") +
-               "</button>"
+               '<button type="button" class="list-group-item list-group-item-action pe-description-result" data-pe-index="' +
+                  i +
+                  '">' +
+                  '<div class="fw-semibold">' +
+                  escapePersonalExpenseHtml(item.description) +
+                  "</div>" +
+                  (detail
+                     ? '<div class="small text-muted">' +
+                       escapePersonalExpenseHtml(detail) +
+                       "</div>"
+                     : "") +
+                  "</button>",
             );
          }
          html = parts.join("");
@@ -518,7 +574,9 @@
       const category = document.getElementById("personalExpenseCategory");
       if (!input || !category) return;
 
-      const key = String(input.value || "").trim().toLowerCase();
+      const key = String(input.value || "")
+         .trim()
+         .toLowerCase();
       if (!key) return;
 
       const remembered = personalExpenseDescriptionMap[key];
@@ -560,7 +618,9 @@
    });
 
    function getPersonalExpenseCategoryIcon(category) {
-      const key = String(category || "").trim().toLowerCase();
+      const key = String(category || "")
+         .trim()
+         .toLowerCase();
       return PERSONAL_EXPENSE_CATEGORY_ICONS[key] || "📌";
    }
 
@@ -579,49 +639,90 @@
       }
 
       clean.sort(function (a, b) {
-         return a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
+         return a.localeCompare(b, undefined, {
+            sensitivity: "base",
+            numeric: true,
+         });
       });
 
       personalExpenseCategoryCache = clean;
       const categorySelect = document.getElementById("personalExpenseCategory");
-      const historySelect = document.getElementById("personalExpenseHistoryCategory");
+      const historySelect = document.getElementById(
+         "personalExpenseHistoryCategory",
+      );
 
-      const currentCategory = categorySelect ? String(categorySelect.value || "") : "";
-      const currentHistory = historySelect ? String(historySelect.value || "") : "";
+      const currentCategory = categorySelect
+         ? String(categorySelect.value || "")
+         : "";
+      const currentHistory = historySelect
+         ? String(historySelect.value || "")
+         : "";
 
-      const options = clean.map(function (category) {
-         const icon = getPersonalExpenseCategoryIcon(category);
-         return '<option value="' + escapePersonalExpenseHtml(category) + '">' + icon + " " + escapePersonalExpenseHtml(category) + "</option>";
-      }).join("");
+      const options = clean
+         .map(function (category) {
+            const icon = getPersonalExpenseCategoryIcon(category);
+            return (
+               '<option value="' +
+               escapePersonalExpenseHtml(category) +
+               '">' +
+               icon +
+               " " +
+               escapePersonalExpenseHtml(category) +
+               "</option>"
+            );
+         })
+         .join("");
 
       if (categorySelect) {
-         categorySelect.innerHTML = '<option value="">Select Category</option>' + options;
+         categorySelect.innerHTML =
+            '<option value="">Select Category</option>' + options;
          if (currentCategory) categorySelect.value = currentCategory;
       }
 
       if (historySelect) {
-         historySelect.innerHTML = '<option value="">All Categories</option>' + options;
+         historySelect.innerHTML =
+            '<option value="">All Categories</option>' + options;
          if (currentHistory) historySelect.value = currentHistory;
       }
 
       const grid = document.getElementById("personalExpenseQuickCategoryGrid");
       if (grid) {
-         const hiddenTiles = ["education", "entertainment", "medical", "vegetables"];
-         grid.innerHTML = clean.filter(function (category) {
-            return !hiddenTiles.includes(category.toLowerCase());
-         }).map(function (category) {
-            const icon = getPersonalExpenseCategoryIcon(category);
-            return '<button type="button" class="btn btn-outline-secondary pe-quick-btn" data-pe-category="' + escapePersonalExpenseHtml(category) + '" title="' + escapePersonalExpenseHtml(category) + '">' +
-                   '<span class="pe-category-icon" aria-hidden="true">' + icon + "</span>" +
-                   '<span class="pe-category-name">' + escapePersonalExpenseHtml(category) + "</span></button>";
-         }).join("");
+         const hiddenTiles = [
+            "education",
+            "entertainment",
+            "medical",
+            "vegetables",
+         ];
+         grid.innerHTML = clean
+            .filter(function (category) {
+               return !hiddenTiles.includes(category.toLowerCase());
+            })
+            .map(function (category) {
+               const icon = getPersonalExpenseCategoryIcon(category);
+               return (
+                  '<button type="button" class="btn btn-outline-secondary pe-quick-btn" data-pe-category="' +
+                  escapePersonalExpenseHtml(category) +
+                  '" title="' +
+                  escapePersonalExpenseHtml(category) +
+                  '">' +
+                  '<span class="pe-category-icon" aria-hidden="true">' +
+                  icon +
+                  "</span>" +
+                  '<span class="pe-category-name">' +
+                  escapePersonalExpenseHtml(category) +
+                  "</span></button>"
+               );
+            })
+            .join("");
 
          if (grid.dataset.categoryDelegateBound !== "true") {
             grid.dataset.categoryDelegateBound = "true";
             grid.addEventListener("click", function (event) {
                const button = event.target.closest("[data-pe-category]");
                if (!button || !grid.contains(button)) return;
-               selectPersonalExpenseCategory(button.getAttribute("data-pe-category"));
+               selectPersonalExpenseCategory(
+                  button.getAttribute("data-pe-category"),
+               );
             });
          }
       }
@@ -631,7 +732,9 @@
       const value = window.prompt("Enter new expense category:");
       if (value === null) return;
 
-      const category = String(value || "").trim().replace(/\s+/g, " ");
+      const category = String(value || "")
+         .trim()
+         .replace(/\s+/g, " ");
       if (!category) return;
 
       const duplicate = personalExpenseCategoryCache.some(function (item) {
@@ -642,7 +745,7 @@
          selectPersonalExpenseCategory(
             personalExpenseCategoryCache.find(function (item) {
                return item.toLowerCase() === category.toLowerCase();
-            })
+            }),
          );
          showPersonalExpenseMessage("Category already exists.", "info");
          return;
@@ -651,7 +754,12 @@
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               showPersonalExpenseMessage(response && response.message ? response.message : "Unable to add category.", "danger");
+               showPersonalExpenseMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to add category.",
+                  "danger",
+               );
                return;
             }
             personalExpenseCategoryCache = response.categories || [];
@@ -660,7 +768,10 @@
             showPersonalExpenseMessage("Category added.", "success");
          })
          .withFailureHandler(function (error) {
-            showPersonalExpenseMessage(error && error.message ? error.message : String(error), "danger");
+            showPersonalExpenseMessage(
+               error && error.message ? error.message : String(error),
+               "danger",
+            );
          })
          .addPersonalExpenseCategory(category);
    }
@@ -684,7 +795,9 @@
       }
 
       const editingField = document.getElementById("personalExpenseEditingId");
-      const editingId = editingField ? String(editingField.value || "").trim() : "";
+      const editingId = editingField
+         ? String(editingField.value || "").trim()
+         : "";
       const saveButton = document.getElementById("btnSavePersonalExpense");
 
       isSavingPersonalExpense = true;
@@ -705,13 +818,20 @@
          }
 
          if (!response || response.success !== true) {
-            showPersonalExpenseMessage(response && response.message ? response.message : "Unable to save expense.", "danger");
+            showPersonalExpenseMessage(
+               response && response.message
+                  ? response.message
+                  : "Unable to save expense.",
+               "danger",
+            );
             return;
          }
 
          showPersonalExpenseMessage(
-            editingId ? "Expense updated successfully. ID: " + response.expenseId : "Expense saved successfully. ID: " + response.expenseId,
-            "success"
+            editingId
+               ? "Expense updated successfully. ID: " + response.expenseId
+               : "Expense saved successfully. ID: " + response.expenseId,
+            "success",
          );
 
          resetPersonalExpenseForm();
@@ -723,10 +843,15 @@
          isSavingPersonalExpense = false;
          if (saveButton) {
             saveButton.disabled = false;
-            saveButton.innerHTML = editingId ? "✏️ Update Expense" : "💾 Save Expense";
+            saveButton.innerHTML = editingId
+               ? "✏️ Update Expense"
+               : "💾 Save Expense";
          }
          const message = error && error.message ? error.message : String(error);
-         showPersonalExpenseMessage(message || "Unable to save expense.", "danger");
+         showPersonalExpenseMessage(
+            message || "Unable to save expense.",
+            "danger",
+         );
       }
 
       if (editingId) {
@@ -748,16 +873,37 @@
 
       setPersonalExpenseValue("personalExpenseDate", expense.expenseDateRaw);
       setPersonalExpenseValue("personalExpenseCategory", expense.category);
-      setPersonalExpenseValue("personalExpenseSubcategory", expense.subcategory);
-      setPersonalExpenseValue("personalExpenseDescription", expense.description);
+      setPersonalExpenseValue(
+         "personalExpenseSubcategory",
+         expense.subcategory,
+      );
+      setPersonalExpenseValue(
+         "personalExpenseDescription",
+         expense.description,
+      );
       setPersonalExpenseValue("personalExpenseUnit", expense.unit || "");
-      setPersonalExpenseValue("personalExpenseQuantity", expense.quantity || "");
+      setPersonalExpenseValue(
+         "personalExpenseQuantity",
+         expense.quantity || "",
+      );
       setPersonalExpenseValue("personalExpenseAmount", expense.amount);
-      setPersonalExpenseValue("personalExpensePaymentMode", expense.paymentMode);
+      setPersonalExpenseValue(
+         "personalExpensePaymentMode",
+         expense.paymentMode,
+      );
       setPersonalExpenseValue("personalExpensePaidTo", expense.paidTo);
-      setPersonalExpenseValue("personalExpenseFor", expense.expenseFor || "Self");
-      setPersonalExpenseValue("personalExpenseNature", expense.nature || "Expense");
-      setPersonalExpenseValue("personalExpenseRecurring", expense.recurring || "No");
+      setPersonalExpenseValue(
+         "personalExpenseFor",
+         expense.expenseFor || "Self",
+      );
+      setPersonalExpenseValue(
+         "personalExpenseNature",
+         expense.nature || "Expense",
+      );
+      setPersonalExpenseValue(
+         "personalExpenseRecurring",
+         expense.recurring || "No",
+      );
       setPersonalExpenseValue("personalExpenseReference", expense.referenceNo);
       setPersonalExpenseValue("personalExpenseRemarks", expense.remarks);
       setPersonalExpenseValue("personalExpenseEditingId", expense.expenseId);
@@ -792,21 +938,42 @@
       if (!expenseId) return;
 
       const amountText = formatPersonalExpenseCurrency(amount);
-      const confirmed = confirm("Delete this expense?\n\n" + expenseId + "\n" + description + "\n" + amountText + "\n\nIt will be removed from expense totals but retained for audit.");
+      const confirmed = confirm(
+         "Delete this expense?\n\n" +
+            expenseId +
+            "\n" +
+            description +
+            "\n" +
+            amountText +
+            "\n\nIt will be removed from expense totals but retained for audit.",
+      );
       if (!confirmed) return;
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               showPersonalExpenseMessage(response && response.message ? response.message : "Unable to delete expense.", "danger");
+               showPersonalExpenseMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to delete expense.",
+                  "danger",
+               );
                return;
             }
-            showPersonalExpenseMessage("Expense deleted. " + expenseId + " can be restored from Deleted Expenses.", "warning");
+            showPersonalExpenseMessage(
+               "Expense deleted. " +
+                  expenseId +
+                  " can be restored from Deleted Expenses.",
+               "warning",
+            );
             loadPersonalExpenses();
             loadPersonalExpenseHistory();
          })
          .withFailureHandler(function (error) {
-            showPersonalExpenseMessage(error && error.message ? error.message : String(error), "danger");
+            showPersonalExpenseMessage(
+               error && error.message ? error.message : String(error),
+               "danger",
+            );
          })
          .deletePersonalExpenseFromWeb(expenseId);
    }
@@ -816,18 +983,31 @@
       if (!container) return;
 
       container.style.display = "block";
-      container.innerHTML = '<div class="text-center text-muted py-3">Loading deleted expenses...</div>';
+      container.innerHTML =
+         '<div class="text-center text-muted py-3">Loading deleted expenses...</div>';
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               container.innerHTML = "<div class='alert alert-danger mb-0'>" + escapePersonalExpenseHtml(response && response.message ? response.message : "Unable to load deleted expenses.") + "</div>";
+               container.innerHTML =
+                  "<div class='alert alert-danger mb-0'>" +
+                  escapePersonalExpenseHtml(
+                     response && response.message
+                        ? response.message
+                        : "Unable to load deleted expenses.",
+                  ) +
+                  "</div>";
                return;
             }
             renderDeletedPersonalExpenses(response.expenses || []);
          })
          .withFailureHandler(function (error) {
-            container.innerHTML = "<div class='alert alert-danger mb-0'>" + escapePersonalExpenseHtml(error && error.message ? error.message : String(error)) + "</div>";
+            container.innerHTML =
+               "<div class='alert alert-danger mb-0'>" +
+               escapePersonalExpenseHtml(
+                  error && error.message ? error.message : String(error),
+               ) +
+               "</div>";
          })
          .getDeletedPersonalExpenses();
    }
@@ -837,7 +1017,8 @@
       if (!container) return;
 
       if (!Array.isArray(expenses) || expenses.length === 0) {
-         container.innerHTML = '<div class="text-center text-muted py-3">No deleted expenses.</div>';
+         container.innerHTML =
+            '<div class="text-center text-muted py-3">No deleted expenses.</div>';
          return;
       }
 
@@ -862,19 +1043,30 @@
    }
 
    function restorePersonalExpense(expenseId) {
-      const confirmed = confirm("Restore " + expenseId + "?\n\nIt will again be included in expense reports.");
+      const confirmed = confirm(
+         "Restore " +
+            expenseId +
+            "?\n\nIt will again be included in expense reports.",
+      );
       if (!confirmed) return;
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               alert(response && response.message ? response.message : "Unable to restore expense.");
+               alert(
+                  response && response.message
+                     ? response.message
+                     : "Unable to restore expense.",
+               );
                return;
             }
             loadPersonalExpenses();
             loadPersonalExpenseHistory();
             loadDeletedPersonalExpenses();
-            showPersonalExpenseMessage("Expense restored successfully: " + expenseId, "success");
+            showPersonalExpenseMessage(
+               "Expense restored successfully: " + expenseId,
+               "success",
+            );
          })
          .withFailureHandler(function (error) {
             alert(error && error.message ? error.message : String(error));
@@ -894,12 +1086,18 @@
       return {
          expenseDate: getPersonalExpenseFieldValue("personalExpenseDate"),
          category: getPersonalExpenseFieldValue("personalExpenseCategory"),
-         subcategory: getPersonalExpenseFieldValue("personalExpenseSubcategory"),
-         description: getPersonalExpenseFieldValue("personalExpenseDescription"),
+         subcategory: getPersonalExpenseFieldValue(
+            "personalExpenseSubcategory",
+         ),
+         description: getPersonalExpenseFieldValue(
+            "personalExpenseDescription",
+         ),
          unit: getPersonalExpenseFieldValue("personalExpenseUnit"),
          quantity: getPersonalExpenseFieldValue("personalExpenseQuantity"),
          amount: getPersonalExpenseFieldValue("personalExpenseAmount"),
-         paymentMode: getPersonalExpenseFieldValue("personalExpensePaymentMode"),
+         paymentMode: getPersonalExpenseFieldValue(
+            "personalExpensePaymentMode",
+         ),
          paidTo: getPersonalExpenseFieldValue("personalExpensePaidTo"),
          expenseFor: getPersonalExpenseFieldValue("personalExpenseFor"),
          nature: getPersonalExpenseFieldValue("personalExpenseNature"),
@@ -931,7 +1129,10 @@
       const amount = Number(expenseData.amount);
       if (!Number.isFinite(amount) || amount <= 0) {
          focusPersonalExpenseField("personalExpenseAmount");
-         return { success: false, message: "Please enter a valid Amount greater than zero." };
+         return {
+            success: false,
+            message: "Please enter a valid Amount greater than zero.",
+         };
       }
       if (!expenseData.paymentMode) {
          focusPersonalExpenseField("personalExpensePaymentMode");
@@ -949,7 +1150,9 @@
          element.scrollIntoView();
       }
       setTimeout(function () {
-         try { element.focus(); } catch (error) {}
+         try {
+            element.focus();
+         } catch (error) {}
       }, 250);
    }
 
@@ -1016,7 +1219,8 @@
       const moreDetails = document.getElementById("personalExpenseMoreDetails");
       if (moreDetails && moreDetails.classList.contains("show")) {
          try {
-            const collapse = bootstrap.Collapse.getOrCreateInstance(moreDetails);
+            const collapse =
+               bootstrap.Collapse.getOrCreateInstance(moreDetails);
             collapse.hide();
          } catch (error) {
             moreDetails.classList.remove("show");
@@ -1025,7 +1229,9 @@
 
       if (category) {
          setTimeout(function () {
-            try { category.focus(); } catch (error) {}
+            try {
+               category.focus();
+            } catch (error) {}
          }, 150);
       }
 
@@ -1041,24 +1247,35 @@
       const mobileList = document.getElementById("personalExpenseMobileList");
 
       if (desktopBody) {
-         desktopBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading expenses...</td></tr>';
+         desktopBody.innerHTML =
+            '<tr><td colspan="7" class="text-center text-muted py-4">Loading expenses...</td></tr>';
       }
       if (mobileList) {
-         mobileList.innerHTML = '<div class="text-center text-muted py-4">Loading expenses...</div>';
+         mobileList.innerHTML =
+            '<div class="text-center text-muted py-4">Loading expenses...</div>';
       }
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               showPersonalExpenseMessage(response && response.message ? response.message : "Unable to load expenses.", "danger");
+               showPersonalExpenseMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to load expenses.",
+                  "danger",
+               );
                return;
             }
             updatePersonalExpenseSummary(response.summary);
             renderPersonalExpenses(response.expenses || []);
          })
          .withFailureHandler(function (error) {
-            const message = error && error.message ? error.message : String(error);
-            showPersonalExpenseMessage(message || "Unable to load expenses.", "danger");
+            const message =
+               error && error.message ? error.message : String(error);
+            showPersonalExpenseMessage(
+               message || "Unable to load expenses.",
+               "danger",
+            );
          })
          .getPersonalExpensesDashboardData();
    }
@@ -1069,8 +1286,10 @@
       const month = document.getElementById("personalExpenseMonth");
       const count = document.getElementById("personalExpenseTransactionCount");
 
-      if (today) today.textContent = formatPersonalExpenseCurrency(summary.today);
-      if (month) month.textContent = formatPersonalExpenseCurrency(summary.thisMonth);
+      if (today)
+         today.textContent = formatPersonalExpenseCurrency(summary.today);
+      if (month)
+         month.textContent = formatPersonalExpenseCurrency(summary.thisMonth);
       if (count) count.textContent = Number(summary.transactionCount || 0);
    }
 
@@ -1085,7 +1304,8 @@
       if (!body) return;
 
       if (expenses.length === 0) {
-         body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No expenses found.</td></tr>';
+         body.innerHTML =
+            '<tr><td colspan="7" class="text-center text-muted py-4">No expenses found.</td></tr>';
          return;
       }
 
@@ -1113,13 +1333,16 @@
       if (!list) return;
 
       if (!Array.isArray(expenses) || expenses.length === 0) {
-         list.innerHTML = '<div class="text-center text-muted py-4">No expenses found.</div>';
+         list.innerHTML =
+            '<div class="text-center text-muted py-4">No expenses found.</div>';
          return;
       }
 
       let html = "";
       expenses.forEach(function (expense) {
-         const expenseJson = JSON.stringify(expense).replace(/&/g, "&amp;").replace(/'/g, "&#39;");
+         const expenseJson = JSON.stringify(expense)
+            .replace(/&/g, "&amp;")
+            .replace(/'/g, "&#39;");
          html += `
             <div class="pe-mobile-expense-card">
                <div class="d-flex justify-content-between align-items-start gap-2">
@@ -1141,39 +1364,65 @@
 
    function loadPersonalExpenseHistory() {
       const month = getPersonalExpenseFieldValue("personalExpenseHistoryMonth");
-      const category = getPersonalExpenseFieldValue("personalExpenseHistoryCategory");
-      const search = getPersonalExpenseFieldValue("personalExpenseHistorySearch");
+      const category = getPersonalExpenseFieldValue(
+         "personalExpenseHistoryCategory",
+      );
+      const search = getPersonalExpenseFieldValue(
+         "personalExpenseHistorySearch",
+      );
 
       const desktopBody = document.getElementById("personalExpenseTableBody");
       const mobileList = document.getElementById("personalExpenseMobileList");
       const info = document.getElementById("personalExpenseHistoryInfo");
 
-      if (desktopBody) desktopBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Loading history...</td></tr>';
-      if (mobileList) mobileList.innerHTML = '<div class="text-center text-muted py-4">Loading history...</div>';
+      if (desktopBody)
+         desktopBody.innerHTML =
+            '<tr><td colspan="7" class="text-center text-muted py-4">Loading history...</td></tr>';
+      if (mobileList)
+         mobileList.innerHTML =
+            '<div class="text-center text-muted py-4">Loading history...</div>';
       if (info) info.textContent = "";
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               showPersonalExpenseMessage(response && response.message ? response.message : "Unable to load expense history.", "danger");
+               showPersonalExpenseMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to load expense history.",
+                  "danger",
+               );
                return;
             }
             renderPersonalExpenses(response.expenses || []);
             if (info) {
                const count = Number(response.count || 0);
                const total = Number(response.total || 0);
-               info.textContent = count + (count === 1 ? " transaction" : " transactions") + " • Total " + formatPersonalExpenseCurrency(total);
+               info.textContent =
+                  count +
+                  (count === 1 ? " transaction" : " transactions") +
+                  " • Total " +
+                  formatPersonalExpenseCurrency(total);
             }
          })
          .withFailureHandler(function (error) {
-            showPersonalExpenseMessage(error && error.message ? error.message : String(error), "danger");
+            showPersonalExpenseMessage(
+               error && error.message ? error.message : String(error),
+               "danger",
+            );
          })
-         .getPersonalExpenseHistory({ month: month, category: category, search: search });
+         .getPersonalExpenseHistory({
+            month: month,
+            category: category,
+            search: search,
+         });
    }
 
    function clearPersonalExpenseHistoryFilters() {
       const month = document.getElementById("personalExpenseHistoryMonth");
-      const category = document.getElementById("personalExpenseHistoryCategory");
+      const category = document.getElementById(
+         "personalExpenseHistoryCategory",
+      );
       const search = document.getElementById("personalExpenseHistorySearch");
 
       if (month) month.value = getToday().slice(0, 7);
@@ -1185,7 +1434,12 @@
    function formatPersonalExpenseCurrency(amount) {
       const value = Number(amount) || 0;
       try {
-         return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+         return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+         }).format(value);
       } catch (error) {
          return "₹" + value.toFixed(2);
       }
@@ -1193,11 +1447,17 @@
 
    function escapePersonalExpenseHtml(value) {
       return String(value === null || value === undefined ? "" : value)
-         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
    }
 
    function setActiveMenu(selectedLink) {
-      document.querySelectorAll(".menu-link").forEach((link) => link.classList.remove("active"));
+      document
+         .querySelectorAll(".menu-link")
+         .forEach((link) => link.classList.remove("active"));
       selectedLink.classList.add("active");
    }
 
@@ -1219,7 +1479,8 @@
       const deliveryArea = document.getElementById("deliveryArea");
 
       if (customerName) customerName.value = customer.customerName || "";
-      if (houseAddress) houseAddress.value = customer.houseAddress || customer.address || "";
+      if (houseAddress)
+         houseAddress.value = customer.houseAddress || customer.address || "";
       if (deliveryArea) deliveryArea.value = customer.deliveryArea || "";
       updateDeliveryCharge();
    }
@@ -1228,7 +1489,12 @@
       google.script.run
          .withSuccessHandler(function (menu) {
             menuCache = (menu || []).map(function (item) {
-               return { ...item, searchName: String(item.itemName || "").trim().toLowerCase() };
+               return {
+                  ...item,
+                  searchName: String(item.itemName || "")
+                     .trim()
+                     .toLowerCase(),
+               };
             });
          })
          .withFailureHandler(function (error) {
@@ -1256,7 +1522,9 @@
 
    function debounceMenuSearch() {
       clearTimeout(menuSearchTimer);
-      menuSearchTimer = setTimeout(function () { searchMenuItems(); }, 120);
+      menuSearchTimer = setTimeout(function () {
+         searchMenuItems();
+      }, 120);
    }
 
    function searchMenuItems() {
@@ -1275,7 +1543,11 @@
       for (let i = 0; i < menuCache.length; i++) {
          const item = menuCache[i];
          if (!item) continue;
-         const searchName = item.searchName || String(item.itemName || "").trim().toLowerCase();
+         const searchName =
+            item.searchName ||
+            String(item.itemName || "")
+               .trim()
+               .toLowerCase();
          if (searchName.includes(keyword)) {
             results.push(item);
             if (results.length >= 8) break;
@@ -1290,7 +1562,8 @@
       list.style.display = "block";
 
       if (items.length === 0) {
-         list.innerHTML = '<div class="list-group-item text-muted">No menu item found</div>';
+         list.innerHTML =
+            '<div class="list-group-item text-muted">No menu item found</div>';
          return;
       }
 
@@ -1332,7 +1605,8 @@
       if (!cartContainer) return;
 
       if (cart.length === 0) {
-         cartContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-cart-x fs-1"></i><h6 class="mt-3">No items added</h6><small>Search menu items to begin</small></div>';
+         cartContainer.innerHTML =
+            '<div class="text-center text-muted py-5"><i class="bi bi-cart-x fs-1"></i><h6 class="mt-3">No items added</h6><small>Search menu items to begin</small></div>';
          updateDiscountState();
          calculateTotals();
          return;
@@ -1407,7 +1681,9 @@
          if (discountBox) discountBox.value = discount.toFixed(2);
       }
 
-      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge)) ? Number(deliveryCharge) : 0;
+      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge))
+         ? Number(deliveryCharge)
+         : 0;
       const grandTotal = subTotal + addonTotal - discount + safeDeliveryCharge;
 
       const subTotalEl = document.getElementById("subTotal");
@@ -1417,7 +1693,8 @@
 
       if (subTotalEl) subTotalEl.innerText = "₹" + subTotal.toFixed(2);
       if (addonTotalEl) addonTotalEl.textContent = "₹" + addonTotal.toFixed(2);
-      if (deliveryEl) deliveryEl.innerText = "₹" + safeDeliveryCharge.toFixed(2);
+      if (deliveryEl)
+         deliveryEl.innerText = "₹" + safeDeliveryCharge.toFixed(2);
       if (grandEl) grandEl.innerText = "₹" + grandTotal.toFixed(2);
    }
 
@@ -1452,18 +1729,33 @@
       const addonTotal = getCustomAddonTotal();
       let discount = parseFloat(getValue("discount"));
       if (!Number.isFinite(discount) || discount < 0) discount = 0;
-      if (discount > (subTotal + addonTotal)) discount = subTotal + addonTotal;
+      if (discount > subTotal + addonTotal) discount = subTotal + addonTotal;
 
-      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge)) ? Number(deliveryCharge) : 0;
+      const safeDeliveryCharge = Number.isFinite(Number(deliveryCharge))
+         ? Number(deliveryCharge)
+         : 0;
       const grandTotal = subTotal + addonTotal - discount + safeDeliveryCharge;
 
       return {
          customer: customer,
          order: order,
          payment: payment,
-         totals: { subTotal, addonTotal, discount, deliveryCharge: safeDeliveryCharge, grandTotal },
-         cart: cart.map(function (item) { return { ...item }; }),
-         customAddons: customAddons.map(function (addon) { return { name: String(addon.name || "").trim(), price: Number(addon.price) || 0 }; }),
+         totals: {
+            subTotal,
+            addonTotal,
+            discount,
+            deliveryCharge: safeDeliveryCharge,
+            grandTotal,
+         },
+         cart: cart.map(function (item) {
+            return { ...item };
+         }),
+         customAddons: customAddons.map(function (addon) {
+            return {
+               name: String(addon.name || "").trim(),
+               price: Number(addon.price) || 0,
+            };
+         }),
          meta: { orderDate: getValue("orderDate"), source: "WEB" },
       };
    }
@@ -1484,11 +1776,19 @@
    }
 
    function populatePOSDropdowns() {
-      if (appSettings.deliveryAreas) fillSelect("deliveryArea", appSettings.deliveryAreas.map((x) => x.area));
-      if (appSettings.paymentModes) fillSelect("paymentMode", appSettings.paymentModes);
-      if (appSettings.paymentStatus) fillSelect("paymentStatus", appSettings.paymentStatus);
-      if (appSettings.orderTypes) fillSelect("orderType", appSettings.orderTypes);
-      if (appSettings.deliverySlots) fillSelect("deliverySlot", appSettings.deliverySlots);
+      if (appSettings.deliveryAreas)
+         fillSelect(
+            "deliveryArea",
+            appSettings.deliveryAreas.map((x) => x.area),
+         );
+      if (appSettings.paymentModes)
+         fillSelect("paymentMode", appSettings.paymentModes);
+      if (appSettings.paymentStatus)
+         fillSelect("paymentStatus", appSettings.paymentStatus);
+      if (appSettings.orderTypes)
+         fillSelect("orderType", appSettings.orderTypes);
+      if (appSettings.deliverySlots)
+         fillSelect("deliverySlot", appSettings.deliverySlots);
    }
 
    function updateDeliveryCharge() {
@@ -1509,8 +1809,11 @@
       if (select.options.length > 1) return;
 
       let html = "";
-      if (id === "deliveryArea") html += `<option value="" selected>Select Delivery Area</option>`;
-      values.forEach(function (value) { html += `<option value="${value}">${value}</option>`; });
+      if (id === "deliveryArea")
+         html += `<option value="" selected>Select Delivery Area</option>`;
+      values.forEach(function (value) {
+         html += `<option value="${value}">${value}</option>`;
+      });
       select.innerHTML = html;
    }
 
@@ -1528,7 +1831,10 @@
 
       let html = "";
       QUICK_NOTES.forEach((note) => {
-         const buttonClass = note.includes("Call") || note.includes("Ring") ? "btn-outline-info" : "btn-outline-warning";
+         const buttonClass =
+            note.includes("Call") || note.includes("Ring")
+               ? "btn-outline-info"
+               : "btn-outline-warning";
          html += `<button type="button" class="btn ${buttonClass} btn-sm m-1" onclick="addQuickNote('${note}')">${note}</button>`;
       });
       container.innerHTML = html;
@@ -1553,7 +1859,8 @@
       const saveButton = document.getElementById("btnSaveOrder");
       if (saveButton) {
          saveButton.disabled = true;
-         saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+         saveButton.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
       }
 
       google.script.run
@@ -1565,13 +1872,19 @@
                   saveButton.disabled = false;
                   saveButton.innerHTML = "💾 Save Order";
                }
-               alert("Order Saved Successfully\n\nOrder ID : " + response.orderId);
+               alert(
+                  "Order Saved Successfully\n\nOrder ID : " + response.orderId,
+               );
             } else {
                if (saveButton) {
                   saveButton.disabled = false;
                   saveButton.innerHTML = "💾 Save Order";
                }
-               alert(response && response.message ? response.message : "Unable to save order.");
+               alert(
+                  response && response.message
+                     ? response.message
+                     : "Unable to save order.",
+               );
             }
          })
          .withFailureHandler(function (error) {
@@ -1580,7 +1893,9 @@
                saveButton.disabled = false;
                saveButton.innerHTML = "💾 Save Order";
             }
-            alert(error && error.message ? error.message : "Unable to save order.");
+            alert(
+               error && error.message ? error.message : "Unable to save order.",
+            );
          })
          .saveOrderFromWeb(orderData);
    }
@@ -1642,7 +1957,16 @@
    }
 
    function registerPurchaseEvents() {
-      ["purchaseDate", "itemSearch", "quantity", "unit", "paymentType", "amount", "supplier", "remarks"].forEach(function (id) {
+      [
+         "purchaseDate",
+         "itemSearch",
+         "quantity",
+         "unit",
+         "paymentType",
+         "amount",
+         "supplier",
+         "remarks",
+      ].forEach(function (id) {
          const element = document.getElementById(id);
          if (element) {
             element.addEventListener("input", updatePurchaseSummary);
@@ -1675,12 +1999,17 @@
    }
 
    function searchPurchaseItems() {
-      const keyword = document.getElementById("itemSearch").value.trim().toLowerCase();
+      const keyword = document
+         .getElementById("itemSearch")
+         .value.trim()
+         .toLowerCase();
       if (keyword.length === 0) {
          clearPurchaseSuggestions();
          return;
       }
-      const items = purchaseItemsCache.filter((item) => item.searchName.includes(keyword)).slice(0, 15);
+      const items = purchaseItemsCache
+         .filter((item) => item.searchName.includes(keyword))
+         .slice(0, 15);
       showPurchaseSuggestions(items);
    }
 
@@ -1689,8 +2018,15 @@
       const suggestionBox = document.getElementById("itemSuggestions");
       if (!suggestionBox) return;
 
-      let html = items.map((item) => `<button type="button" class="list-group-item list-group-item-action" onclick="selectPurchaseItem('${item.itemName.replace(/'/g, "\\'")}')">${item.itemName}</button>`).join("");
-      const exactMatch = items.some((item) => item.itemName.toLowerCase() === keyword.toLowerCase());
+      let html = items
+         .map(
+            (item) =>
+               `<button type="button" class="list-group-item list-group-item-action" onclick="selectPurchaseItem('${item.itemName.replace(/'/g, "\\'")}')">${item.itemName}</button>`,
+         )
+         .join("");
+      const exactMatch = items.some(
+         (item) => item.itemName.toLowerCase() === keyword.toLowerCase(),
+      );
 
       if (keyword !== "" && !exactMatch) {
          html += `<button type="button" class="list-group-item list-group-item-action text-success fw-bold border-top" onclick="addNewPurchaseItem()">➕ Add "${keyword}"</button>`;
@@ -1710,9 +2046,16 @@
 
       google.script.run
          .withSuccessHandler(function (response) {
-            const exists = purchaseItemsCache.some((item) => item.itemName.toLowerCase() === response.itemName.toLowerCase());
+            const exists = purchaseItemsCache.some(
+               (item) =>
+                  item.itemName.toLowerCase() ===
+                  response.itemName.toLowerCase(),
+            );
             if (!exists) {
-               purchaseItemsCache.push({ itemName: response.itemName, searchName: response.itemName.toLowerCase() });
+               purchaseItemsCache.push({
+                  itemName: response.itemName,
+                  searchName: response.itemName.toLowerCase(),
+               });
             }
             document.getElementById("itemSearch").value = response.itemName;
             clearPurchaseSuggestions();
@@ -1752,7 +2095,8 @@
       const saveButton = document.getElementById("btnSavePurchase");
       if (saveButton) {
          saveButton.disabled = true;
-         saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+         saveButton.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
       }
 
       google.script.run
@@ -1766,7 +2110,9 @@
                alert(response.message);
                return;
             }
-            alert(response.message + "\n\nPurchase ID : " + response.purchaseId);
+            alert(
+               response.message + "\n\nPurchase ID : " + response.purchaseId,
+            );
             clearPurchaseForm();
          })
          .withFailureHandler(function (error) {
@@ -1782,20 +2128,28 @@
 
    function updatePurchaseSummary() {
       if (!document.getElementById("summaryPurchaseDate")) return;
-      document.getElementById("summaryPurchaseDate").textContent = document.getElementById("purchaseDate").value || "-";
-      document.getElementById("summaryItem").textContent = document.getElementById("itemSearch").value || "-";
-      document.getElementById("summaryQuantity").textContent = document.getElementById("quantity").value || "-";
-      document.getElementById("summaryUnit").textContent = document.getElementById("unit").value || "-";
-      document.getElementById("summaryPaymentType").textContent = document.getElementById("paymentType").value || "-";
+      document.getElementById("summaryPurchaseDate").textContent =
+         document.getElementById("purchaseDate").value || "-";
+      document.getElementById("summaryItem").textContent =
+         document.getElementById("itemSearch").value || "-";
+      document.getElementById("summaryQuantity").textContent =
+         document.getElementById("quantity").value || "-";
+      document.getElementById("summaryUnit").textContent =
+         document.getElementById("unit").value || "-";
+      document.getElementById("summaryPaymentType").textContent =
+         document.getElementById("paymentType").value || "-";
       const amount = document.getElementById("amount").value || 0;
       document.getElementById("summaryAmount").textContent = "₹" + amount;
-      document.getElementById("summarySupplier").textContent = document.getElementById("supplier").value || "-";
-      document.getElementById("summaryRemarks").textContent = document.getElementById("remarks").value || "-";
+      document.getElementById("summarySupplier").textContent =
+         document.getElementById("supplier").value || "-";
+      document.getElementById("summaryRemarks").textContent =
+         document.getElementById("remarks").value || "-";
    }
 
    function clearPurchaseForm() {
       const today = new Date();
-      document.getElementById("purchaseDate").value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      document.getElementById("purchaseDate").value =
+         `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       document.getElementById("itemSearch").value = "";
       document.getElementById("quantity").value = "";
       document.getElementById("unit").value = "Gram";
@@ -1810,8 +2164,14 @@
    }
 
    function clearPOSForm() {
-      function setValue(id, value) { const el = document.getElementById(id); if (el) el.value = value; }
-      function resetSelect(id) { const el = document.getElementById(id); if (el) el.selectedIndex = 0; }
+      function setValue(id, value) {
+         const el = document.getElementById(id);
+         if (el) el.value = value;
+      }
+      function resetSelect(id) {
+         const el = document.getElementById(id);
+         if (el) el.selectedIndex = 0;
+      }
 
       setValue("customerName", "");
       setValue("mobile", "");
@@ -1823,7 +2183,7 @@
       resetSelect("paymentMode");
       resetSelect("paymentStatus");
       setValue("menuSearch", "");
-      
+
       const suggestionBox = document.getElementById("menuSuggestions");
       if (suggestionBox) {
          suggestionBox.innerHTML = "";
@@ -1885,12 +2245,17 @@
       document.getElementById("invMobile").innerText = order.mobile;
       document.getElementById("invDeliveryArea").innerText = order.deliveryArea;
       document.getElementById("invOrderType").innerText = order.orderType;
-      document.getElementById("invAddress").innerHTML = (order.houseAddress || "").replace(/\n/g, "<br>");
+      document.getElementById("invAddress").innerHTML = (
+         order.houseAddress || ""
+      ).replace(/\n/g, "<br>");
       document.getElementById("invPaymentMode2").innerText = order.paymentMode;
-      document.getElementById("invInstructions").innerText = order.specialInstructions || "-";
+      document.getElementById("invInstructions").innerText =
+         order.specialInstructions || "-";
 
-      document.getElementById("invStatus").innerHTML = `<span class="badge bg-primary">${order.status}</span>`;
-      document.getElementById("invPaymentStatus").innerHTML = `<span class="badge bg-success">${order.paymentStatus}</span>`;
+      document.getElementById("invStatus").innerHTML =
+         `<span class="badge bg-primary">${order.status}</span>`;
+      document.getElementById("invPaymentStatus").innerHTML =
+         `<span class="badge bg-success">${order.paymentStatus}</span>`;
 
       let rows = "";
       items.forEach(function (item) {
@@ -1898,7 +2263,8 @@
          rows += `<tr><td>${item.itemName}</td><td class="text-center">${item.qty}</td><td class="text-end">₹${item.price.toFixed(2)}</td><td class="text-end">₹${item.total.toFixed(2)}</td></tr>`;
       });
       document.getElementById("invoiceItemsBody").innerHTML = rows;
-      document.getElementById("invSubtotal").innerText = "₹" + subtotal.toFixed(2);
+      document.getElementById("invSubtotal").innerText =
+         "₹" + subtotal.toFixed(2);
 
       const addonsRow = document.getElementById("invAddonsRow");
       const addonsText = document.getElementById("invAddons");
@@ -1909,16 +2275,20 @@
       if (addons && addonTotal > 0) {
          if (addonsRow) addonsRow.style.display = "";
          if (addonsText) addonsText.innerText = addons;
-         if (addonTotalElement) addonTotalElement.innerText = "₹" + addonTotal.toFixed(2);
+         if (addonTotalElement)
+            addonTotalElement.innerText = "₹" + addonTotal.toFixed(2);
       } else {
          if (addonsRow) addonsRow.style.display = "none";
          if (addonsText) addonsText.innerText = "";
          if (addonTotalElement) addonTotalElement.innerText = "₹0.00";
       }
 
-      document.getElementById("invDeliveryCharge").innerText = "₹" + Number(order.deliveryCharge || 0).toFixed(2);
-      document.getElementById("invDiscount").innerText = "₹" + Number(order.discount || 0).toFixed(2);
-      document.getElementById("invGrandTotal").innerText = "₹" + Number(order.grandTotal || 0).toFixed(2);
+      document.getElementById("invDeliveryCharge").innerText =
+         "₹" + Number(order.deliveryCharge || 0).toFixed(2);
+      document.getElementById("invDiscount").innerText =
+         "₹" + Number(order.discount || 0).toFixed(2);
+      document.getElementById("invGrandTotal").innerText =
+         "₹" + Number(order.grandTotal || 0).toFixed(2);
    }
 
    function printInvoice() {
@@ -1928,472 +2298,290 @@
          return;
       }
       const printWindow = window.open("", "_blank");
-      printWindow.document.write(`<html><head><title>Invoice</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><style>body{padding:20px;font-family:Arial,sans-serif;}</style></head><body>${invoice.outerHTML}</body></html>`);
+      printWindow.document.write(
+         `<html><head><title>Invoice</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"><style>body{padding:20px;font-family:Arial,sans-serif;}</style></head><body>${invoice.outerHTML}</body></html>`,
+      );
       printWindow.document.close();
       printWindow.focus();
       printWindow.print();
       printWindow.close();
    }
 
+   /**
+    * ==========================================
+    * BUILD INVOICE PDF BLOB
+    *
+    * Shared by:
+    * - Download PDF
+    * - WhatsApp PDF
+    * ==========================================
+    */
+   async function buildInvoicePdfBlob() {
+      const invoice = document.getElementById("invoicePdfContainer");
 
-
-/**
- * ==========================================
- * BUILD INVOICE PDF BLOB
- *
- * Shared by:
- * - Download PDF
- * - WhatsApp PDF
- * ==========================================
- */
-async function buildInvoicePdfBlob() {
-
-   const invoice =
-      document.getElementById("invoicePdfContainer");
-
-   if (!invoice) {
-      throw new Error("Invoice not found.");
-   }
-
-   let wrapper = null;
-
-   try {
-
-      // Fixed desktop export width.
-      // Do NOT mix mm sizing with html2canvas pixel sizing.
-      const EXPORT_WIDTH = 794;
-
-      wrapper = document.createElement("div");
-      wrapper.id = "invoicePdfExportHost";
-
-      wrapper.style.position = "fixed";
-      wrapper.style.left = "0";
-      wrapper.style.top = "0";
-      wrapper.style.width = EXPORT_WIDTH + "px";
-      wrapper.style.margin = "0";
-      wrapper.style.padding = "0";
-      wrapper.style.background = "#ffffff";
-      wrapper.style.zIndex = "-2147483647";
-      wrapper.style.pointerEvents = "none";
-      wrapper.style.overflow = "visible";
-
-      const pdfInvoice =
-         invoice.cloneNode(true);
-
-      pdfInvoice.id = "invoicePdfExport";
-
-      // Strip emojis and problematic characters that break html2canvas text metrics
-      pdfInvoice.innerHTML = pdfInvoice.innerHTML
-         .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/ug, "")
-         .replace(/•/g, "-");
-
-      // ==========================================
-      // MOBILE RESPONSIVE CLASS NEUTRALIZER
-      // Neutralize Bootstrap 'd-none' classes and media query dependencies
-      // so desktop card headers and sub-addresses render properly on mobile exports.
-      // ==========================================
-      pdfInvoice.querySelectorAll('*').forEach(function(el) {
-         if (el.className && typeof el.className === 'string') {
-            el.className = el.className
-               .replace(/\bd-none\b/g, '')
-               .replace(/\bd-(sm|md|lg|xl)-(none|block|flex|inline)\b/g, '')
-               .trim();
-         }
-      });
-
-      pdfInvoice.querySelectorAll('.card-header, .card, .row').forEach(function(el) {
-         if (el.classList.contains('row')) {
-            el.style.setProperty('display', 'flex', 'important');
-         } else {
-            el.style.setProperty('display', 'block', 'important');
-         }
-         el.style.setProperty('visibility', 'visible', 'important');
-         el.style.setProperty('opacity', '1', 'important');
-      });
-      // ==========================================
-
-
-      // ==========================================
-      // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
-      // ==========================================
-
-      pdfInvoice.style.setProperty(
-         "display",
-         "block",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "min-width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "max-width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "overflow",
-         "visible",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "margin-left",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "margin-right",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "min-width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "max-width",
-         EXPORT_WIDTH + "px",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "margin",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "padding",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "position",
-         "relative",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "left",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "top",
-         "0",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "transform",
-         "none",
-         "important"
-      );
-
-      pdfInvoice.style.setProperty(
-         "overflow",
-         "visible",
-         "important"
-      );
-
-      pdfInvoice.style.background = "#ffffff";
-      pdfInvoice.style.boxSizing = "border-box";
-      pdfInvoice.style.fontFamily = "Arial, sans-serif";
-
-
-      // ==========================================
-      // Remove screen-only controls
-      // ==========================================
-
-      pdfInvoice
-         .querySelectorAll(
-            "button, .btn, .no-print"
-         )
-         .forEach(function(element) {
-
-            element.remove();
-
-         });
-
-
-      // ==========================================
-      // Remove empty optional cards
-      // ==========================================
-
-      const address =
-         pdfInvoice.querySelector("#invAddress");
-
-      if (
-         address &&
-         !address.textContent.trim()
-      ) {
-
-         const card =
-            address.closest(".card");
-
-         if (card) {
-            card.remove();
-         }
-
+      if (!invoice) {
+         throw new Error("Invoice not found.");
       }
 
+      let wrapper = null;
 
-      const instructions =
-         pdfInvoice.querySelector(
-            "#invInstructions"
+      try {
+         // Fixed desktop export width.
+         // Do NOT mix mm sizing with html2canvas pixel sizing.
+         const EXPORT_WIDTH = 794;
+
+         wrapper = document.createElement("div");
+         wrapper.id = "invoicePdfExportHost";
+
+         wrapper.style.position = "fixed";
+         wrapper.style.left = "0";
+         wrapper.style.top = "0";
+         wrapper.style.width = EXPORT_WIDTH + "px";
+         wrapper.style.margin = "0";
+         wrapper.style.padding = "0";
+         wrapper.style.background = "#ffffff";
+         wrapper.style.zIndex = "-2147483647";
+         wrapper.style.pointerEvents = "none";
+         wrapper.style.overflow = "visible";
+
+         const pdfInvoice = invoice.cloneNode(true);
+
+         pdfInvoice.id = "invoicePdfExport";
+
+         // Strip emojis and problematic characters that break html2canvas text metrics
+         pdfInvoice.innerHTML = pdfInvoice.innerHTML
+            .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/gu, "")
+            .replace(/•/g, "-");
+
+         // ==========================================
+         // MOBILE RESPONSIVE CLASS NEUTRALIZER
+         // Neutralize Bootstrap 'd-none' classes and media query dependencies
+         // so desktop card headers and sub-addresses render properly on mobile exports.
+         // ==========================================
+         pdfInvoice.querySelectorAll("*").forEach(function (el) {
+            if (el.className && typeof el.className === "string") {
+               el.className = el.className
+                  .replace(/\bd-none\b/g, "")
+                  .replace(/\bd-(sm|md|lg|xl)-(none|block|flex|inline)\b/g, "")
+                  .trim();
+            }
+         });
+
+         pdfInvoice
+            .querySelectorAll(".card-header, .card, .row")
+            .forEach(function (el) {
+               if (el.classList.contains("row")) {
+                  el.style.setProperty("display", "flex", "important");
+               } else {
+                  el.style.setProperty("display", "block", "important");
+               }
+               el.style.setProperty("visibility", "visible", "important");
+               el.style.setProperty("opacity", "1", "important");
+            });
+         // ==========================================
+
+         // ==========================================
+         // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
+         // ==========================================
+
+         pdfInvoice.style.setProperty("display", "block", "important");
+
+         pdfInvoice.style.setProperty(
+            "width",
+            EXPORT_WIDTH + "px",
+            "important",
          );
 
-      if (
-         instructions &&
-         (
-            !instructions.textContent.trim() ||
-            instructions.textContent.trim() === "-"
-         )
-      ) {
+         pdfInvoice.style.setProperty(
+            "min-width",
+            EXPORT_WIDTH + "px",
+            "important",
+         );
 
-         const card =
-            instructions.closest(".card");
+         pdfInvoice.style.setProperty(
+            "max-width",
+            EXPORT_WIDTH + "px",
+            "important",
+         );
 
-         if (card) {
-            card.remove();
+         pdfInvoice.style.setProperty("overflow", "visible", "important");
+
+         pdfInvoice.style.setProperty("margin-left", "0", "important");
+
+         pdfInvoice.style.setProperty("margin-right", "0", "important");
+
+         pdfInvoice.style.setProperty(
+            "width",
+            EXPORT_WIDTH + "px",
+            "important",
+         );
+
+         pdfInvoice.style.setProperty(
+            "min-width",
+            EXPORT_WIDTH + "px",
+            "important",
+         );
+
+         pdfInvoice.style.setProperty(
+            "max-width",
+            EXPORT_WIDTH + "px",
+            "important",
+         );
+
+         pdfInvoice.style.setProperty("margin", "0", "important");
+
+         pdfInvoice.style.setProperty("padding", "0", "important");
+
+         pdfInvoice.style.setProperty("position", "relative", "important");
+
+         pdfInvoice.style.setProperty("left", "0", "important");
+
+         pdfInvoice.style.setProperty("top", "0", "important");
+
+         pdfInvoice.style.setProperty("transform", "none", "important");
+
+         pdfInvoice.style.setProperty("overflow", "visible", "important");
+
+         pdfInvoice.style.background = "#ffffff";
+         pdfInvoice.style.boxSizing = "border-box";
+         pdfInvoice.style.fontFamily = "Arial, sans-serif";
+
+         // ==========================================
+         // Remove screen-only controls
+         // ==========================================
+
+         pdfInvoice
+            .querySelectorAll("button, .btn, .no-print")
+            .forEach(function (element) {
+               element.remove();
+            });
+
+         // ==========================================
+         // Remove empty optional cards
+         // ==========================================
+
+         const address = pdfInvoice.querySelector("#invAddress");
+
+         if (address && !address.textContent.trim()) {
+            const card = address.closest(".card");
+
+            if (card) {
+               card.remove();
+            }
          }
 
-      }
+         const instructions = pdfInvoice.querySelector("#invInstructions");
 
+         if (
+            instructions &&
+            (!instructions.textContent.trim() ||
+               instructions.textContent.trim() === "-")
+         ) {
+            const card = instructions.closest(".card");
 
-      // ==========================================
-      // Force desktop Bootstrap layout
-      // ==========================================
+            if (card) {
+               card.remove();
+            }
+         }
 
-      pdfInvoice
-         .querySelectorAll(".row")
-         .forEach(function(row) {
+         // ==========================================
+         // Force desktop Bootstrap layout
+         // ==========================================
 
-            row.style.setProperty(
-               "display",
-               "flex",
-               "important"
-            );
+         pdfInvoice.querySelectorAll(".row").forEach(function (row) {
+            row.style.setProperty("display", "flex", "important");
 
-            row.style.setProperty(
-               "flex-wrap",
-               "wrap",
-               "important"
-            );
+            row.style.setProperty("flex-wrap", "wrap", "important");
 
-            row.style.setProperty(
-               "margin-left",
-               "0",
-               "important"
-            );
+            row.style.setProperty("margin-left", "0", "important");
 
-            row.style.setProperty(
-               "margin-right",
-               "0",
-               "important"
-            );
-
+            row.style.setProperty("margin-right", "0", "important");
          });
 
+         pdfInvoice
+            .querySelectorAll('[class*="col-md-6"]')
+            .forEach(function (column) {
+               column.style.setProperty("flex", "0 0 50%", "important");
 
-      pdfInvoice
-         .querySelectorAll('[class*="col-md-6"]')
-         .forEach(function(column) {
+               column.style.setProperty("width", "50%", "important");
 
-            column.style.setProperty(
-               "flex",
-               "0 0 50%",
-               "important"
-            );
+               column.style.setProperty("max-width", "50%", "important");
 
-            column.style.setProperty(
-               "width",
-               "50%",
-               "important"
-            );
+               column.style.boxSizing = "border-box";
+            });
 
-            column.style.setProperty(
-               "max-width",
-               "50%",
-               "important"
-            );
+         pdfInvoice
+            .querySelectorAll('[class*="col-md-4"]')
+            .forEach(function (column) {
+               column.style.setProperty("flex", "0 0 33.333333%", "important");
 
-            column.style.boxSizing =
-               "border-box";
+               column.style.setProperty("width", "33.333333%", "important");
 
-         });
+               column.style.setProperty("max-width", "33.333333%", "important");
 
+               column.style.boxSizing = "border-box";
+            });
 
-      pdfInvoice
-         .querySelectorAll('[class*="col-md-4"]')
-         .forEach(function(column) {
+         pdfInvoice
+            .querySelectorAll('[class*="col-md-8"]')
+            .forEach(function (column) {
+               column.style.setProperty("flex", "0 0 66.666667%", "important");
 
-            column.style.setProperty(
-               "flex",
-               "0 0 33.333333%",
-               "important"
-            );
+               column.style.setProperty("width", "66.666667%", "important");
 
-            column.style.setProperty(
-               "width",
-               "33.333333%",
-               "important"
-            );
+               column.style.setProperty("max-width", "66.666667%", "important");
 
-            column.style.setProperty(
-               "max-width",
-               "33.333333%",
-               "important"
-            );
+               column.style.boxSizing = "border-box";
+            });
 
-            column.style.boxSizing =
-               "border-box";
+         // ==========================================
+         // Compact cards
+         // ==========================================
 
-         });
-
-
-      pdfInvoice
-         .querySelectorAll('[class*="col-md-8"]')
-         .forEach(function(column) {
-
-            column.style.setProperty(
-               "flex",
-               "0 0 66.666667%",
-               "important"
-            );
-
-            column.style.setProperty(
-               "width",
-               "66.666667%",
-               "important"
-            );
-
-            column.style.setProperty(
-               "max-width",
-               "66.666667%",
-               "important"
-            );
-
-            column.style.boxSizing =
-               "border-box";
-
-         });
-
-
-      // ==========================================
-      // Compact cards
-      // ==========================================
-
-      pdfInvoice
-         .querySelectorAll(".card")
-         .forEach(function(card) {
-
+         pdfInvoice.querySelectorAll(".card").forEach(function (card) {
             card.style.marginTop = "0";
             card.style.marginBottom = "5px";
             card.style.boxShadow = "none";
             card.style.breakInside = "auto";
             card.style.pageBreakInside = "auto";
-
          });
 
-
-      pdfInvoice
-         .querySelectorAll(".card-body")
-         .forEach(function(body) {
-
+         pdfInvoice.querySelectorAll(".card-body").forEach(function (body) {
             body.style.padding = "7px 9px";
-
          });
 
-
-      pdfInvoice
-         .querySelectorAll(".card-header")
-         .forEach(function(header) {
-
+         pdfInvoice.querySelectorAll(".card-header").forEach(function (header) {
             header.style.padding = "5px 9px";
             header.style.margin = "0";
-
          });
 
+         // ==========================================
+         // Tables
+         // ==========================================
 
-      // ==========================================
-      // Tables
-      // ==========================================
+         pdfInvoice.querySelectorAll("table").forEach(function (table) {
+            table.style.setProperty("width", "100%", "important");
 
-      pdfInvoice
-         .querySelectorAll("table")
-         .forEach(function(table) {
+            table.style.setProperty("max-width", "100%", "important");
 
-            table.style.setProperty(
-               "width",
-               "100%",
-               "important"
-            );
-
-            table.style.setProperty(
-               "max-width",
-               "100%",
-               "important"
-            );
-
-            table.style.setProperty(
-               "min-width",
-               "0",
-               "important"
-            );
+            table.style.setProperty("min-width", "0", "important");
 
             table.style.tableLayout = "fixed";
             table.style.borderCollapse = "collapse";
             table.style.margin = "0";
             table.style.boxSizing = "border-box";
-
          });
 
+         const itemsBody = pdfInvoice.querySelector("#invoiceItemsBody");
 
-      const itemsBody =
-         pdfInvoice.querySelector(
-            "#invoiceItemsBody"
-         );
+         if (itemsBody) {
+            const itemsTable = itemsBody.closest("table");
 
-      if (itemsBody) {
-
-         const itemsTable =
-            itemsBody.closest("table");
-
-         if (itemsTable) {
-
-            itemsTable
-               .querySelectorAll("tr")
-               .forEach(function(row) {
-
-                  const cells =
-                     row.children;
+            if (itemsTable) {
+               itemsTable.querySelectorAll("tr").forEach(function (row) {
+                  const cells = row.children;
 
                   if (cells.length >= 4) {
-
                      cells[0].style.width = "56%";
                      cells[1].style.width = "10%";
                      cells[2].style.width = "16%";
@@ -2408,61 +2596,41 @@ async function buildInvoicePdfBlob() {
                      cells[1].style.whiteSpace = "nowrap";
                      cells[2].style.whiteSpace = "nowrap";
                      cells[3].style.whiteSpace = "nowrap";
-
                   }
-
                });
-
+            }
          }
 
-      }
-
-
-      pdfInvoice
-         .querySelectorAll("th, td")
-         .forEach(function(cell) {
-
+         pdfInvoice.querySelectorAll("th, td").forEach(function (cell) {
             cell.style.padding = "4px 6px";
             cell.style.verticalAlign = "middle";
             cell.style.lineHeight = "1.15";
             cell.style.fontSize = "10px";
             cell.style.boxSizing = "border-box";
-
          });
 
+         // ==========================================
+         // Remove responsive overflow
+         // ==========================================
 
-      // ==========================================
-      // Remove responsive overflow
-      // ==========================================
+         pdfInvoice.querySelectorAll("*").forEach(function (element) {
+            element.style.boxSizing = "border-box";
 
-      pdfInvoice
-         .querySelectorAll("*")
-         .forEach(function(element) {
-
-            element.style.boxSizing =
-               "border-box";
-
-            if (
-               element.style.overflowX === "auto"
-            ) {
-               element.style.overflowX =
-                  "visible";
+            if (element.style.overflowX === "auto") {
+               element.style.overflowX = "visible";
             }
-
          });
 
+         // ==========================================
+         // EXPORT-ONLY CSS
+         // Keeps responsive/mobile UI rules away from
+         // the temporary PDF clone without changing
+         // the live Invoice screen.
+         // ==========================================
 
-      // ==========================================
-      // EXPORT-ONLY CSS
-      // Keeps responsive/mobile UI rules away from
-      // the temporary PDF clone without changing
-      // the live Invoice screen.
-      // ==========================================
+         const exportStyle = document.createElement("style");
 
-      const exportStyle =
-         document.createElement("style");
-
-      exportStyle.textContent = `
+         exportStyle.textContent = `
          #invoicePdfExportHost {
             width: ${EXPORT_WIDTH}px !important;
             min-width: ${EXPORT_WIDTH}px !important;
@@ -2517,297 +2685,161 @@ async function buildInvoicePdfBlob() {
          }
       `;
 
-      wrapper.appendChild(exportStyle);
-      wrapper.appendChild(pdfInvoice);
+         wrapper.appendChild(exportStyle);
+         wrapper.appendChild(pdfInvoice);
 
-      document.body.appendChild(wrapper);
+         document.body.appendChild(wrapper);
 
-
-      // Allow browser to calculate the fixed layout.
-      await new Promise(function(resolve) {
-
-         requestAnimationFrame(function() {
-
-            requestAnimationFrame(resolve);
-
+         // Allow browser to calculate the fixed layout.
+         await new Promise(function (resolve) {
+            requestAnimationFrame(function () {
+               requestAnimationFrame(resolve);
+            });
          });
 
-      });
+         // ==========================================
+         // CAPTURE EXACT INVOICE AND CONVERT TO PDF
+         // ==========================================
 
+         const pdfBlob = await html2pdf()
+            .set({
+               margin: [10, 0], // 10mm top/bottom margin
+               image: { type: "jpeg", quality: 0.98 },
+               html2canvas: {
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  backgroundColor: "#ffffff",
+                  logging: false,
+                  width: EXPORT_WIDTH,
+                  windowWidth: EXPORT_WIDTH,
+                  scrollX: 0,
+                  scrollY: 0,
+                  x: 0,
+                  y: 0,
+               },
+               jsPDF: {
+                  unit: "mm",
+                  format: "a4",
+                  orientation: "portrait",
+               },
+            })
+            .from(pdfInvoice)
+            .output("blob");
 
-      // ==========================================
-      // CAPTURE EXACT INVOICE AND CONVERT TO PDF
-      // ==========================================
+         if (!pdfBlob || pdfBlob.size < 1000) {
+            throw new Error("Generated PDF is empty.");
+         }
 
-      const pdfBlob = await html2pdf()
-         .set({
-            margin: [10, 0], // 10mm top/bottom margin
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: {
-               scale: 2,
-               useCORS: true,
-               allowTaint: false,
-               backgroundColor: "#ffffff",
-               logging: false,
-               width: EXPORT_WIDTH,
-               windowWidth: EXPORT_WIDTH,
-               scrollX: 0,
-               scrollY: 0,
-               x: 0,
-               y: 0
-            },
-            jsPDF: {
-               unit: "mm",
-               format: "a4",
-               orientation: "portrait"
-            }
-         })
-         .from(pdfInvoice)
-         .output('blob');
+         return pdfBlob;
+      } finally {
+         if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+         }
+      }
+   }
 
-      if (!pdfBlob || pdfBlob.size < 1000) {
-         throw new Error("Generated PDF is empty.");
+   /**
+    * ==========================================
+    * Download Invoice PDF
+    * Compact A4 / Mobile Safe Version
+    * ==========================================
+    */
+   async function downloadInvoicePdf() {
+      const orderId = document.getElementById("invOrderId").innerText.trim();
+
+      if (!orderId || orderId === "-") {
+         alert("Please search an invoice first.");
+
+         return;
       }
 
-      return pdfBlob;
-
-   } finally {
-
-      if (
-         wrapper &&
-         wrapper.parentNode
-      ) {
-
-         wrapper.parentNode
-            .removeChild(wrapper);
-
-      }
-
-   }
-
-}
-
-
-
-
-
-
-
-
-
-
-/**
- * ==========================================
- * Download Invoice PDF
- * Compact A4 / Mobile Safe Version
- * ==========================================
- */
-async function downloadInvoicePdf() {
-
-   const orderId =
-      document
-         .getElementById("invOrderId")
-         .innerText
-         .trim();
-
-
-   if (
-      !orderId ||
-      orderId === "-"
-   ) {
-
-      alert(
-         "Please search an invoice first."
-      );
-
-      return;
-
-   }
-
-
-   const btn =
-      document.getElementById(
-         "btnDownloadPdf"
-      );
-
-
-   if (btn) {
-
-      btn.disabled = true;
-
-      btn.innerHTML =
-         "Generating PDF...";
-
-   }
-
-
-   try {
-
-      const today =
-         new Date();
-
-
-      const fileDate =
-         today.getFullYear() +
-         "-" +
-         String(
-            today.getMonth() + 1
-         ).padStart(2, "0") +
-         "-" +
-         String(
-            today.getDate()
-         ).padStart(2, "0");
-
-
-      const fileName =
-         orderId +
-         "_" +
-         fileDate +
-         ".pdf";
-
-
-      // Generate PDF ONCE
-      const pdfBlob =
-         await buildInvoicePdfBlob();
-
-
-      // ==========================================
-      // DOWNLOAD
-      // ==========================================
-
-      const downloadUrl =
-         URL.createObjectURL(
-            pdfBlob
-         );
-
-
-      const link =
-         document.createElement("a");
-
-
-      link.href =
-         downloadUrl;
-
-      link.download =
-         fileName;
-
-
-      document.body
-         .appendChild(link);
-
-
-      link.click();
-
-      link.remove();
-
-
-      setTimeout(function() {
-
-         URL.revokeObjectURL(
-            downloadUrl
-         );
-
-      }, 3000);
-
-
-      // ==========================================
-      // SAVE SAME PDF TO DRIVE
-      // ==========================================
-
-      const base64Pdf =
-         await blobToBase64(
-            pdfBlob
-         );
-
-
-      google.script.run
-
-         .withSuccessHandler(
-            function(response) {
-
-               console.log(
-                  "PDF saved to Drive",
-                  response
-               );
-
-            }
-         )
-
-         .withFailureHandler(
-            function(error) {
-
-               console.error(
-                  "Unable to save PDF to Drive:",
-                  error
-               );
-
-            }
-         )
-
-         .savePdf(
-            fileName,
-            base64Pdf
-         );
-
-
-   } catch (error) {
-
-      console.error(
-         "Invoice PDF Error:",
-         error
-      );
-
-
-      alert(
-         "Unable to generate invoice PDF."
-      );
-
-
-   } finally {
+      const btn = document.getElementById("btnDownloadPdf");
 
       if (btn) {
+         btn.disabled = true;
 
-         btn.disabled = false;
-
-         btn.innerHTML =
-            "📄 Download PDF";
-
+         btn.innerHTML = "Generating PDF...";
       }
 
+      try {
+         const today = new Date();
+
+         const fileDate =
+            today.getFullYear() +
+            "-" +
+            String(today.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(today.getDate()).padStart(2, "0");
+
+         const fileName = orderId + "_" + fileDate + ".pdf";
+
+         // Generate PDF ONCE
+         const pdfBlob = await buildInvoicePdfBlob();
+
+         // ==========================================
+         // DOWNLOAD
+         // ==========================================
+
+         const downloadUrl = URL.createObjectURL(pdfBlob);
+
+         const link = document.createElement("a");
+
+         link.href = downloadUrl;
+
+         link.download = fileName;
+
+         document.body.appendChild(link);
+
+         link.click();
+
+         link.remove();
+
+         setTimeout(function () {
+            URL.revokeObjectURL(downloadUrl);
+         }, 3000);
+
+         // ==========================================
+         // SAVE SAME PDF TO DRIVE
+         // ==========================================
+
+         const base64Pdf = await blobToBase64(pdfBlob);
+
+         google.script.run
+
+            .withSuccessHandler(function (response) {
+               console.log("PDF saved to Drive", response);
+            })
+
+            .withFailureHandler(function (error) {
+               console.error("Unable to save PDF to Drive:", error);
+            })
+
+            .savePdf(fileName, base64Pdf);
+      } catch (error) {
+         console.error("Invoice PDF Error:", error);
+
+         alert("Unable to generate invoice PDF.");
+      } finally {
+         if (btn) {
+            btn.disabled = false;
+
+            btn.innerHTML = "📄 Download PDF";
+         }
+      }
    }
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
    function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
          const reader = new FileReader();
          reader.onloadend = () => {
             const res = reader.result;
-            resolve(res && res.includes(',') ? res.split(',')[1] : res);
+            resolve(res && res.includes(",") ? res.split(",")[1] : res);
          };
          reader.onerror = reject;
          reader.readAsDataURL(blob);
       });
    }
-
-
-
 
    async function shareInvoiceWhatsApp() {
       const orderId = document.getElementById("invOrderId").innerText.trim();
@@ -2816,13 +2848,28 @@ async function downloadInvoicePdf() {
          return;
       }
 
-      const customerName = document.getElementById("invCustomer").innerText.trim();
-      let mobile = document.getElementById("invMobile").innerText.trim().replace(/\D/g, "");
+      const customerName = document
+         .getElementById("invCustomer")
+         .innerText.trim();
+      let mobile = document
+         .getElementById("invMobile")
+         .innerText.trim()
+         .replace(/\D/g, "");
       if (mobile.length === 10) mobile = "91" + mobile;
-      const grandTotal = document.getElementById("invGrandTotal").innerText.trim();
+      const grandTotal = document
+         .getElementById("invGrandTotal")
+         .innerText.trim();
 
       const today = new Date();
-      const fileName = orderId + "_" + today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0") + ".pdf";
+      const fileName =
+         orderId +
+         "_" +
+         today.getFullYear() +
+         "-" +
+         String(today.getMonth() + 1).padStart(2, "0") +
+         "-" +
+         String(today.getDate()).padStart(2, "0") +
+         ".pdf";
 
       try {
          const pdfBlob = await buildInvoicePdfBlob();
@@ -2835,7 +2882,13 @@ async function downloadInvoicePdf() {
                   return;
                }
                const message = `Hello ${customerName},\n\nThank you for choosing Smoky Swaad.\n\n🧾 Invoice No : ${orderId}\n💰 Amount : ${grandTotal}\n\n📄 Your Invoice\n${response.fileUrl}\n\n🍛 Smoky Swaad`;
-               window.open("https://wa.me/" + mobile + "?text=" + encodeURIComponent(message), "_blank");
+               window.open(
+                  "https://wa.me/" +
+                     mobile +
+                     "?text=" +
+                     encodeURIComponent(message),
+                  "_blank",
+               );
             })
             .withFailureHandler(function (error) {
                alert("Unable to save invoice to Google Drive.");
@@ -2870,7 +2923,8 @@ async function downloadInvoicePdf() {
 
       if (salesEl) salesEl.innerText = "₹" + Number(data.todaySales).toFixed(2);
       if (ordersEl) ordersEl.innerText = data.todayOrders;
-      if (profitEl) profitEl.innerText = "₹" + Number(data.todayProfit).toFixed(2);
+      if (profitEl)
+         profitEl.innerText = "₹" + Number(data.todayProfit).toFixed(2);
    }
 
    function generateReport() {
@@ -2904,7 +2958,8 @@ async function downloadInvoicePdf() {
       const totalOrdersEl = document.getElementById("reportTotalOrders");
       const totalSalesEl = document.getElementById("reportTotalSales");
       if (totalOrdersEl) totalOrdersEl.innerText = data.totalOrders;
-      if (totalSalesEl) totalSalesEl.innerText = "₹" + Number(data.totalSales).toFixed(2);
+      if (totalSalesEl)
+         totalSalesEl.innerText = "₹" + Number(data.totalSales).toFixed(2);
       renderOrderTable(data.orders);
    }
 
@@ -2914,7 +2969,8 @@ async function downloadInvoicePdf() {
       tbody.innerHTML = "";
 
       if (!orders || orders.length === 0) {
-         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No records found.</td></tr>';
+         tbody.innerHTML =
+            '<tr><td colspan="7" class="text-center text-muted">No records found.</td></tr>';
          return;
       }
 
@@ -2932,9 +2988,12 @@ async function downloadInvoicePdf() {
       const profitPercentEl = document.getElementById("reportProfitPercentage");
 
       if (revEl) revEl.innerText = "₹" + Number(data.totalSales).toFixed(2);
-      if (foodCostEl) foodCostEl.innerText = "₹" + Number(data.totalCost).toFixed(2);
-      if (grossProfitEl) grossProfitEl.innerText = "₹" + Number(data.grossProfit).toFixed(2);
-      if (profitPercentEl) profitPercentEl.innerText = data.profitPercentage + "%";
+      if (foodCostEl)
+         foodCostEl.innerText = "₹" + Number(data.totalCost).toFixed(2);
+      if (grossProfitEl)
+         grossProfitEl.innerText = "₹" + Number(data.grossProfit).toFixed(2);
+      if (profitPercentEl)
+         profitPercentEl.innerText = data.profitPercentage + "%";
    }
 
    function renderTopSellingItems(items) {
@@ -2943,7 +3002,8 @@ async function downloadInvoicePdf() {
       tbody.innerHTML = "";
 
       if (!items || items.length === 0) {
-         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No records found.</td></tr>';
+         tbody.innerHTML =
+            '<tr><td colspan="6" class="text-center text-muted">No records found.</td></tr>';
          return;
       }
 
@@ -2961,14 +3021,18 @@ async function downloadInvoicePdf() {
          return;
       }
 
-      const filename = "Smoky_Swaad_Report_" + fromDate + "_to_" + toDate + ".pdf";
-      html2pdf().set({
-         margin: 0.5,
-         filename: filename,
-         image: { type: "jpeg", quality: 1 },
-         html2canvas: { scale: 2, useCORS: true },
-         jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
-      }).from(element).save();
+      const filename =
+         "Smoky_Swaad_Report_" + fromDate + "_to_" + toDate + ".pdf";
+      html2pdf()
+         .set({
+            margin: 0.5,
+            filename: filename,
+            image: { type: "jpeg", quality: 1 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+         })
+         .from(element)
+         .save();
    }
 
    function loadPOSCache(forceRefresh) {
@@ -2993,7 +3057,9 @@ async function downloadInvoicePdf() {
       const orderIdBox = document.getElementById("deleteOrderId");
       if (!orderIdBox) return;
 
-      const orderId = String(orderIdBox.value || "").trim().toUpperCase();
+      const orderId = String(orderIdBox.value || "")
+         .trim()
+         .toUpperCase();
       if (!orderId) {
          alert("Please enter an Order ID.");
          orderIdBox.focus();
@@ -3008,7 +3074,11 @@ async function downloadInvoicePdf() {
                orderIdBox.value = "";
                alert("Order Deleted Successfully\n\nOrder ID : " + orderId);
             } else {
-               alert(response && response.message ? response.message : "Unable to delete order.");
+               alert(
+                  response && response.message
+                     ? response.message
+                     : "Unable to delete order.",
+               );
             }
          })
          .deleteOrderFromWeb(orderId);
@@ -3069,12 +3139,19 @@ async function downloadInvoicePdf() {
 
    function getCustomAddonTotal() {
       let total = 0;
-      customAddons.forEach(function (addon) { total += Number(addon.price || 0); });
+      customAddons.forEach(function (addon) {
+         total += Number(addon.price || 0);
+      });
       return total;
    }
 
    function escapeAddonHtml(value) {
-      return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      return String(value || "")
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
    }
 
    function loadInvoiceCompanyLogo() {
@@ -3093,20 +3170,29 @@ async function downloadInvoicePdf() {
    }
 
    function optimizeMobileControls(root) {
-      if (!window.matchMedia("(max-width: 768px), (pointer: coarse)").matches) return;
+      if (!window.matchMedia("(max-width: 768px), (pointer: coarse)").matches)
+         return;
       const scope = root && root.querySelectorAll ? root : document;
       const inputs = scope.querySelectorAll("input");
 
       for (let i = 0; i < inputs.length; i++) {
          const input = inputs[i];
          const type = String(input.type || "").toLowerCase();
-         if (type === "number" && !input.hasAttribute("inputmode")) input.setAttribute("inputmode", "decimal");
-         else if (type === "tel" && !input.hasAttribute("inputmode")) input.setAttribute("inputmode", "tel");
+         if (type === "number" && !input.hasAttribute("inputmode"))
+            input.setAttribute("inputmode", "decimal");
+         else if (type === "tel" && !input.hasAttribute("inputmode"))
+            input.setAttribute("inputmode", "tel");
       }
    }
 
    function formatCurrency(value) {
-      return "₹" + Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (
+         "₹" +
+         Number(value || 0).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+         })
+      );
    }
 
    let cachedProfitMonths = null;
@@ -3129,7 +3215,9 @@ async function downloadInvoicePdf() {
       if (!ddl) return;
 
       ddl.innerHTML = "";
-      (months || []).forEach(function (month) { ddl.add(new Option(month, month)); });
+      (months || []).forEach(function (month) {
+         ddl.add(new Option(month, month));
+      });
       if (months.length) {
          ddl.value = months[0];
          ddl.onchange = loadMonthlyProfit;
@@ -3149,9 +3237,15 @@ async function downloadInvoicePdf() {
             const marginEl = document.getElementById("monthlyMargin");
 
             if (salesEl) salesEl.innerHTML = formatCurrency(result.sales);
-            if (purchasesEl) purchasesEl.innerHTML = formatCurrency(result.purchases);
-            if (profitEl) profitEl.innerHTML = formatCurrency(result.grossProfit);
-            if (marginEl) marginEl.innerHTML = result.profitMargin === null ? "—" : result.profitMargin.toFixed(1) + "%";
+            if (purchasesEl)
+               purchasesEl.innerHTML = formatCurrency(result.purchases);
+            if (profitEl)
+               profitEl.innerHTML = formatCurrency(result.grossProfit);
+            if (marginEl)
+               marginEl.innerHTML =
+                  result.profitMargin === null
+                     ? "—"
+                     : result.profitMargin.toFixed(1) + "%";
          })
          .getMonthlyProfitSummary(ddl.value);
    }
@@ -3168,11 +3262,18 @@ async function downloadInvoicePdf() {
       const fromDate = document.getElementById("bulkInvoiceFromDate").value;
       const toDate = document.getElementById("bulkInvoiceToDate").value;
       const mobile = document.getElementById("bulkInvoiceMobile").value.trim();
-      const orderId = document.getElementById("bulkInvoiceOrderId").value.trim();
-      const paymentStatus = document.getElementById("bulkInvoicePaymentStatus").value;
+      const orderId = document
+         .getElementById("bulkInvoiceOrderId")
+         .value.trim();
+      const paymentStatus = document.getElementById(
+         "bulkInvoicePaymentStatus",
+      ).value;
 
       if ((fromDate && !toDate) || (!fromDate && toDate)) {
-         showBulkInvoiceMessage("Please select both From Date and To Date.", "warning");
+         showBulkInvoiceMessage(
+            "Please select both From Date and To Date.",
+            "warning",
+         );
          return;
       }
 
@@ -3185,22 +3286,31 @@ async function downloadInvoicePdf() {
       showBulkInvoiceMessage("Searching orders...", "info");
 
       google.script.run
-         .withSuccessHandler(function(response) {
+         .withSuccessHandler(function (response) {
             if (searchBtn) {
                searchBtn.disabled = false;
                searchBtn.innerHTML = "🔍 Search Orders";
             }
 
-            const resultsContainer = document.getElementById("bulkInvoiceResultsContainer");
+            const resultsContainer = document.getElementById(
+               "bulkInvoiceResultsContainer",
+            );
             if (!response || !response.success) {
                bulkInvoiceSearchResults = [];
                renderBulkInvoiceResults([]);
-               showBulkInvoiceMessage(response && response.message ? response.message : "Unable to search orders.", "danger");
+               showBulkInvoiceMessage(
+                  response && response.message
+                     ? response.message
+                     : "Unable to search orders.",
+                  "danger",
+               );
                if (resultsContainer) resultsContainer.style.display = "none";
                return;
             }
 
-            bulkInvoiceSearchResults = Array.isArray(response.orders) ? response.orders : [];
+            bulkInvoiceSearchResults = Array.isArray(response.orders)
+               ? response.orders
+               : [];
             const countEl = document.getElementById("bulkInvoiceOrderCount");
             if (countEl) countEl.innerText = bulkInvoiceSearchResults.length;
 
@@ -3212,18 +3322,30 @@ async function downloadInvoicePdf() {
 
             if (resultsContainer) resultsContainer.style.display = "block";
             renderBulkInvoiceResults(bulkInvoiceSearchResults);
-            showBulkInvoiceMessage(bulkInvoiceSearchResults.length + " order(s) found.", "success");
+            showBulkInvoiceMessage(
+               bulkInvoiceSearchResults.length + " order(s) found.",
+               "success",
+            );
          })
-         .withFailureHandler(function(err) {
+         .withFailureHandler(function (err) {
             if (searchBtn) {
                searchBtn.disabled = false;
                searchBtn.innerHTML = "🔍 Search Orders";
             }
             bulkInvoiceSearchResults = [];
             renderBulkInvoiceResults([]);
-            showBulkInvoiceMessage("Error searching orders: " + (err.message || err), "danger");
+            showBulkInvoiceMessage(
+               "Error searching orders: " + (err.message || err),
+               "danger",
+            );
          })
-         .searchBulkInvoiceOrdersFromWeb({ fromDate, toDate, mobile, orderId, paymentStatus });
+         .searchBulkInvoiceOrdersFromWeb({
+            fromDate,
+            toDate,
+            mobile,
+            orderId,
+            paymentStatus,
+         });
    }
 
    function renderBulkInvoiceResults(orders) {
@@ -3240,10 +3362,13 @@ async function downloadInvoicePdf() {
          return;
       }
 
-      orders.forEach(function(order, index) {
+      orders.forEach(function (order, index) {
          const tr = document.createElement("tr");
-         const statusClass = String(order.paymentStatus || "").toLowerCase() === 'paid' ? 'bg-success' : 'bg-danger';
-         
+         const statusClass =
+            String(order.paymentStatus || "").toLowerCase() === "paid"
+               ? "bg-success"
+               : "bg-danger";
+
          tr.innerHTML = `
             <td class="text-center">
               <input type="checkbox" class="bulk-invoice-order-checkbox" data-index="${index}" value="${order.orderId}" data-amount="${order.grandTotal}" onchange="updateBulkInvoiceSelection()" />
@@ -3274,17 +3399,21 @@ async function downloadInvoicePdf() {
       const selectAll = document.getElementById("bulkInvoiceSelectAll");
       if (!selectAll) return;
 
-      const checkboxes = document.querySelectorAll(".bulk-invoice-order-checkbox");
-      checkboxes.forEach(cb => cb.checked = selectAll.checked);
+      const checkboxes = document.querySelectorAll(
+         ".bulk-invoice-order-checkbox",
+      );
+      checkboxes.forEach((cb) => (cb.checked = selectAll.checked));
       updateBulkInvoiceSelection();
    }
 
    function updateBulkInvoiceSelection() {
-      const checkboxes = document.querySelectorAll(".bulk-invoice-order-checkbox:checked");
+      const checkboxes = document.querySelectorAll(
+         ".bulk-invoice-order-checkbox:checked",
+      );
       let selectedCount = checkboxes.length;
       let selectedTotal = 0;
 
-      checkboxes.forEach(cb => {
+      checkboxes.forEach((cb) => {
          selectedTotal += parseFloat(cb.getAttribute("data-amount")) || 0;
       });
 
@@ -3297,10 +3426,13 @@ async function downloadInvoicePdf() {
       if (generateBtn) generateBtn.disabled = selectedCount === 0;
 
       const selectAll = document.getElementById("bulkInvoiceSelectAll");
-      const allCheckboxes = document.querySelectorAll(".bulk-invoice-order-checkbox");
+      const allCheckboxes = document.querySelectorAll(
+         ".bulk-invoice-order-checkbox",
+      );
       if (selectAll && allCheckboxes.length > 0) {
          selectAll.checked = selectedCount === allCheckboxes.length;
-         selectAll.indeterminate = selectedCount > 0 && selectedCount < allCheckboxes.length;
+         selectAll.indeterminate =
+            selectedCount > 0 && selectedCount < allCheckboxes.length;
       }
    }
 
@@ -3315,7 +3447,14 @@ async function downloadInvoicePdf() {
    }
 
    function clearBulkInvoiceSearch() {
-      ["bulkInvoiceFromDate", "bulkInvoiceToDate", "bulkInvoiceMobile", "bulkInvoiceOrderId", "bulkInvoicePaymentStatus", "bulkInvoiceSort"].forEach(id => {
+      [
+         "bulkInvoiceFromDate",
+         "bulkInvoiceToDate",
+         "bulkInvoiceMobile",
+         "bulkInvoiceOrderId",
+         "bulkInvoicePaymentStatus",
+         "bulkInvoiceSort",
+      ].forEach((id) => {
          const el = document.getElementById(id);
          if (el) el.value = "";
       });
@@ -3331,14 +3470,23 @@ async function downloadInvoicePdf() {
          message.style.display = "none";
          message.innerHTML = "";
       }
-      
-      const previewContainer = document.getElementById("bulkInvoicePreviewContainer");
+
+      const previewContainer = document.getElementById(
+         "bulkInvoicePreviewContainer",
+      );
       if (previewContainer) previewContainer.style.display = "none";
    }
 
    function sortBulkInvoiceResults() {
-      const sortElement = document.getElementById("bulkInvoiceSort") || document.querySelector("select[id*='sort']") || document.getElementById("sortSelect");
-      if (!sortElement || !Array.isArray(bulkInvoiceSearchResults) || bulkInvoiceSearchResults.length === 0) {
+      const sortElement =
+         document.getElementById("bulkInvoiceSort") ||
+         document.querySelector("select[id*='sort']") ||
+         document.getElementById("sortSelect");
+      if (
+         !sortElement ||
+         !Array.isArray(bulkInvoiceSearchResults) ||
+         bulkInvoiceSearchResults.length === 0
+      ) {
          return;
       }
 
@@ -3349,18 +3497,37 @@ async function downloadInvoicePdf() {
          const value = String(order.orderDate || "");
          const parts = value.split("/");
          if (parts.length !== 3) return 0;
-         return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+         return new Date(
+            Number(parts[2]),
+            Number(parts[1]) - 1,
+            Number(parts[0]),
+         ).getTime();
       }
 
       sortedOrders.sort(function (a, b) {
          switch (sortType) {
-            case "date-desc": return getDateValue(b) - getDateValue(a);
-            case "date-asc": return getDateValue(a) - getDateValue(b);
-            case "amount-desc": return Number(b.grandTotal || 0) - Number(a.grandTotal || 0);
-            case "amount-asc": return Number(a.grandTotal || 0) - Number(b.grandTotal || 0);
-            case "order-desc": return String(b.orderId || "").localeCompare(String(a.orderId || ""), undefined, { numeric: true });
-            case "order-asc": return String(a.orderId || "").localeCompare(String(b.orderId || ""), undefined, { numeric: true });
-            default: return 0;
+            case "date-desc":
+               return getDateValue(b) - getDateValue(a);
+            case "date-asc":
+               return getDateValue(a) - getDateValue(b);
+            case "amount-desc":
+               return Number(b.grandTotal || 0) - Number(a.grandTotal || 0);
+            case "amount-asc":
+               return Number(a.grandTotal || 0) - Number(b.grandTotal || 0);
+            case "order-desc":
+               return String(b.orderId || "").localeCompare(
+                  String(a.orderId || ""),
+                  undefined,
+                  { numeric: true },
+               );
+            case "order-asc":
+               return String(a.orderId || "").localeCompare(
+                  String(b.orderId || ""),
+                  undefined,
+                  { numeric: true },
+               );
+            default:
+               return 0;
          }
       });
 
@@ -3380,13 +3547,17 @@ async function downloadInvoicePdf() {
    }
 
    function closeBulkInvoicePreview() {
-      const previewContainer = document.getElementById("bulkInvoicePreviewContainer");
+      const previewContainer = document.getElementById(
+         "bulkInvoicePreviewContainer",
+      );
       if (previewContainer) previewContainer.style.display = "none";
    }
 
    function generateBulkInvoice() {
-      const checkboxes = document.querySelectorAll(".bulk-invoice-order-checkbox:checked");
-      const selectedOrderIds = Array.from(checkboxes).map(cb => cb.value);
+      const checkboxes = document.querySelectorAll(
+         ".bulk-invoice-order-checkbox:checked",
+      );
+      const selectedOrderIds = Array.from(checkboxes).map((cb) => cb.value);
 
       if (selectedOrderIds.length === 0) {
          showBulkInvoiceMessage("Please select at least one order.", "warning");
@@ -3400,21 +3571,24 @@ async function downloadInvoicePdf() {
       }
 
       google.script.run
-         .withSuccessHandler(function(response) {
+         .withSuccessHandler(function (response) {
             if (generateBtn) {
                generateBtn.disabled = false;
                generateBtn.textContent = "🧾 Generate Bulk Invoice";
             }
 
             if (!response.success) {
-               showBulkInvoiceMessage("Failed to generate bulk invoice: " + response.message, "danger");
+               showBulkInvoiceMessage(
+                  "Failed to generate bulk invoice: " + response.message,
+                  "danger",
+               );
                return;
             }
 
             selectedBulkData = response;
             showBulkInvoicePreview(response);
          })
-         .withFailureHandler(function(err) {
+         .withFailureHandler(function (err) {
             if (generateBtn) {
                generateBtn.disabled = false;
                generateBtn.textContent = "🧾 Generate Bulk Invoice";
@@ -3425,7 +3599,9 @@ async function downloadInvoicePdf() {
    }
 
    function showBulkInvoicePreview(bulkResponse) {
-      const previewContainer = document.getElementById("bulkInvoicePreviewContainer");
+      const previewContainer = document.getElementById(
+         "bulkInvoicePreviewContainer",
+      );
       if (!previewContainer) return;
       previewContainer.style.display = "block";
 
@@ -3436,7 +3612,7 @@ async function downloadInvoicePdf() {
          <div class="alert alert-success d-flex justify-content-between align-items-center mb-3">
             <div>
                <strong>✅ Bulk Invoice Ready!</strong>
-               <br><small>Mobile: ${bulkResponse.customerMobile} | Total Orders: ${document.querySelectorAll('.bulk-invoice-order-checkbox:checked').length}</small>
+               <br><small>Mobile: ${bulkResponse.customerMobile} | Total Orders: ${document.querySelectorAll(".bulk-invoice-order-checkbox:checked").length}</small>
             </div>
             <span class="fs-4 fw-bold text-success">₹${totals.grandTotal.toFixed(2)}</span>
          </div>
@@ -3453,7 +3629,7 @@ async function downloadInvoicePdf() {
             <button class="btn btn-success" onclick="shareBulkWhatsApp()">📲 Share via WhatsApp</button>
          </div>`;
 
-      previewContainer.scrollIntoView({ behavior: 'smooth' });
+      previewContainer.scrollIntoView({ behavior: "smooth" });
    }
 
    function downloadBulkPdf() {
@@ -3470,10 +3646,14 @@ async function downloadInvoicePdf() {
       const totals = selectedBulkData.totals;
 
       let message = `*Smoky Swaad - Consolidated Statement*\n\nGrand Total: ₹${totals.grandTotal.toFixed(2)}\nPaid: ₹${totals.paidAmount.toFixed(2)}\n`;
-      if (totals.pendingAmount > 0) message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
+      if (totals.pendingAmount > 0)
+         message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
       message += `\nThank you for ordering with Smoky Swaad! ❤️`;
 
-      window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`, '_blank');
+      window.open(
+         `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`,
+         "_blank",
+      );
    }
 
    /**
@@ -3485,7 +3665,7 @@ async function downloadInvoicePdf() {
       const pinInput = document.getElementById("app-pin-input").value;
       const lockScreen = document.getElementById("pin-lock-screen");
       const errorMsg = document.getElementById("pin-error-msg");
-      const adminPin = "9999"; 
+      const adminPin = "9999";
       const cashierPin = "1234";
 
       if (pinInput === adminPin || pinInput === cashierPin) {
@@ -3497,10 +3677,10 @@ async function downloadInvoicePdf() {
       }
    }
 
-   document.addEventListener("DOMContentLoaded", function() {
+   document.addEventListener("DOMContentLoaded", function () {
       const pinField = document.getElementById("app-pin-input");
-      if(pinField) {
-         pinField.addEventListener("keypress", function(e) {
+      if (pinField) {
+         pinField.addEventListener("keypress", function (e) {
             if (e.key === "Enter") unlockSystem();
          });
       }
@@ -3511,12 +3691,15 @@ async function downloadInvoicePdf() {
     * NATIVE MOBILE SORTING & CHANGE LISTENER
     * ==========================================
     */
-   document.addEventListener("DOMContentLoaded", function() {
-      document.body.addEventListener("change", function(e) {
+   document.addEventListener("DOMContentLoaded", function () {
+      document.body.addEventListener("change", function (e) {
          const target = e.target;
          if (!target) return;
 
-         if (target.id === "bulkInvoiceSort" || target.id.toLowerCase().includes("sort")) {
+         if (
+            target.id === "bulkInvoiceSort" ||
+            target.id.toLowerCase().includes("sort")
+         ) {
             if (typeof sortBulkInvoiceResults === "function") {
                sortBulkInvoiceResults();
             }
@@ -3524,10 +3707,7 @@ async function downloadInvoicePdf() {
       });
    });
 
-
-
-
-let purchaseSearchTimer = null;
+   let purchaseSearchTimer = null;
 
    function debouncedPurchaseSearch() {
       clearTimeout(purchaseSearchTimer);
@@ -3538,7 +3718,4 @@ let purchaseSearchTimer = null;
          }
       }, 200);
    }
-
-
-
 </script>
