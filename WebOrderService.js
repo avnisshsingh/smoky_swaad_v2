@@ -8,7 +8,7 @@
 /**
  * ==========================================================
  * Save Order From Web
- * PERFORMANCE DIAGNOSTIC VERSION
+ * HIGH-SPEED OPTIMIZED VERSION
  * ==========================================================
  */
 function saveOrderFromWeb(orderData) {
@@ -20,55 +20,22 @@ function saveOrderFromWeb(orderData) {
     // ======================================================
     // 1. VALIDATION
     // ======================================================
-
-    let start = Date.now();
-
     validateOrderData(orderData);
 
-    console.log(
-      "PERF | Validation:",
-      Date.now() - start,
-      "ms"
-    );
-
 
     // ======================================================
-    // 2. LOAD SHEETS
+    // 2. LOAD SHEETS (Optimized: Removed unused Menu, Settings, Customers)
     // ======================================================
-
-    start = Date.now();
-
     const db = {
       orders: getSheet(SHEETS.ORDERS),
-      orderItems: getSheet(SHEETS.ORDER_ITEMS),
-      customers: getSheet(SHEETS.CUSTOMERS),
-      menu: getSheet(SHEETS.MENU),
-      settings: getSheet(SHEETS.SETTINGS)
+      orderItems: getSheet(SHEETS.ORDER_ITEMS)
     };
-
-    console.log(
-      "PERF | Load Sheets:",
-      Date.now() - start,
-      "ms"
-    );
 
 
     // ======================================================
     // 3. GENERATE ORDER ID
     // ======================================================
-
-    start = Date.now();
-
-    const orderId = generateNextId(
-      db.orders,
-      "SS"
-    );
-
-    console.log(
-      "PERF | Generate Order ID:",
-      Date.now() - start,
-      "ms"
-    );
+    const orderId = generateNextId(db.orders, "SS");
 
 
     try {
@@ -76,144 +43,64 @@ function saveOrderFromWeb(orderData) {
       // ====================================================
       // 4. SAVE ORDER HEADER
       // ====================================================
-
-      start = Date.now();
-
-      saveOrderHeader(
-        db.orders,
-        orderId,
-        orderData
-      );
-
-      console.log(
-        "PERF | Save Order Header:",
-        Date.now() - start,
-        "ms"
-      );
+      saveOrderHeader(db.orders, orderId, orderData);
 
 
       // ====================================================
-      // 5. SAVE ORDER ITEMS
+      // 5. SAVE ORDER ITEMS (Already batch-optimized)
       // ====================================================
-
-      start = Date.now();
-
-      saveOrderItems(
-        db.orderItems,
-        orderId,
-        orderData
-      );
-
-      console.log(
-        "PERF | Save Order Items:",
-        Date.now() - start,
-        "ms"
-      );
+      saveOrderItems(db.orderItems, orderId, orderData);
 
 
       // ====================================================
-      // 6. SAVE / UPDATE CUSTOMER
+      // 6. SAVE / UPDATE CUSTOMER 
+      // (CustomerService handles its own sheet loading)
       // ====================================================
-
-      start = Date.now();
-
-      saveOrUpdateCustomer(
-        orderData,
-        orderId
-      );
-
-      console.log(
-        "PERF | Save/Update Customer:",
-        Date.now() - start,
-        "ms"
-      );
+      saveOrUpdateCustomer(orderData, orderId);
 
 
       // ====================================================
-      // TOTAL SERVER TIME
+      // 7. CLEAR HIGH-SPEED CACHE
       // ====================================================
-
-      const totalTime =
-        Date.now() - totalStart;
-
-      console.log(
-        "========================================"
-      );
-
-      console.log(
-        "PERF | TOTAL SAVE ORDER:",
-        totalTime,
-        "ms"
-      );
-
-      console.log(
-        "========================================"
-      );
-
+      if (typeof clearAppCache === "function") {
+        clearAppCache();
+      }
 
       // ====================================================
       // SUCCESS
       // ====================================================
+      const totalTime = Date.now() - totalStart;
+      console.log("PERF | TOTAL SAVE ORDER:", totalTime, "ms");
 
       return {
-
         success: true,
-
         orderId: orderId,
-
         message: "Order Saved Successfully",
-
         performance: {
           totalMs: totalTime
         }
-
       };
-
 
     } catch (error) {
 
       // ====================================================
       // ROLLBACK
       // ====================================================
-
-      const rollbackStart = Date.now();
-
-      rollbackOrder(
-        db,
-        orderId
-      );
-
-      console.log(
-        "PERF | Rollback:",
-        Date.now() - rollbackStart,
-        "ms"
-      );
-
+      rollbackOrder(db, orderId);
       throw error;
 
     }
 
-
   } catch (error) {
 
-    console.error(
-      "Save Order Error:",
-      error
-    );
-
+    console.error("Save Order Error:", error);
     return {
-
       success: false,
-
       message: error.message
-
     };
 
   }
-
 }
-
-
 
 
 

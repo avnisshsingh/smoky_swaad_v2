@@ -47,98 +47,73 @@ function getLatestIngredientPurchase(ingredientName) {
 
 /**
  * ==========================================
- * Get Menu Items
+ * Get Menu Items (Optimized with Cache)
  * ==========================================
  */
 function getMenuItems() {
+    return getCachedData("CACHE_MENU_PRICING", function() {
+        const sheet = getSheet(SHEETS.MENU);
+        const data = sheet.getDataRange().getValues();
+        data.shift();
 
-    const sheet = getSheet(SHEETS.MENU);
+        const menuItems = [];
 
-    const data = sheet.getDataRange().getValues();
-
-    data.shift();
-
-    const menuItems = [];
-
-    data.forEach(function(row){
-
-        if (!row[1]) {
-
-            return;
-
-        }
-
-        menuItems.push({
-
-            menuItem: row[1],
-
-            category: row[2],
-
-            sellingPrice: Number(row[4]) || 0
-
+        data.forEach(function(row){
+            if (!row[1]) {
+                return;
+            }
+            menuItems.push({
+                menuItem: row[1],
+                category: row[2],
+                sellingPrice: Number(row[4]) || 0
+            });
         });
 
+        return {
+            success: true,
+            menuItems: menuItems
+        };
     });
-
-    return {
-
-        success: true,
-
-        menuItems: menuItems
-
-    };
-
 }
+
+
 
 
 
 
 /**
  * ==========================================
- * Get Ingredients
+ * Get Ingredients (Optimized with Cache)
  * ==========================================
  */
 function getIngredients() {
+    return getCachedData("CACHE_UNIQUE_INGREDIENTS", function() {
+        const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+        const data = sheet.getDataRange().getValues();
+        data.shift();
 
-    const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+        const ingredientMap = {};
 
-    const data = sheet.getDataRange().getValues();
+        data.forEach(function(row){
+            const ingredient = String(row[2]).trim();
+            if (!ingredient) {
+                return;
+            }
+            const key = ingredient.toUpperCase();
+            if (!ingredientMap[key]) {
+                ingredientMap[key] = ingredient;
+            }
+        });
 
-    data.shift();
-
-    const ingredientMap = {};
-
-    data.forEach(function(row){
-
-        const ingredient =
-            String(row[2]).trim();
-
-        if (!ingredient) {
-
-            return;
-
-        }
-
-        const key =
-            ingredient.toUpperCase();
-
-        if (!ingredientMap[key]) {
-
-            ingredientMap[key] = ingredient;
-
-        }
-
+        return {
+            success: true,
+            ingredients: Object.values(ingredientMap).sort()
+        };
     });
-
-    return {
-
-        success: true,
-
-        ingredients: Object.values(ingredientMap).sort()
-
-    };
-
 }
+
+
+
 
 
 

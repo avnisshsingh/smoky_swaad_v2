@@ -3989,38 +3989,71 @@
       if (document.getElementById("purchaseDate")) initializePurchase();
    });
 
-   /**
+
+
+
+
+  /**
     * ==========================================
-    * initializePurchase
+    * Initialize Purchase Screen (Optimized)
     * ==========================================
     */
+   let isPurchaseSettingsLoaded = false;
+   let isPurchaseItemsLoaded = false;
+
    function initializePurchase() {
       const purchaseDate = document.getElementById("purchaseDate");
 
       if (purchaseDate && !purchaseDate.value) {
          const today = new Date();
-
          const year = today.getFullYear();
-
          const month = String(today.getMonth() + 1).padStart(2, "0");
-
          const day = String(today.getDate()).padStart(2, "0");
-
          purchaseDate.value = `${year}-${month}-${day}`;
       }
 
       loadPurchaseSettings();
-
       registerPurchaseEvents();
-
       updatePurchaseSummary();
+
+      // Skip server call if items are already in memory
+      if (isPurchaseItemsLoaded) {
+          console.log("⚡ Purchase items loaded from instant memory cache");
+          return;
+      }
 
       google.script.run
          .withSuccessHandler(function (items) {
             purchaseItemsCache = items;
+            isPurchaseItemsLoaded = true;
+            console.log("☁️ Purchase items downloaded from server");
          })
          .getPurchaseItems();
    }
+
+   function loadPurchaseSettings(forceRefresh) {
+      // Skip server call if settings are already in memory
+      if (isPurchaseSettingsLoaded && !forceRefresh) {
+          populatePurchaseDropdowns();
+          return;
+      }
+
+      google.script.run
+         .withSuccessHandler(function (settings) {
+            purchaseSettings = settings;
+            isPurchaseSettingsLoaded = true;
+            populatePurchaseDropdowns();
+         })
+         .withFailureHandler(function (error) {
+            alert(error.message);
+         })
+         .loadPurchaseSettings();
+   }
+
+
+
+
+
 
    /**
     * ==========================================
@@ -5789,32 +5822,36 @@ function renderTopSellingItems(items) {
 
    /**
     * ==========================================
-    * Load Complete POS Cache
+    * Load Complete POS Cache (Optimized)
     * ==========================================
     */
-   function loadPOSCache() {
+   let isPosCacheLoaded = false;
+
+   function loadPOSCache(forceRefresh) {
+      // Skip server call if POS data is already in memory
+      if (isPosCacheLoaded && !forceRefresh) {
+         console.log("⚡ POS loaded from instant memory cache");
+         populatePOSDropdowns();
+         return;
+      }
+
       google.script.run
-
          .withSuccessHandler(function (data) {
-            console.log("Complete Response:", data);
-
             menuCache = data.menu || [];
-
             appSettings = data.settings || {};
-
-            console.log("App Settings:", appSettings);
-
             customerCache = data.customers || [];
-
+            isPosCacheLoaded = true;
             populatePOSDropdowns();
+            console.log("☁️ POS Cache downloaded from server");
          })
-
          .withFailureHandler(function (error) {
-            console.error(error);
+            console.error("POS Cache Error:", error);
          })
-
          .loadPOSCache();
    }
+
+
+
 
    /**
     * ==========================================
@@ -6227,32 +6264,46 @@ function renderTopSellingItems(items) {
       );
    }
 
+
+
+
+/**
+    * ==========================================
+    * Load Profit Months (Optimized)
+    * ==========================================
+    */
+   let cachedProfitMonths = null;
+
    function loadProfitMonths() {
+      // Skip server call if months are already in memory
+      if (cachedProfitMonths) {
+         populateProfitMonthsUI(cachedProfitMonths);
+         return;
+      }
+
       google.script.run
-
          .withSuccessHandler(function (months) {
-            const ddl = document.getElementById("profitMonth");
-
-            if (!ddl) return;
-
-            ddl.innerHTML = "";
-
-            months.forEach(function (month) {
-               ddl.add(new Option(month, month));
-            });
-
-            if (months.length) {
-               ddl.value = months[0];
-
-               ddl.onchange = loadMonthlyProfit;
-
-               loadMonthlyProfit();
-            }
+            cachedProfitMonths = months;
+            populateProfitMonthsUI(months);
          })
-
          .getAvailableProfitMonths();
    }
 
+   function populateProfitMonthsUI(months) {
+      const ddl = document.getElementById("profitMonth");
+      if (!ddl) return;
+
+      ddl.innerHTML = "";
+      months.forEach(function (month) {
+         ddl.add(new Option(month, month));
+      });
+
+      if (months.length) {
+         ddl.value = months[0];
+         ddl.onchange = loadMonthlyProfit;
+         loadMonthlyProfit();
+      }
+   }
 
 
 
@@ -7360,7 +7411,53 @@ function closeBulkInvoicePreview() {
 
 
 
+/**
+ * ==========================================
+ * PIN AUTHENTICATION SYSTEM
+ * ==========================================
+ */
+function unlockSystem() {
+  const pinInput = document.getElementById("app-pin-input").value;
+  const lockScreen = document.getElementById("pin-lock-screen");
+  const errorMsg = document.getElementById("pin-error-msg");
+  
+  // Set your secure PINs here
+  const adminPin = "9999"; 
+  const cashierPin = "1234";
 
+  if (pinInput === adminPin) {
+    
+    // Unlock everything for Admin
+    lockScreen.style.display = "none";
+    errorMsg.style.visibility = "hidden";
+    
+  } else if (pinInput === cashierPin) {
+    
+    // Unlock for Cashier
+    lockScreen.style.display = "none";
+    errorMsg.style.visibility = "hidden";
+    
+    // TODO: Hide sensitive sidebar tabs here
+    // Example: document.getElementById("menu-expenses").style.display = "none";
+    
+  } else {
+    
+    // Failed attempt
+    errorMsg.style.visibility = "visible";
+    document.getElementById("app-pin-input").value = "";
+    
+  }
+}
+
+// Allow pressing 'Enter' on the keyboard to unlock instantly
+document.addEventListener("DOMContentLoaded", function() {
+  const pinField = document.getElementById("app-pin-input");
+  if(pinField) {
+    pinField.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") unlockSystem();
+    });
+  }
+});
 
 
 

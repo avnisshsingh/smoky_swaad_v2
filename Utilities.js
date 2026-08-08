@@ -321,3 +321,45 @@ function testInvoiceFolder(){
   Logger.log(folder.getId());
 
 }
+
+
+
+
+/**
+ * ==========================================
+ * HIGH-SPEED SERVER CACHE MANAGER
+ * ==========================================
+ */
+function getCachedData(cacheKey, fetchCallback) {
+  const cache = CacheService.getScriptCache();
+  const cachedString = cache.get(cacheKey);
+  
+  // 1. If data is in high-speed memory, return it instantly
+  if (cachedString) {
+    return JSON.parse(cachedString);
+  }
+  
+  // 2. If not, run the normal sheet-reading function
+  const freshData = fetchCallback();
+  
+  // 3. Save the result to memory for 30 minutes (1800 seconds)
+  try {
+    cache.put(cacheKey, JSON.stringify(freshData), 1800);
+  } catch (e) {
+    console.warn("Payload too large for CacheService: " + cacheKey);
+  }
+  
+  return freshData;
+}
+
+/**
+ * Call this when a new menu item, customer, or setting is added/updated
+ */
+function clearAppCache() {
+  CacheService.getScriptCache().removeAll([
+    "CACHE_POS_PAYLOAD",
+    "CACHE_PURCHASE_ITEMS",
+    "CACHE_UNIQUE_INGREDIENTS", 
+    "CACHE_MENU_PRICING"
+  ]);
+}

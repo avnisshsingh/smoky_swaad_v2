@@ -103,18 +103,13 @@ function loadMenu() {
  * ==========================================
  */
 function loadPOSCache() {
-
+  return getCachedData("CACHE_POS_PAYLOAD", function() {
     return {
-
-        menu: loadMenu(),
-
-        settings: loadAppSettings(),
-
-        customers: getAllCustomers()
-
+      menu: loadMenu(),          
+      settings: loadAppSettings(), 
+      customers: getAllCustomers() // Corrected function name
     };
-
+  });
 }
-
 
 

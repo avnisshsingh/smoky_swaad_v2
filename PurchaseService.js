@@ -248,17 +248,17 @@ function savePurchaseEntry(
 
 
 function getPurchaseItems() {
+   return getCachedData("CACHE_PURCHASE_ITEMS", function() {
+      const sheet = getSheet(SHEETS.SETTINGS);
 
-    const sheet = getSheet(SHEETS.SETTINGS);
-
-    return sheet
-        .getRange("X2:X1000")
-        .getValues()
-        .flat()
-        .filter(item => item && String(item).trim() !== "")
-        .map(item => ({
+      return sheet
+         .getRange("X2:X1000")
+         .getValues()
+         .flat()
+         .filter(item => item && String(item).trim() !== "")
+         .map(item => ({
             itemName: String(item).trim(),
             searchName: String(item).trim().toLowerCase()
-        }));
-
+         }));
+   });
 }
