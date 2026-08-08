@@ -2754,4 +2754,22 @@
          }
       });
    });
+
+
+
+
+let purchaseSearchTimer = null;
+
+   function debouncedPurchaseSearch() {
+      clearTimeout(purchaseSearchTimer);
+
+      purchaseSearchTimer = setTimeout(function () {
+         if (typeof searchPurchaseItems === "function") {
+            searchPurchaseItems();
+         }
+      }, 200);
+   }
+
+
+
 </script>
