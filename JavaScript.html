@@ -1935,98 +1935,864 @@
       printWindow.close();
    }
 
-   async function buildInvoicePdfBlob() {
-      const invoice = document.getElementById("invoicePdfContainer");
-      if (!invoice) throw new Error("Invoice not found.");
 
-      let wrapper = null;
-      try {
-         const EXPORT_WIDTH = 794;
-         wrapper = document.createElement("div");
-         wrapper.id = "invoicePdfExportHost";
-         wrapper.style.position = "fixed";
-         wrapper.style.left = "0";
-         wrapper.style.top = "0";
-         wrapper.style.width = EXPORT_WIDTH + "px";
-         wrapper.style.background = "#ffffff";
-         wrapper.style.zIndex = "-2147483647";
-         wrapper.style.pointerEvents = "none";
 
-         const pdfInvoice = invoice.cloneNode(true);
-         pdfInvoice.id = "invoicePdfExport";
-         pdfInvoice.innerHTML = pdfInvoice.innerHTML.replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/gu, "").replace(/•/g, "-");
+/**
+ * ==========================================
+ * BUILD INVOICE PDF BLOB
+ *
+ * Shared by:
+ * - Download PDF
+ * - WhatsApp PDF
+ * ==========================================
+ */
+async function buildInvoicePdfBlob() {
 
-         pdfInvoice.querySelectorAll("*").forEach(function (el) {
-            if (el.className && typeof el.className === "string") {
-               el.className = el.className.replace(/\bd-none\b/g, "").replace(/\bd-(sm|md|lg|xl)-(none|block|flex|inline)\b/g, "").trim();
+   const invoice =
+      document.getElementById("invoicePdfContainer");
+
+   if (!invoice) {
+      throw new Error("Invoice not found.");
+   }
+
+   let wrapper = null;
+
+   try {
+
+      // Fixed desktop export width.
+      // Do NOT mix mm sizing with html2canvas pixel sizing.
+      const EXPORT_WIDTH = 794;
+
+      wrapper = document.createElement("div");
+      wrapper.id = "invoicePdfExportHost";
+
+      wrapper.style.position = "fixed";
+      wrapper.style.left = "0";
+      wrapper.style.top = "0";
+      wrapper.style.width = EXPORT_WIDTH + "px";
+      wrapper.style.margin = "0";
+      wrapper.style.padding = "0";
+      wrapper.style.background = "#ffffff";
+      wrapper.style.zIndex = "-2147483647";
+      wrapper.style.pointerEvents = "none";
+      wrapper.style.overflow = "visible";
+
+      const pdfInvoice =
+         invoice.cloneNode(true);
+
+      pdfInvoice.id = "invoicePdfExport";
+
+      // Strip emojis and problematic characters that break html2canvas text metrics
+      pdfInvoice.innerHTML = pdfInvoice.innerHTML
+         .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/ug, "")
+         .replace(/•/g, "-");
+
+      // ==========================================
+      // MOBILE RESPONSIVE CLASS NEUTRALIZER
+      // Neutralize Bootstrap 'd-none' classes and media query dependencies
+      // so desktop card headers and sub-addresses render properly on mobile exports.
+      // ==========================================
+      pdfInvoice.querySelectorAll('*').forEach(function(el) {
+         if (el.className && typeof el.className === 'string') {
+            el.className = el.className
+               .replace(/\bd-none\b/g, '')
+               .replace(/\bd-(sm|md|lg|xl)-(none|block|flex|inline)\b/g, '')
+               .trim();
+         }
+      });
+
+      pdfInvoice.querySelectorAll('.card-header, .card, .row').forEach(function(el) {
+         if (el.classList.contains('row')) {
+            el.style.setProperty('display', 'flex', 'important');
+         } else {
+            el.style.setProperty('display', 'block', 'important');
+         }
+         el.style.setProperty('visibility', 'visible', 'important');
+         el.style.setProperty('opacity', '1', 'important');
+      });
+      // ==========================================
+
+
+      // ==========================================
+      // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
+      // ==========================================
+
+      pdfInvoice.style.setProperty(
+         "display",
+         "block",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "min-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "max-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "overflow",
+         "visible",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin-left",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin-right",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "min-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "max-width",
+         EXPORT_WIDTH + "px",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "margin",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "padding",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "position",
+         "relative",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "left",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "top",
+         "0",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "transform",
+         "none",
+         "important"
+      );
+
+      pdfInvoice.style.setProperty(
+         "overflow",
+         "visible",
+         "important"
+      );
+
+      pdfInvoice.style.background = "#ffffff";
+      pdfInvoice.style.boxSizing = "border-box";
+      pdfInvoice.style.fontFamily = "Arial, sans-serif";
+
+
+      // ==========================================
+      // Remove screen-only controls
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll(
+            "button, .btn, .no-print"
+         )
+         .forEach(function(element) {
+
+            element.remove();
+
+         });
+
+
+      // ==========================================
+      // Remove empty optional cards
+      // ==========================================
+
+      const address =
+         pdfInvoice.querySelector("#invAddress");
+
+      if (
+         address &&
+         !address.textContent.trim()
+      ) {
+
+         const card =
+            address.closest(".card");
+
+         if (card) {
+            card.remove();
+         }
+
+      }
+
+
+      const instructions =
+         pdfInvoice.querySelector(
+            "#invInstructions"
+         );
+
+      if (
+         instructions &&
+         (
+            !instructions.textContent.trim() ||
+            instructions.textContent.trim() === "-"
+         )
+      ) {
+
+         const card =
+            instructions.closest(".card");
+
+         if (card) {
+            card.remove();
+         }
+
+      }
+
+
+      // ==========================================
+      // Force desktop Bootstrap layout
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll(".row")
+         .forEach(function(row) {
+
+            row.style.setProperty(
+               "display",
+               "flex",
+               "important"
+            );
+
+            row.style.setProperty(
+               "flex-wrap",
+               "wrap",
+               "important"
+            );
+
+            row.style.setProperty(
+               "margin-left",
+               "0",
+               "important"
+            );
+
+            row.style.setProperty(
+               "margin-right",
+               "0",
+               "important"
+            );
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-6"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 50%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "50%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "50%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-4"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 33.333333%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "33.333333%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "33.333333%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll('[class*="col-md-8"]')
+         .forEach(function(column) {
+
+            column.style.setProperty(
+               "flex",
+               "0 0 66.666667%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "width",
+               "66.666667%",
+               "important"
+            );
+
+            column.style.setProperty(
+               "max-width",
+               "66.666667%",
+               "important"
+            );
+
+            column.style.boxSizing =
+               "border-box";
+
+         });
+
+
+      // ==========================================
+      // Compact cards
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll(".card")
+         .forEach(function(card) {
+
+            card.style.marginTop = "0";
+            card.style.marginBottom = "5px";
+            card.style.boxShadow = "none";
+            card.style.breakInside = "auto";
+            card.style.pageBreakInside = "auto";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll(".card-body")
+         .forEach(function(body) {
+
+            body.style.padding = "7px 9px";
+
+         });
+
+
+      pdfInvoice
+         .querySelectorAll(".card-header")
+         .forEach(function(header) {
+
+            header.style.padding = "5px 9px";
+            header.style.margin = "0";
+
+         });
+
+
+      // ==========================================
+      // Tables
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll("table")
+         .forEach(function(table) {
+
+            table.style.setProperty(
+               "width",
+               "100%",
+               "important"
+            );
+
+            table.style.setProperty(
+               "max-width",
+               "100%",
+               "important"
+            );
+
+            table.style.setProperty(
+               "min-width",
+               "0",
+               "important"
+            );
+
+            table.style.tableLayout = "fixed";
+            table.style.borderCollapse = "collapse";
+            table.style.margin = "0";
+            table.style.boxSizing = "border-box";
+
+         });
+
+
+      const itemsBody =
+         pdfInvoice.querySelector(
+            "#invoiceItemsBody"
+         );
+
+      if (itemsBody) {
+
+         const itemsTable =
+            itemsBody.closest("table");
+
+         if (itemsTable) {
+
+            itemsTable
+               .querySelectorAll("tr")
+               .forEach(function(row) {
+
+                  const cells =
+                     row.children;
+
+                  if (cells.length >= 4) {
+
+                     cells[0].style.width = "56%";
+                     cells[1].style.width = "10%";
+                     cells[2].style.width = "16%";
+                     cells[3].style.width = "18%";
+
+                     cells[0].style.textAlign = "left";
+                     cells[1].style.textAlign = "center";
+                     cells[2].style.textAlign = "right";
+                     cells[3].style.textAlign = "right";
+
+                     cells[0].style.whiteSpace = "normal";
+                     cells[1].style.whiteSpace = "nowrap";
+                     cells[2].style.whiteSpace = "nowrap";
+                     cells[3].style.whiteSpace = "nowrap";
+
+                  }
+
+               });
+
+         }
+
+      }
+
+
+      pdfInvoice
+         .querySelectorAll("th, td")
+         .forEach(function(cell) {
+
+            cell.style.padding = "4px 6px";
+            cell.style.verticalAlign = "middle";
+            cell.style.lineHeight = "1.15";
+            cell.style.fontSize = "10px";
+            cell.style.boxSizing = "border-box";
+
+         });
+
+
+      // ==========================================
+      // Remove responsive overflow
+      // ==========================================
+
+      pdfInvoice
+         .querySelectorAll("*")
+         .forEach(function(element) {
+
+            element.style.boxSizing =
+               "border-box";
+
+            if (
+               element.style.overflowX === "auto"
+            ) {
+               element.style.overflowX =
+                  "visible";
             }
+
          });
 
-         wrapper.appendChild(pdfInvoice);
-         document.body.appendChild(wrapper);
 
-         await new Promise(function (resolve) {
-            requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+      // ==========================================
+      // EXPORT-ONLY CSS
+      // Keeps responsive/mobile UI rules away from
+      // the temporary PDF clone without changing
+      // the live Invoice screen.
+      // ==========================================
+
+      const exportStyle =
+         document.createElement("style");
+
+      exportStyle.textContent = `
+         #invoicePdfExportHost {
+            width: ${EXPORT_WIDTH}px !important;
+            min-width: ${EXPORT_WIDTH}px !important;
+            max-width: ${EXPORT_WIDTH}px !important;
+            overflow: visible !important;
+         }
+
+         #invoicePdfExport {
+            display: block !important;
+            width: ${EXPORT_WIDTH}px !important;
+            min-width: ${EXPORT_WIDTH}px !important;
+            max-width: ${EXPORT_WIDTH}px !important;
+            overflow: visible !important;
+            margin: 0 !important;
+         }
+
+         #invoicePdfExport > .card {
+            width: 100% !important;
+            max-width: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+         }
+
+         #invoicePdfExport .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+         }
+
+         #invoicePdfExport .row > * {
+            min-width: 0 !important;
+         }
+
+         #invoicePdfExport table {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            overflow: visible !important;
+         }
+
+         #invoicePdfExport .table-responsive {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+         }
+
+         #invoicePdfExport .text-center {
+            width: 100% !important;
+            display: block !important;
+            text-align: center !important;
+         }
+      `;
+
+      wrapper.appendChild(exportStyle);
+      wrapper.appendChild(pdfInvoice);
+
+      document.body.appendChild(wrapper);
+
+
+      // Allow browser to calculate the fixed layout.
+      await new Promise(function(resolve) {
+
+         requestAnimationFrame(function() {
+
+            requestAnimationFrame(resolve);
+
          });
 
-         const pdfBlob = await html2pdf().set({
-            margin: [10, 0],
+      });
+
+
+      // ==========================================
+      // CAPTURE EXACT INVOICE AND CONVERT TO PDF
+      // ==========================================
+
+      const pdfBlob = await html2pdf()
+         .set({
+            margin: [10, 0], // 10mm top/bottom margin
             image: { type: "jpeg", quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", width: EXPORT_WIDTH, windowWidth: EXPORT_WIDTH },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-         }).from(pdfInvoice).output("blob");
+            html2canvas: {
+               scale: 2,
+               useCORS: true,
+               allowTaint: false,
+               backgroundColor: "#ffffff",
+               logging: false,
+               width: EXPORT_WIDTH,
+               windowWidth: EXPORT_WIDTH,
+               scrollX: 0,
+               scrollY: 0,
+               x: 0,
+               y: 0
+            },
+            jsPDF: {
+               unit: "mm",
+               format: "a4",
+               orientation: "portrait"
+            }
+         })
+         .from(pdfInvoice)
+         .output('blob');
 
-         if (!pdfBlob || pdfBlob.size < 1000) throw new Error("Generated PDF is empty.");
-         return pdfBlob;
-      } finally {
-         if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+      if (!pdfBlob || pdfBlob.size < 1000) {
+         throw new Error("Generated PDF is empty.");
       }
+
+      return pdfBlob;
+
+   } finally {
+
+      if (
+         wrapper &&
+         wrapper.parentNode
+      ) {
+
+         wrapper.parentNode
+            .removeChild(wrapper);
+
+      }
+
    }
 
-   async function downloadInvoicePdf() {
-      const orderId = document.getElementById("invOrderId").innerText.trim();
-      if (!orderId || orderId === "-") {
-         alert("Please search an invoice first.");
-         return;
-      }
+}
 
-      const btn = document.getElementById("btnDownloadPdf");
+
+
+
+
+
+
+
+
+
+/**
+ * ==========================================
+ * Download Invoice PDF
+ * Compact A4 / Mobile Safe Version
+ * ==========================================
+ */
+async function downloadInvoicePdf() {
+
+   const orderId =
+      document
+         .getElementById("invOrderId")
+         .innerText
+         .trim();
+
+
+   if (
+      !orderId ||
+      orderId === "-"
+   ) {
+
+      alert(
+         "Please search an invoice first."
+      );
+
+      return;
+
+   }
+
+
+   const btn =
+      document.getElementById(
+         "btnDownloadPdf"
+      );
+
+
+   if (btn) {
+
+      btn.disabled = true;
+
+      btn.innerHTML =
+         "Generating PDF...";
+
+   }
+
+
+   try {
+
+      const today =
+         new Date();
+
+
+      const fileDate =
+         today.getFullYear() +
+         "-" +
+         String(
+            today.getMonth() + 1
+         ).padStart(2, "0") +
+         "-" +
+         String(
+            today.getDate()
+         ).padStart(2, "0");
+
+
+      const fileName =
+         orderId +
+         "_" +
+         fileDate +
+         ".pdf";
+
+
+      // Generate PDF ONCE
+      const pdfBlob =
+         await buildInvoicePdfBlob();
+
+
+      // ==========================================
+      // DOWNLOAD
+      // ==========================================
+
+      const downloadUrl =
+         URL.createObjectURL(
+            pdfBlob
+         );
+
+
+      const link =
+         document.createElement("a");
+
+
+      link.href =
+         downloadUrl;
+
+      link.download =
+         fileName;
+
+
+      document.body
+         .appendChild(link);
+
+
+      link.click();
+
+      link.remove();
+
+
+      setTimeout(function() {
+
+         URL.revokeObjectURL(
+            downloadUrl
+         );
+
+      }, 3000);
+
+
+      // ==========================================
+      // SAVE SAME PDF TO DRIVE
+      // ==========================================
+
+      const base64Pdf =
+         await blobToBase64(
+            pdfBlob
+         );
+
+
+      google.script.run
+
+         .withSuccessHandler(
+            function(response) {
+
+               console.log(
+                  "PDF saved to Drive",
+                  response
+               );
+
+            }
+         )
+
+         .withFailureHandler(
+            function(error) {
+
+               console.error(
+                  "Unable to save PDF to Drive:",
+                  error
+               );
+
+            }
+         )
+
+         .savePdf(
+            fileName,
+            base64Pdf
+         );
+
+
+   } catch (error) {
+
+      console.error(
+         "Invoice PDF Error:",
+         error
+      );
+
+
+      alert(
+         "Unable to generate invoice PDF."
+      );
+
+
+   } finally {
+
       if (btn) {
-         btn.disabled = true;
-         btn.innerHTML = "Generating PDF...";
+
+         btn.disabled = false;
+
+         btn.innerHTML =
+            "📄 Download PDF";
+
       }
 
-      try {
-         const today = new Date();
-         const fileName = orderId + "_" + today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0") + ".pdf";
-         const pdfBlob = await buildInvoicePdfBlob();
-
-         try {
-            const downloadUrl = URL.createObjectURL(pdfBlob);
-            const link = document.createElement("a");
-            link.href = downloadUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 3000);
-         } catch (dlErr) {
-            console.warn("Direct browser download restricted:", dlErr);
-         }
-
-         const base64Pdf = await blobToBase64(pdfBlob);
-         google.script.run
-            .withFailureHandler(function (error) { console.error("Unable to save PDF to Drive:", error); })
-            .savePdf(fileName, base64Pdf);
-      } catch (error) {
-         alert("Unable to generate invoice PDF.");
-      } finally {
-         if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "📄 Download PDF";
-         }
-      }
    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
@@ -2039,6 +2805,9 @@
          reader.readAsDataURL(blob);
       });
    }
+
+
+
 
    async function shareInvoiceWhatsApp() {
       const orderId = document.getElementById("invOrderId").innerText.trim();
