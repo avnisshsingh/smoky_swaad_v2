@@ -102,110 +102,35 @@ h5{ font-size:1.05rem; }
    SIDEBAR MENU
 ========================================== */
 #sidebar .list-group-item{ padding:12px 16px; }
-
-
-/* ==========================================
-   MOBILE SELECT PICKER
-   Global fallback for touch/mobile browsers.
-   Desktop continues to use native <select>.
-========================================== */
-#mobileSelectPickerOverlay{
-    position:fixed; inset:0; z-index:20000; display:none;
-    align-items:flex-end; background:rgba(0,0,0,.35); padding:12px;
-}
-#mobileSelectPickerOverlay.is-open{ display:flex; }
-#mobileSelectPicker{
-    width:100%; max-height:min(72vh,560px); overflow:hidden;
-    background:#fff; border-radius:16px 16px 10px 10px;
-    box-shadow:0 -8px 30px rgba(0,0,0,.18);
-}
-.mobile-select-picker-header{
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; padding:12px 14px; border-bottom:1px solid #e9ecef;
-}
-#mobileSelectPickerTitle{
-    min-width:0; margin:0; font-size:16px; font-weight:700;
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-}
-#mobileSelectPickerOptions{
-    max-height:calc(min(72vh,560px) - 58px); overflow-y:auto;
-    overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
-}
-.mobile-select-picker-option{
-    width:100%; min-height:48px; border:0; border-bottom:1px solid #f1f3f5;
-    background:#fff; padding:11px 14px; text-align:left; font-size:16px;
-}
-.mobile-select-picker-option.is-selected{
-    font-weight:700; background:#f8f9fa;
-}
-
-/* ==========================================
-   MOBILE DROPDOWNS - ARROW ONLY STANDARD V2
-========================================== */
-@media (max-width:768px), (pointer:coarse){
-    .mobile-select-arrow-host{ position:relative !important; }
-    select.mobile-arrow-select,
-    #personalExpensesScreen select.form-select.mobile-arrow-select{
-        -webkit-appearance:none !important; appearance:none !important;
-        background-image:none !important; pointer-events:none !important;
-        padding-right:48px !important;
-    }
-    .mobile-select-arrow-button{
-        position:absolute !important; z-index:20 !important; right:0 !important;
-        top:var(--mobile-select-top, 0px) !important;
-        height:var(--mobile-select-height, 100%) !important;
-        width:48px !important; min-width:48px !important;
-        margin:0 !important; padding:0 !important; border:0 !important;
-        outline:0 !important; box-shadow:none !important; background:transparent !important;
-        display:flex !important; align-items:center !important; justify-content:center !important;
-        border-radius:0 .375rem .375rem 0 !important;
-        touch-action:manipulation; -webkit-tap-highlight-color:transparent; cursor:pointer;
-    }
-    .mobile-select-arrow-button:active{ background:rgba(0,0,0,.04) !important; }
-    .mobile-select-arrow-chevron{
-        display:block; width:10px; height:10px; margin-top:-5px;
-        border-right:2px solid currentColor; border-bottom:2px solid currentColor;
-        transform:rotate(45deg); transform-origin:center; pointer-events:none;
-    }
-    .mobile-select-arrow-button:disabled{ opacity:.45; pointer-events:none; }
-    
-    #personalExpensesScreen .pe-history-filter-row{
-        display:grid !important; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important; gap:10px !important;
-    }
-    #personalExpensesScreen .pe-history-filter-row > *{
-        width:100% !important; min-width:0 !important; max-width:none !important;
-    }
-}
-
-@media (min-width:769px) and (pointer:fine){
-    .mobile-select-arrow-button{ display:none !important; }
-    select.mobile-arrow-select{ pointer-events:auto !important; }
-    #mobileSelectPickerOverlay{ display:none !important; }
-}
 </style>
 
 <style>
 /* ==========================================================
-   GLOBAL MOBILE UX POLISH V2
+   GLOBAL MOBILE UX POLISH & NATIVE DROPDOWN SUPPORT
    Applies only to phones/tablets. Desktop layout is preserved.
 ========================================================== */
 @media (max-width: 768px), (pointer: coarse) {
   
   :root {
     --mobile-gap: 12px;
-    --mobile-control-height: 48px; /* Minimum Apple/Android touch target size */
+    --mobile-control-height: 48px; /* Minimum touch target size */
   }
 
-html, body { 
+  html, body { 
     height: auto !important;
     min-height: 100% !important;
     -webkit-text-size-adjust: 100%; 
     overscroll-behavior-y: auto !important; 
     -webkit-overflow-scrolling: touch !important;
     background: #f4f6f9;
-    /* THE FIX: Unfreeze the body to allow native mobile scrolling */
     overflow-x: hidden !important;
     overflow-y: auto !important;
+  }
+
+  /* ---------- ENHANCED TOUCH & PERFORMANCE ENFORCEMENTS ---------- */
+  body, button, input, select, textarea, .btn, .list-group-item {
+    touch-action: manipulation !important; /* Eliminates 300ms click delay on mobile */
+    -webkit-tap-highlight-color: transparent !important;
   }
 
   /* ---------- SAFE AREA (For Notches & Home Bars) ---------- */
@@ -244,7 +169,7 @@ html, body {
   #main-content { 
     margin-left: 0 !important;
     margin-top: 0 !important;
-    padding: 12px 10px 80px 10px !important; /* Extra bottom padding for scrolling past buttons */
+    padding: 12px 10px 80px 10px !important;
     height: auto !important;
     min-height: calc(100vh - 60px);
     overflow: visible !important;
@@ -318,16 +243,7 @@ html, body {
     color: #ffffff;
   }
 
-  /* ---------- CARDS (Shielded from Invoice Module) ----------
-     NOTE: ":not(#invoicePdfContainer) .card" does NOT actually
-     exclude cards inside the invoice - it only checks that SOME
-     ancestor (e.g. <body>) isn't #invoicePdfContainer, which is
-     always true. Use ":not([id^="invoicePdf"] *)" instead, which
-     correctly excludes descendants of the live invoice
-     (#invoicePdfContainer) AND the offscreen PDF export clone
-     buildInvoicePdfBlob() creates (#invoicePdfExport /
-     #invoicePdfExportHost) - both need shielding, since the PDF
-     clone is what actually gets rasterized into mobile.pdf. */
+  /* ---------- CARDS (Shielded from Invoice Module) ---------- */
   .card:not([id^="invoicePdf"] *) {
     border: none !important;
     border-radius: 14px;
@@ -351,7 +267,7 @@ html, body {
   .form-select,
   .input-group-text {
     min-height: var(--mobile-control-height);
-    font-size: 16px !important; /* MUST be 16px to prevent iOS auto-zoom */
+    font-size: 16px !important; /* Enforced 16px to prevent mobile browser auto-zoom */
     border-radius: 10px;
     border: 1px solid #ced4da;
     background-color: #fcfcfc;
@@ -522,17 +438,17 @@ html, body {
   
   div:has(> #addonName) > #addonName {
       width: 100% !important;
-      flex: 0 0 100% !important; /* Forces the name box to take the full top row */
+      flex: 0 0 100% !important;
       margin: 0 !important;
   }
   
   div:has(> #addonName) > .input-group {
-      flex: 1 !important; /* Price box takes the remaining space on the bottom row */
+      flex: 1 !important;
       margin: 0 !important;
   }
   
   div:has(> #addonName) > button {
-      width: 48px !important; /* Perfect square touch target for the + button */
+      width: 48px !important;
       margin: 0 !important;
   }
 }
