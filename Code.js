@@ -48,4 +48,3 @@ function loadScreen(screen) {
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
-
