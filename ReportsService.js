@@ -1,6 +1,6 @@
 /**
  * ==========================================
- * Get Reports Data
+ * Get Reports Data (Optimized to Prevent Timeouts)
  * ==========================================
  */
 function getReportsData(fromDate, toDate) {
@@ -21,10 +21,19 @@ function getReportsData(fromDate, toDate) {
   data.shift();
 
   // ==========================================
-  // Order Items Data
+  // Order Items Data & Pre-indexing Map
   // ==========================================
   const orderItems = orderItemsSheet.getDataRange().getValues();
   orderItems.shift();
+
+  const orderItemsMap = {};
+  orderItems.forEach(function (itemRow) {
+    const orderId = String(itemRow[0]).trim();
+    if (!orderItemsMap[orderId]) {
+      orderItemsMap[orderId] = [];
+    }
+    orderItemsMap[orderId].push(itemRow);
+  });
 
   // ==========================================
   // Menu Data
@@ -36,15 +45,11 @@ function getReportsData(fromDate, toDate) {
   // Menu Cost Lookup
   // ==========================================
   const menuCostMap = {};
-
   const topSellingMap = {};
 
   menuData.forEach(function (row) {
-
     const menuItem = String(row[1]).trim();
-
     menuCostMap[menuItem] = Number(row[3]) || 0;
-
   });
 
   // ==========================================
@@ -66,7 +71,7 @@ function getReportsData(fromDate, toDate) {
   );
 
   // ==========================================
-  // Process Orders
+  // Process Orders (Optimized O(1) Item Lookup)
   // ==========================================
   data.forEach(function (row) {
 
@@ -80,27 +85,15 @@ function getReportsData(fromDate, toDate) {
 
     const grandTotal = Number(row[10]) || 0;
 
-    // ==========================================
-    // Calculate Food Cost For This Order
-    // ==========================================
+    // Get items instantly via pre-indexed map instead of looping through all items
+    const itemsForOrder = orderItemsMap[orderId] || [];
     let orderCost = 0;
 
-    orderItems.forEach(function (itemRow) {
-
-      if (String(itemRow[0]).trim() !== orderId) {
-
-        return;
-
-      }
-
+    itemsForOrder.forEach(function (itemRow) {
       const menuItem = String(itemRow[1]).trim();
-
       const qty = Number(itemRow[2]) || 0;
-
       const costPrice = menuCostMap[menuItem] || 0;
-
       orderCost += qty * costPrice;
-
     });
 
     const orderProfit = grandTotal - orderCost;
@@ -109,13 +102,9 @@ function getReportsData(fromDate, toDate) {
     // Today's KPI
     // ==========================================
     if (orderDate === today) {
-
       todayOrders++;
-
       todaySales += grandTotal;
-
       todayProfit += orderProfit;
-
     }
 
     // ==========================================
@@ -126,77 +115,45 @@ function getReportsData(fromDate, toDate) {
       orderDate <= toDate) {
 
       totalOrders++;
-
       totalSales += grandTotal;
-
       totalCost += orderCost;
-
       grossProfit += orderProfit;
 
-      orderItems.forEach(function (itemRow) {
-
-        if (String(itemRow[0]).trim() !== orderId) {
-
-          return;
-
-        }
-
+      itemsForOrder.forEach(function (itemRow) {
         const menuItem = String(itemRow[1]).trim();
-
         const qty = Number(itemRow[2]) || 0;
-
         const costPrice = menuCostMap[menuItem] || 0;
 
         if (!topSellingMap[menuItem]) {
-
           topSellingMap[menuItem] = {
-
             menuItem: menuItem,
-
             quantity: 0,
-
             revenue: 0,
-
             cost: 0,
-
             profit: 0
-
           };
-
         }
 
         topSellingMap[menuItem].quantity += qty;
-
         topSellingMap[menuItem].revenue += qty * Number(itemRow[3]);
-
         topSellingMap[menuItem].cost += qty * costPrice;
-
         topSellingMap[menuItem].profit =
           topSellingMap[menuItem].revenue -
           topSellingMap[menuItem].cost;
-
       });
 
       orders.push({
-
         orderId: row[0],
-
         orderDate: Utilities.formatDate(
           new Date(row[1]),
           Session.getScriptTimeZone(),
           "dd/MM/yyyy"
         ),
-
         customer: row[2],
-
         mobile: row[3],
-
         paymentMode: row[8],
-
         paymentStatus: row[9],
-
         grandTotal: grandTotal
-
       });
 
     }
@@ -204,43 +161,25 @@ function getReportsData(fromDate, toDate) {
   });
 
   const topSellingItems = Object.values(topSellingMap)
-
     .sort(function (a, b) {
-
       return b.quantity - a.quantity;
-
     });
 
   return {
-
     success: true,
-
     todaySales: todaySales,
-
     todayOrders: todayOrders,
-
     todayProfit: todayProfit,
-
     totalOrders: totalOrders,
-
     totalSales: totalSales,
-
     totalCost: totalCost,
-
     grossProfit: grossProfit,
-
     profitPercentage:
       totalSales > 0
         ? ((grossProfit / totalSales) * 100).toFixed(2)
         : "0.00",
-
-
-
     topSellingItems: topSellingItems,
-
     orders: orders
-
-
   };
 
 }

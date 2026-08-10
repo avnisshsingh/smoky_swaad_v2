@@ -40,7 +40,8 @@ function saveOrUpdateCustomer(orderData, orderId) {
     );
 
   }
-
+// CLEAR THE CUSTOMER CACHE SO SUBSEQUENT POS LOOKUPS SEE THE UPDATE
+  clearCustomersCache();
 }
 
 
@@ -414,41 +415,68 @@ function getCustomerByMobileNumber(mobile) {
 
 
 /**
- * ==========================================================
- * Load All Customers for POS Cache
- * ==========================================================
+ * ==========================================
+ * Load All Customers for POS Cache (Optimized with Server-Side Caching)
+ * ==========================================
  */
 function getAllCustomers() {
+   const cache = CacheService.getScriptCache();
+   const cacheKey = "smoky_swaad_all_customers_cache_v1";
 
-  const sheet = getSheet(SHEETS.CUSTOMERS);
+   // 1. Check if cached data exists in server memory
+   const cachedData = cache.get(cacheKey);
+   if (cachedData) {
+      try {
+         return JSON.parse(cachedData);
+      } catch (e) {
+         // Fallback to sheet reading if JSON parse fails
+      }
+   }
 
-  const lastRow = sheet.getLastRow();
+   // 2. Your exact original sheet fetching & mapping logic
+   const sheet = getSheet(SHEETS.CUSTOMERS);
+   const lastRow = sheet.getLastRow();
 
-  if (lastRow < 2) {
+   if (lastRow < 2) {
+      return [];
+   }
 
-    return [];
+   const data = sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        5
+      )
+      .getValues();
 
-  }
+   const customers = data.map(row => ({
+      customerName: row[1],
+      mobile: String(row[2]).trim(),
+      deliveryArea: row[3],
+      houseAddress: row[4]
+   }));
 
-  const data = sheet
-    .getRange(
-      2,
-      1,
-      lastRow - 1,
-      5
-    )
-    .getValues();
+   // 3. Store the result in cache for 6 hours (21600 seconds)
+   try {
+      cache.put(cacheKey, JSON.stringify(customers), 21600);
+   } catch (e) {
+      console.warn("Failed to write customers cache:", e);
+   }
 
-  return data.map(row => ({
+   return customers;
+}
 
-    customerName: row[1],
-
-    mobile: String(row[2]).trim(),
-
-    deliveryArea: row[3],
-
-    houseAddress: row[4]
-
-  }));
-
+/**
+ * ==========================================
+ * Clear Customers Cache
+ * ==========================================
+ */
+function clearCustomersCache() {
+   try {
+      const cache = CacheService.getScriptCache();
+      cache.remove("smoky_swaad_all_customers_cache_v1");
+   } catch (e) {
+      console.warn("Failed to clear customers cache:", e);
+   }
 }

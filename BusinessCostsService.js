@@ -1,19 +1,30 @@
-
 /**
  * ==========================================
- * Get Business Costs
+ * Get Business Costs (Optimized with Caching)
  * ==========================================
  */
 function getBusinessCosts() {
 
-    const sheet = getSheet(SHEETS.BUSINESS_COSTS);
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "smoky_swaadv2_business_costs_cache_v1";
 
+    // 1. Check if business costs are cached in server memory
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+        try {
+            return JSON.parse(cachedData);
+        } catch (e) {
+            // Fallback to sheet reading if JSON parse fails
+        }
+    }
+
+    // 2. Original Sheet Reading & Mapping Logic
+    const sheet = getSheet(SHEETS.BUSINESS_COSTS);
     const data = sheet.getDataRange().getValues();
 
     data.shift(); // Remove Header
 
     const businessCosts = [];
-
     let totalBusinessCost = 0;
 
     data.forEach(function(row, index) {
@@ -44,7 +55,7 @@ function getBusinessCosts() {
 
     });
 
-    return {
+    const result = {
 
         success: true,
 
@@ -54,14 +65,16 @@ function getBusinessCosts() {
 
     };
 
+    // 3. Store result in cache for 6 hours (21600 seconds)
+    try {
+        cache.put(cacheKey, JSON.stringify(result), 21600);
+    } catch (e) {
+        console.warn("Failed to write business costs cache:", e);
+    }
+
+    return result;
+
 }
-
-
-
-
-
-
-
 
 
 /**
@@ -130,6 +143,9 @@ function saveBusinessCost(cost) {
 
     }
 
+    // CRITICAL: Clear the business costs cache on save/update
+    clearBusinessCostsCache();
+
     return {
 
         success: true
@@ -168,4 +184,19 @@ function getBusinessCost(rowNumber) {
 
     };
 
+}
+
+
+/**
+ * ==========================================
+ * Clear Business Costs Cache Helper
+ * ==========================================
+ */
+function clearBusinessCostsCache() {
+    try {
+        const cache = CacheService.getScriptCache();
+        cache.remove("smoky_swaadv2_business_costs_cache_v1");
+    } catch (e) {
+        console.warn("Failed to clear business costs cache:", e);
+    }
 }

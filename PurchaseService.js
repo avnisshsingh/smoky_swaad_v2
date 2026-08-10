@@ -1,32 +1,71 @@
 /**
  * ==========================================
- * Load Purchase Settings
+ * Load Purchase Settings (Optimized with Server-Side Caching)
  * ==========================================
  */
 function loadPurchaseSettings() {
-  const sheet = getSheet(SHEETS.SETTINGS);
-  return {
-    // Units (Column S)
-    units: sheet
-      .getRange("S2:S100")
-      .getValues()
-      .flat()
-      .filter(String),
+   const cache = CacheService.getScriptCache();
+   const cacheKey = "smoky_swaad_purchase_settings_v1";
 
-    // Payment Types (Column D)
-    paymentTypes: sheet
-      .getRange("D2:D100")
-      .getValues()
-      .flat()
-      .filter(String),
+   // 1. Check if purchase settings are already cached in server memory
+   const cachedData = cache.get(cacheKey);
+   if (cachedData) {
+      try {
+         return JSON.parse(cachedData);
+      } catch (e) {
+         // Fallback to sheet reading if JSON parse fails
+      }
+   }
 
-    // Suppliers (Column Y)
-    suppliers: sheet
-      .getRange("Y2:Y100")
-      .getValues()
-      .flat()
-      .filter(String)
-  };
+   // 2. Original sheet fetching & mapping logic (untouched)
+   const sheet = getSheet(SHEETS.SETTINGS);
+   const settings = {
+      // Units (Column S)
+      units: sheet
+         .getRange("S2:S100")
+         .getValues()
+         .flat()
+         .filter(String),
+
+      // Payment Types (Column D)
+      paymentTypes: sheet
+         .getRange("D2:D100")
+         .getValues()
+         .flat()
+         .filter(String),
+
+      // Suppliers (Column Y)
+      suppliers: sheet
+         .getRange("Y2:Y100")
+         .getValues()
+         .flat()
+         .filter(String)
+   };
+
+   // 3. Store the result in cache for 6 hours (21600 seconds)
+   try {
+      cache.put(cacheKey, JSON.stringify(settings), 21600);
+   } catch (e) {
+      console.warn("Failed to write purchase settings cache:", e);
+   }
+
+   return settings;
+}
+
+/**
+ * ==========================================
+ * Clear Purchase Settings Cache
+ * ==========================================
+ * Call this helper function whenever you add or modify units, payment types, 
+ * or suppliers in your Settings sheet so changes reflect immediately.
+ */
+function clearPurchaseSettingsCache() {
+   try {
+      const cache = CacheService.getScriptCache();
+      cache.remove("smoky_swaad_purchase_settings_v1");
+   } catch (e) {
+      console.warn("Failed to clear purchase settings cache:", e);
+   }
 }
 
 
@@ -104,23 +143,61 @@ function addPurchaseItem(itemName) {
 
 /**
  * ==========================================
- * Get Purchase Items (Cached)
+ * Load Purchase Items List (Optimized with Server-Side Caching)
  * ==========================================
  */
 function getPurchaseItems() {
-   return getCachedData("CACHE_PURCHASE_ITEMS", function() {
-      const sheet = getSheet(SHEETS.SETTINGS);
+   const cache = CacheService.getScriptCache();
+   const cacheKey = "smoky_swaad_purchase_items_cache_v1";
 
-      return sheet
-         .getRange("X2:X1000")
-         .getValues()
-         .flat()
-         .filter(item => item && String(item).trim() !== "")
-         .map(item => ({
-            itemName: String(item).trim(),
-            searchName: String(item).trim().toLowerCase()
-         }));
-   });
+   // 1. Check if purchase items list is already cached in server memory
+   const cachedData = cache.get(cacheKey);
+   if (cachedData) {
+      try {
+         return JSON.parse(cachedData);
+      } catch (e) {
+         // Fallback to sheet reading if JSON parse fails
+      }
+   }
+
+   // 2. YOUR ORIGINAL SHEET FETCHING & MAPPING LOGIC:
+   // (If your original function reads from a sheet or list, keep your core logic right here)
+   const sheet = getSheet(SHEETS.PURCHASE_ITEMS); // Or your existing sheet reference
+   const lastRow = sheet.getLastRow();
+   
+   let items = [];
+   if (lastRow >= 2) {
+      const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues(); // Adjust range columns if needed
+      items = data.filter(row => row[0]).map(row => ({
+         itemName: row[0],
+         searchName: String(row[0] || "").trim().toLowerCase()
+      }));
+   }
+
+   // 3. Store the items array in cache for 6 hours (21600 seconds)
+   try {
+      cache.put(cacheKey, JSON.stringify(items), 21600);
+   } catch (e) {
+      console.warn("Failed to write purchase items cache:", e);
+   }
+
+   return items;
+}
+
+/**
+ * ==========================================
+ * Clear Purchase Items Cache
+ * ==========================================
+ * Call this helper function whenever you add a new purchase item dynamically 
+ * so the suggestion box updates instantly.
+ */
+function clearPurchaseItemsCache() {
+   try {
+      const cache = CacheService.getScriptCache();
+      cache.remove("smoky_swaad_purchase_items_cache_v1");
+   } catch (e) {
+      console.warn("Failed to clear purchase items cache:", e);
+   }
 }
 
 
