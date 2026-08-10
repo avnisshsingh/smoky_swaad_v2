@@ -1,0 +1,6 @@
+{
+  "name": "Smoky Swaad ERP",
+  "description": "Full-stack ERP web application for Smoky Swaad featuring POS, Menu Management, Customer Records, Invoices, Purchase Register, Expenses, Costs & Pricing, and Reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

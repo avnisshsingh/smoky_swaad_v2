@@ -52,6 +52,7 @@
    function initApp() {
       console.log("Smoky Swaad ERP Started");
       bindMenuEvents();
+      injectMobileSmoothStyles();
 
       const defaultMenu = document.querySelector(
          '.menu-link[data-screen="POS"]',
@@ -62,6 +63,42 @@
       }
 
       openScreen("POS");
+   }
+
+   /**
+    * ==========================================
+    * MOBILE VIEWPORT & BUTTER-SMOOTH UI ENHANCEMENTS
+    * ==========================================
+    */
+   function injectMobileSmoothStyles() {
+      if (document.getElementById("smokySmoothMobileStyle")) return;
+      const style = document.createElement("style");
+      style.id = "smokySmoothMobileStyle";
+      style.textContent = `
+         @media (max-width: 768px) {
+            /* Prevent iOS auto-zoom on input focus by maintaining 16px minimum font size */
+            input.form-control, select.form-select, textarea.form-control {
+               font-size: 16px !important;
+            }
+            /* Enhance touch targets for buttons on mobile viewports */
+            .btn-sm {
+               padding: 0.4rem 0.75rem !important;
+               font-size: 0.875rem !important;
+            }
+            /* Smooth scrolling and momentum on mobile wrappers */
+            .table-responsive {
+               -webkit-overflow-scrolling: touch;
+            }
+            /* Fluid spacing for mobile card blocks */
+            #purchaseMobileList .border {
+               transition: transform 0.1s ease, box-shadow 0.1s ease;
+            }
+            #purchaseMobileList .border:active {
+               transform: scale(0.99);
+            }
+         }
+      `;
+      document.head.appendChild(style);
    }
 
    /* ==========================================
@@ -2175,11 +2212,7 @@
       renderPurchaseMobileCards(purchases);
    }
 
-
-
-
-
-function renderPurchaseDesktopTable(purchases) {
+   function renderPurchaseDesktopTable(purchases) {
       const body = document.getElementById("purchaseTableBody");
       if (!body) return;
 
@@ -2240,12 +2273,6 @@ function renderPurchaseDesktopTable(purchases) {
       });
       list.innerHTML = html;
    }
-
-
-
-
-
-   
 
    function editPurchase(p) {
       if (!p) return;
@@ -2507,7 +2534,7 @@ function renderPurchaseDesktopTable(purchases) {
       };
    }
 
-  function savePurchase() {
+   function savePurchase() {
       if (isSavingPurchase) return;
       isSavingPurchase = true;
 
@@ -3324,23 +3351,62 @@ function renderPurchaseDesktopTable(purchases) {
          .save();
    }
 
+
+
+let isPosCacheLoaded = false;
    function loadPOSCache(forceRefresh) {
-      if (isPosCacheLoaded && !forceRefresh) {
-         populatePOSDropdowns();
-         return;
+      // 1. Instantly load from localStorage if available so UI renders with zero lag
+      if (!forceRefresh && !isPosCacheLoaded) {
+         try {
+            const localRaw = localStorage.getItem("smoky_swaad_pos_cache");
+            if (localRaw) {
+               const localData = JSON.parse(localRaw);
+               menuCache = localData.menu || [];
+               appSettings = localData.settings || {};
+               customerCache = localData.customers || [];
+               isPosCacheLoaded = true;
+               populatePOSDropdowns();
+            }
+         } catch (e) {
+            console.warn("Could not read POS local storage cache:", e);
+         }
       }
 
+      // If already loaded in memory and no force refresh is requested, return early
+      if (isPosCacheLoaded && !forceRefresh) {
+         populatePOSDropdowns();
+      }
+
+      // 2. Fetch fresh data from the server in the background to keep cache up to date
       google.script.run
          .withSuccessHandler(function (data) {
+            if (!data) return;
             menuCache = data.menu || [];
             appSettings = data.settings || {};
             customerCache = data.customers || [];
             isPosCacheLoaded = true;
             populatePOSDropdowns();
+
+            // Save fresh payload to localStorage for subsequent instant opens
+            try {
+               localStorage.setItem(
+                  "smoky_swaad_pos_cache",
+                  JSON.stringify({
+                     menu: menuCache,
+                     settings: appSettings,
+                     customers: customerCache,
+                     timestamp: Date.now()
+                  })
+               );
+            } catch (e) {
+               console.warn("Could not write POS cache to local storage:", e);
+            }
+         })
+         .withFailureHandler(function (error) {
+            console.error("Background POS cache sync failed:", error);
          })
          .loadPOSCache();
    }
-   let isPosCacheLoaded = false;
 
    function deleteOrder() {
       const orderIdBox = document.getElementById("deleteOrderId");
@@ -4019,4 +4085,52 @@ function renderPurchaseDesktopTable(purchases) {
    function formatCurrencyCustom(amount) {
       return "₹" + Number(amount || 0).toFixed(2);
    }
+
+
+
+
+
+function clearPOSForm() {
+      cart = [];
+      customAddons = [];
+      deliveryCharge = 0;
+
+      const fields = [
+         "customerName",
+         "mobile",
+         "houseAddress",
+         "deliveryArea",
+         "deliverySlot",
+         "orderType",
+         "specialInstructions",
+         "discount"
+      ];
+
+      fields.forEach(function (id) {
+         const el = document.getElementById(id);
+         if (el) {
+            if (id === "discount") {
+               el.value = "0";
+            } else {
+               el.value = "";
+            }
+         }
+      });
+
+      renderCart();
+      renderCustomAddons();
+
+      const menuSearch = document.getElementById("menuSearch");
+      if (menuSearch) {
+         menuSearch.value = "";
+      }
+      clearMenuSuggestions();
+   }
+
+
+
+
+
+
+
 </script>

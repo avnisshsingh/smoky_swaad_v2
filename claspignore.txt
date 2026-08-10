@@ -1,0 +1,13 @@
+# Ignore Node.js / Full-Stack Web Runtime files when pushing to Google Apps Script via clasp
+package.json
+package-lock.json
+node_modules/
+server.js
+gas-emulator.js
+metadata.json
+.claspignore
+.gitignore
+.git/
+.env
+.env.*
+README.md
