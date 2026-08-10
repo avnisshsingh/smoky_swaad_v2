@@ -40,7 +40,6 @@ html, body{
     padding:0;
     background:#f5f7fa;
     font-family:Arial, Helvetica, sans-serif;
-    font-size:14px;
     overflow:hidden;
 }
 
@@ -77,7 +76,15 @@ html, body{
 /* ==========================================
    TYPOGRAPHY
 ========================================== */
-body{ font-size:14px; }
+body { 
+    font-size: 14px; 
+    font-weight: 500 !important; 
+}
+
+p, span, td, th, .form-control, .form-select, .list-group-item {
+    font-weight: 500 !important;
+}
+
 .card-header h4{ font-size:1.45rem; margin:0; }
 .card-header h5{ font-size:1.1rem; margin:0; }
 h5{ font-size:1.05rem; }
@@ -107,13 +114,12 @@ h5{ font-size:1.05rem; }
 <style>
 /* ==========================================================
    GLOBAL MOBILE UX POLISH & NATIVE DROPDOWN SUPPORT
-   Applies only to phones/tablets. Desktop layout is preserved.
 ========================================================== */
 @media (max-width: 768px), (pointer: coarse) {
   
   :root {
     --mobile-gap: 12px;
-    --mobile-control-height: 48px; /* Minimum touch target size */
+    --mobile-control-height: 48px;
   }
 
   html, body { 
@@ -127,13 +133,11 @@ h5{ font-size:1.05rem; }
     overflow-y: auto !important;
   }
 
-  /* ---------- ENHANCED TOUCH & PERFORMANCE ENFORCEMENTS ---------- */
   body, button, input, select, textarea, .btn, .list-group-item {
-    touch-action: manipulation !important; /* Eliminates 300ms click delay on mobile */
+    touch-action: manipulation !important;
     -webkit-tap-highlight-color: transparent !important;
   }
 
-  /* ---------- SAFE AREA (For Notches & Home Bars) ---------- */
   body {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
@@ -141,7 +145,6 @@ h5{ font-size:1.05rem; }
     padding-right: env(safe-area-inset-right);
   }
 
-  /* ---------- APP SHELL & HEADER ---------- */
   .navbar {
     min-height: 60px;
     padding: 8px 12px !important;
@@ -180,7 +183,6 @@ h5{ font-size:1.05rem; }
     overflow: visible !important;
   }
 
-  /* ---------- SIDEBAR -> MOBILE GRID ---------- */
   #sidebar { 
     position: relative !important;
     width: 100% !important;
@@ -243,7 +245,6 @@ h5{ font-size:1.05rem; }
     color: #ffffff;
   }
 
-  /* ---------- CARDS (Shielded from Invoice Module) ---------- */
   .card:not([id^="invoicePdf"] *) {
     border: none !important;
     border-radius: 14px;
@@ -262,12 +263,11 @@ h5{ font-size:1.05rem; }
   .card-header:not([id^="invoicePdf"] *) h5 { font-size: 1rem; }
   .card-body:not([id^="invoicePdf"] *) { padding: 16px !important; }
 
-  /* ---------- FORMS & TOUCH TARGETS ---------- */
   .form-control,
   .form-select,
   .input-group-text {
     min-height: var(--mobile-control-height);
-    font-size: 16px !important; /* Enforced 16px to prevent mobile browser auto-zoom */
+    font-size: 16px !important; 
     border-radius: 10px;
     border: 1px solid #ced4da;
     background-color: #fcfcfc;
@@ -288,7 +288,6 @@ h5{ font-size:1.05rem; }
     margin-bottom: 6px;
   }
 
-  /* ---------- BUTTONS ---------- */
   .btn {
     min-height: var(--mobile-control-height);
     font-size: 15px;
@@ -302,7 +301,6 @@ h5{ font-size:1.05rem; }
   .btn-sm { min-height: 38px; }
   .btn-lg { min-height: 52px; }
 
-  /* ---------- TABLES (SWIPE-FRIENDLY - Shielded from Invoice Module) ---------- */
   .table-responsive:not([id^="invoicePdf"] *) {
     width: 100%;
     border-radius: 10px;
@@ -337,7 +335,6 @@ h5{ font-size:1.05rem; }
     white-space: nowrap;
   }
 
-  /* ---------- MODALS ---------- */
   .modal-dialog {
     margin: auto 12px;
     max-width: calc(100vw - 24px);
@@ -356,7 +353,6 @@ h5{ font-size:1.05rem; }
   .modal-footer { padding: 10px 12px; gap: 8px; }
   .modal-footer .btn { flex: 1 1 auto; }
   
-  /* ---------- UTILITY ---------- */
   .row.g-3 { --bs-gutter-x: 12px; --bs-gutter-y: 12px; }
   .alert { padding: 10px 12px; margin-bottom: 10px; }
 
@@ -383,7 +379,6 @@ h5{ font-size:1.05rem; }
     padding: 10px 12px;
   }
 
-  /* ---------- MODULE SPECIFIC FIXES ---------- */
   #reportContent .card-body h3,
   #todaySales, #todayOrders, #todayProfit {
     font-size: 1.35rem; margin-bottom: 0;
@@ -399,7 +394,6 @@ h5{ font-size:1.05rem; }
   #pricingIngredientsTable,
   #businessCostsTableBody { font-size: 13px; }
 
-  /* ---------- MOBILE HEADER / NAVIGATION FIX ---------- */
   #navbarMenu .navbar-nav .nav-item:first-child{
       display:none !important;
   }
@@ -414,12 +408,6 @@ h5{ font-size:1.05rem; }
       padding:6px 4px !important;
   }
   
-  /* ==========================================
-     POS ADD-ON & INPUT GROUP ALIGNMENT FIX 
-     (This only applies to mobile devices)
-  ========================================== */
-  
-  /* 1. Fix the double-borders on the Price box */
   .input-group > .input-group-text:first-child {
       border-top-right-radius: 0 !important;
       border-bottom-right-radius: 0 !important;
@@ -430,7 +418,6 @@ h5{ font-size:1.05rem; }
       border-bottom-left-radius: 0 !important;
   }
 
-  /* 2. Stop the squishing! Stack the Add-on Row into 2 lines */
   div:has(> #addonName) {
       flex-wrap: wrap !important;
       gap: 10px !important;
@@ -451,9 +438,17 @@ h5{ font-size:1.05rem; }
       width: 48px !important;
       margin: 0 !important;
   }
+
+  /* Clean single native arrow fix for mobile select fields */
+  select, .form-select {
+    appearance: menulist !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
+    background-image: none !important;
+    padding-right: 1.5rem !important;
+  }
 }
 
-/* Extra small devices */
 @media (max-width: 420px) {
   .card-body { padding: 12px !important; }
   .table th, .table td { padding: 10px 12px; }

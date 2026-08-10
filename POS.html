@@ -1,4 +1,3 @@
-
 <style>
 /* ===== POS Stage-2 Mobile Polish ===== */
 @media (max-width:768px){
@@ -106,6 +105,8 @@ padding:12px!important;
                         maxlength="10"
                         class="form-control"
                         placeholder="9876543210"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
                         onkeyup="searchCustomer()"
                      />
                   </div>
@@ -324,6 +325,7 @@ padding:12px!important;
                            value="0"
                            min="0"
                            step="1"
+                           inputmode="numeric"
                            onchange="calculateTotals()"
                            oninput="calculateTotals()"
                         />
@@ -403,7 +405,8 @@ padding:12px!important;
                     class="form-control"
                     placeholder="0"
                     min="0"
-                    step="1">
+                    step="1"
+                    inputmode="numeric">
 
             </div>
 
@@ -521,6 +524,6 @@ padding:12px!important;
 </div>
 
 
-      </div>
-   </div>
+          </div>
+       </div>
 </div>
