@@ -454,4 +454,56 @@ h5{ font-size:1.05rem; }
   .table th, .table td { padding: 10px 12px; }
   #main-content { padding: 8px 6px 80px 6px !important; }
 }
+
+/* ==========================================
+   INSTANT TOAST NOTIFICATIONS (Client-Side)
+========================================== */
+#toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1080;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.custom-toast {
+    min-width: 260px;
+    max-width: 360px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    animation: toastSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.custom-toast.success { background: #198754; } /* Success Green */
+.custom-toast.error { background: #dc3545; }   /* Danger Red */
+.custom-toast.info { background: #212529; }    /* Dark Info */
+
+@keyframes toastSlideIn {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 0.95; }
+}
+
+@media (max-width: 768px) {
+    #toast-container {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+    }
+    .custom-toast {
+        max-width: 100%;
+    }
+}
+
 </style>

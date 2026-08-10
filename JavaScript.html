@@ -846,89 +846,90 @@
 
    let isSavingPersonalExpense = false;
 
-   function savePersonalExpense() {
-      if (isSavingPersonalExpense) return;
+function savePersonalExpense() {
+     if (isSavingPersonalExpense) return;
 
-      const expenseData = collectPersonalExpenseData();
-      const validation = validatePersonalExpenseForm(expenseData);
-      if (!validation.success) {
-         showPersonalExpenseMessage(validation.message, "danger");
+     const expenseData = collectPersonalExpenseData();
+     const validation = validatePersonalExpenseForm(expenseData);
+     if (!validation.success) {
+         showToast(validation.message, "error"); // Replaced alert/message box with Toast
          return;
-      }
+     }
 
-      const editingField = document.getElementById("personalExpenseEditingId");
-      const editingId = editingField
-         ? String(editingField.value || "").trim()
-         : "";
-      const saveButton = document.getElementById("btnSavePersonalExpense");
+     const editingField = document.getElementById("personalExpenseEditingId");
+     const editingId = editingField
+        ? String(editingField.value || "").trim()
+        : "";
+     const saveButton = document.getElementById("btnSavePersonalExpense");
 
-      isSavingPersonalExpense = true;
-      if (saveButton) {
-         saveButton.disabled = true;
-         saveButton.innerHTML = editingId
-            ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...'
-            : '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
-      }
+     isSavingPersonalExpense = true;
+     if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.innerHTML = editingId
+           ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...'
+           : '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+     }
 
-      hidePersonalExpenseMessage();
+     hidePersonalExpenseMessage();
 
-      function handleSuccess(response) {
-         isSavingPersonalExpense = false;
-         if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.innerHTML = "💾 Save Expense";
-         }
+     function handleSuccess(response) {
+        isSavingPersonalExpense = false;
+        if (saveButton) {
+           saveButton.disabled = false;
+           saveButton.innerHTML = "💾 Save Expense";
+        }
 
-         if (!response || response.success !== true) {
-            showPersonalExpenseMessage(
-               response && response.message
-                  ? response.message
-                  : "Unable to save expense.",
-               "danger",
-            );
-            return;
-         }
+        if (!response || response.success !== true) {
+           showToast(
+              response && response.message
+                 ? response.message
+                 : "Unable to save expense.",
+              "error"
+           );
+           return;
+        }
 
-         showPersonalExpenseMessage(
-            editingId
-               ? "Expense updated successfully. ID: " + response.expenseId
-               : "Expense saved successfully. ID: " + response.expenseId,
-            "success",
-         );
+        // Success Toast Notification
+        showToast(
+           editingId
+              ? "Expense updated successfully. ID: " + response.expenseId
+              : "Expense saved successfully. ID: " + response.expenseId,
+           "success"
+        );
 
-         resetPersonalExpenseForm();
-         if (editingField) editingField.value = "";
-         loadPersonalExpenseBootstrap(true);
-      }
+        resetPersonalExpenseForm();
+        if (editingField) editingField.value = "";
+        loadPersonalExpenseBootstrap(true);
+     }
 
-      function handleFailure(error) {
-         isSavingPersonalExpense = false;
-         if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.innerHTML = editingId
-               ? "✏️ Update Expense"
-               : "💾 Save Expense";
-         }
-         const message = error && error.message ? error.message : String(error);
-         showPersonalExpenseMessage(
-            message || "Unable to save expense.",
-            "danger",
-         );
-      }
+     function handleFailure(error) {
+        isSavingPersonalExpense = false;
+        if (saveButton) {
+           saveButton.disabled = false;
+           saveButton.innerHTML = editingId
+              ? "✏️ Update Expense"
+              : "💾 Save Expense";
+        }
+        const message = error && error.message ? error.message : String(error);
+        showToast(
+           message || "Unable to save expense.",
+           "error"
+        );
+     }
 
-      if (editingId) {
-         google.script.run
-            .withSuccessHandler(handleSuccess)
-            .withFailureHandler(handleFailure)
-            .updatePersonalExpenseFromWeb(editingId, expenseData);
-         return;
-      }
+     if (editingId) {
+        google.script.run
+           .withSuccessHandler(handleSuccess)
+           .withFailureHandler(handleFailure)
+           .updatePersonalExpenseFromWeb(editingId, expenseData);
+        return;
+     }
 
-      google.script.run
-         .withSuccessHandler(handleSuccess)
-         .withFailureHandler(handleFailure)
-         .savePersonalExpenseFromWeb(expenseData);
-   }
+     google.script.run
+        .withSuccessHandler(handleSuccess)
+        .withFailureHandler(handleFailure)
+        .savePersonalExpenseFromWeb(expenseData);
+  }
 
    function editPersonalExpense(expense) {
       if (!expense) return;
@@ -1115,26 +1116,26 @@
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response || response.success !== true) {
-               alert(
+               showToast(
                   response && response.message
                      ? response.message
                      : "Unable to restore expense.",
+                  "error"
                );
                return;
             }
             loadPersonalExpenses();
             loadPersonalExpenseHistory();
             loadDeletedPersonalExpenses();
-            showPersonalExpenseMessage(
-               "Expense restored successfully: " + expenseId,
-               "success",
-            );
+            showToast("Expense restored successfully: " + expenseId, "success");
          })
          .withFailureHandler(function (error) {
-            alert(error && error.message ? error.message : String(error));
+            showToast(error && error.message ? error.message : String(error), "error");
          })
          .restorePersonalExpenseFromWeb(expenseId);
    }
+
+
 
    function escapePersonalExpenseJs(value) {
       return String(value === null || value === undefined ? "" : value)
@@ -1565,7 +1566,7 @@
          .loadMenu();
    }
 
-   function loadSettingsCache() {
+function loadSettingsCache() {
       google.script.run
          .withSuccessHandler(function (settings) {
             appSettings = settings;
@@ -1577,7 +1578,7 @@
             if (saveButton) saveButton.disabled = false;
          })
          .withFailureHandler(function (error) {
-            alert("Unable to load application settings.");
+            showToast("Unable to load application settings.", "error");
          })
          .loadAppSettings();
    }
@@ -1913,54 +1914,60 @@
       });
    }
 
+
+
    function saveOrder() {
-      if (isSavingOrder) return;
-      const orderData = collectOrderData();
-      isSavingOrder = true;
+   if (isSavingOrder) return;
+   const orderData = collectOrderData();
+   isSavingOrder = true;
 
-      const saveButton = document.getElementById("btnSaveOrder");
-      if (saveButton) {
-         saveButton.disabled = true;
-         saveButton.innerHTML =
-            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
-      }
+   const saveButton = document.getElementById("btnSaveOrder");
+   if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML =
+         '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+   }
 
-      google.script.run
-         .withSuccessHandler(function (response) {
-            isSavingOrder = false;
-            if (response && response.success) {
-               clearPOSForm();
-               if (saveButton) {
-                  saveButton.disabled = false;
-                  saveButton.innerHTML = "💾 Save Order";
-               }
-               alert(
-                  "Order Saved Successfully\n\nOrder ID : " + response.orderId,
-               );
-            } else {
-               if (saveButton) {
-                  saveButton.disabled = false;
-                  saveButton.innerHTML = "💾 Save Order";
-               }
-               alert(
-                  response && response.message
-                     ? response.message
-                     : "Unable to save order.",
-               );
-            }
-         })
-         .withFailureHandler(function (error) {
-            isSavingOrder = false;
+   google.script.run
+      .withSuccessHandler(function (response) {
+         isSavingOrder = false;
+         if (response && response.success) {
+            clearPOSForm();
             if (saveButton) {
                saveButton.disabled = false;
                saveButton.innerHTML = "💾 Save Order";
             }
-            alert(
-               error && error.message ? error.message : "Unable to save order.",
+            showToast(
+               "Order Saved Successfully - ID: " + response.orderId,
+               "success"
             );
-         })
-         .saveOrderFromWeb(orderData);
-   }
+         } else {
+            if (saveButton) {
+               saveButton.disabled = false;
+               saveButton.innerHTML = "💾 Save Order";
+            }
+            showToast(
+               response && response.message
+                  ? response.message
+                  : "Unable to save order.",
+               "error"
+            );
+         }
+      })
+      .withFailureHandler(function (error) {
+         isSavingOrder = false;
+         if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = "💾 Save Order";
+         }
+         showToast(
+            error && error.message ? error.message : "Unable to save order.",
+            "error"
+         );
+      })
+      .saveOrderFromWeb(orderData);
+}
+
 
    function clearMenuSuggestions() {
       const el = document.getElementById("menuSuggestions");
@@ -2292,19 +2299,20 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
    }
 
-   function deletePurchase(purchaseId, itemName, amount) {
+function deletePurchase(purchaseId, itemName, amount) {
       if (!confirm("Delete purchase " + purchaseId + " (" + itemName + ")?")) return;
 
       google.script.run
          .withSuccessHandler(function (res) {
             if (!res || !res.success) {
-               alert(res && res.message ? res.message : "Unable to delete purchase.");
+               showToast(res && res.message ? res.message : "Unable to delete purchase.", "error");
                return;
             }
+            showToast("Purchase deleted successfully", "success");
             loadPurchaseHistoryBootstrap();
          })
          .withFailureHandler(function (err) {
-            alert(err.message || err);
+            showToast(err.message || err, "error");
          })
          .deletePurchaseFromWeb(purchaseId);
    }
@@ -2364,17 +2372,20 @@
       google.script.run
          .withSuccessHandler(function (res) {
             if (!res || !res.success) {
-               alert(res && res.message ? res.message : "Unable to restore purchase.");
+               showToast(res && res.message ? res.message : "Unable to restore purchase.", "error");
                return;
             }
+            showToast("Purchase restored successfully", "success");
             loadPurchaseHistoryBootstrap();
             loadDeletedPurchases();
          })
          .withFailureHandler(function (err) {
-            alert(err.message || err);
+            showToast(err.message || err, "error");
          })
          .restorePurchaseFromWeb(purchaseId);
    }
+
+
 
    function clearPurchaseHistoryFilters() {
       const month = document.getElementById("purchaseHistoryMonth");
@@ -2487,7 +2498,7 @@
       updatePurchaseSummary();
    }
 
-   function addNewPurchaseItem() {
+function addNewPurchaseItem() {
       const itemName = document.getElementById("itemSearch").value.trim();
       if (!itemName) return;
 
@@ -2507,9 +2518,10 @@
             document.getElementById("itemSearch").value = response.itemName;
             clearPurchaseSuggestions();
             selectPurchaseItem(response.itemName);
+            showToast("New item added to purchase list", "success");
          })
          .withFailureHandler(function (error) {
-            alert(error.message || error);
+            showToast(error.message || error, "error");
          })
          .addPurchaseItem(itemName);
    }
@@ -2558,10 +2570,10 @@
             saveButton.innerHTML = "💾 Save Purchase";
          }
          if (!response || !response.success) {
-            alert(response && response.message ? response.message : "Unable to save purchase.");
+            showToast(response && response.message ? response.message : "Unable to save purchase.", "error");
             return;
          }
-         alert(response.message || (editingId ? "Purchase updated successfully!" : "Purchase saved successfully!"));
+         showToast(response.message || (editingId ? "Purchase updated successfully!" : "Purchase saved successfully!"), "success");
          clearPurchaseForm();
          document.getElementById("purchaseEditingId").value = "";
          loadPurchaseHistoryBootstrap();
@@ -2573,7 +2585,7 @@
             saveButton.disabled = false;
             saveButton.innerHTML = "💾 Save Purchase";
          }
-         alert(error.message || error);
+         showToast(error.message || error, "error");
       }
    }
 
@@ -2622,23 +2634,23 @@
       loadProfitMonths();
    }
 
-   function searchInvoice() {
+function searchInvoice() {
       const orderId = document.getElementById("searchOrderId").value.trim();
       if (!orderId) {
-         alert("Please enter Order ID.");
+         showToast("Please enter Order ID.", "error");
          return;
       }
 
       google.script.run
          .withSuccessHandler(function (response) {
             if (!response.success) {
-               alert(response.message);
+               showToast(response.message, "error");
                return;
             }
             renderInvoice(response);
          })
          .withFailureHandler(function (error) {
-            alert(error);
+            showToast(String(error), "error");
          })
          .getInvoice(orderId);
    }
@@ -2700,10 +2712,10 @@
          "₹" + Number(order.grandTotal || 0).toFixed(2);
    }
 
-   function printInvoice() {
+function printInvoice() {
       const invoice = document.getElementById("invoicePdfContainer");
       if (!invoice) {
-         alert("Invoice not found.");
+         showToast("Invoice not found.", "error");
          return;
       }
       const printWindow = window.open("", "_blank");
@@ -3074,8 +3086,7 @@
       const orderId = document.getElementById("invOrderId").innerText.trim();
 
       if (!orderId || orderId === "-") {
-         alert("Please search an invoice first.");
-
+         showToast("Please search an invoice first.", "error");
          return;
       }
 
@@ -3083,13 +3094,11 @@
 
       if (btn) {
          btn.disabled = true;
-
          btn.innerHTML = "Generating PDF...";
       }
 
       try {
          const today = new Date();
-
          const fileDate =
             today.getFullYear() +
             "-" +
@@ -3098,21 +3107,14 @@
             String(today.getDate()).padStart(2, "0");
 
          const fileName = orderId + "_" + fileDate + ".pdf";
-
          const pdfBlob = await buildInvoicePdfBlob();
-
          const downloadUrl = URL.createObjectURL(pdfBlob);
 
          const link = document.createElement("a");
-
          link.href = downloadUrl;
-
          link.download = fileName;
-
          document.body.appendChild(link);
-
          link.click();
-
          link.remove();
 
          setTimeout(function () {
@@ -3122,28 +3124,25 @@
          const base64Pdf = await blobToBase64(pdfBlob);
 
          google.script.run
-
             .withSuccessHandler(function (response) {
                console.log("PDF saved to Drive", response);
             })
-
             .withFailureHandler(function (error) {
                console.error("Unable to save PDF to Drive:", error);
             })
-
             .savePdf(fileName, base64Pdf);
       } catch (error) {
          console.error("Invoice PDF Error:", error);
-
-         alert("Unable to generate invoice PDF.");
+         showToast("Unable to generate invoice PDF.", "error");
       } finally {
          if (btn) {
             btn.disabled = false;
-
             btn.innerHTML = "📄 Download PDF";
          }
       }
    }
+
+
 
    function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
@@ -3160,7 +3159,7 @@
    async function shareInvoiceWhatsApp() {
       const orderId = document.getElementById("invOrderId").innerText.trim();
       if (!orderId || orderId === "-") {
-         alert("Please search an invoice first.");
+         showToast("Please search an invoice first.", "error");
          return;
       }
 
@@ -3194,7 +3193,7 @@
          google.script.run
             .withSuccessHandler(function (response) {
                if (!response || response.success !== true) {
-                  alert("Unable to save invoice.");
+                  showToast("Unable to save invoice.", "error");
                   return;
                }
                const message = `Hello ${customerName},\n\nThank you for choosing Smoky Swaad.\n\n🧾 Invoice No : ${orderId}\n💰 Amount : ${grandTotal}\n\n📄 Your Invoice\n${response.fileUrl}\n\n🍛 Smoky Swaad`;
@@ -3207,13 +3206,16 @@
                );
             })
             .withFailureHandler(function (error) {
-               alert("Unable to save invoice to Google Drive.");
+               showToast("Unable to save invoice to Google Drive.", "error");
             })
             .saveInvoicePdf(fileName, base64Pdf);
       } catch (error) {
-         alert("Unable to generate Invoice PDF.");
+         showToast("Unable to generate Invoice PDF.", "error");
       }
    }
+
+
+
 
    function initializeReports() {
       const today = getToday();
@@ -3247,18 +3249,18 @@
       const fromDate = document.getElementById("reportFromDate").value;
       const toDate = document.getElementById("reportToDate").value;
       if (!fromDate || !toDate) {
-         alert("Please select both dates.");
+         showToast("Please select both dates.", "error");
          return;
       }
       if (fromDate > toDate) {
-         alert("From Date cannot be greater than To Date.");
+         showToast("From Date cannot be greater than To Date.", "error");
          return;
       }
 
       google.script.run
          .withSuccessHandler(function (data) {
             if (!data.success) {
-               alert(data.message);
+               showToast(data.message, "error");
                return;
             }
             renderSummary(data);
@@ -3333,7 +3335,7 @@
       const fromDate = document.getElementById("reportFromDate").value;
       const toDate = document.getElementById("reportToDate").value;
       if (!element || !fromDate || !toDate) {
-         alert("Please select both From Date and To Date.");
+         showToast("Please select both From Date and To Date.", "error");
          return;
       }
 
@@ -3416,7 +3418,7 @@ let isPosCacheLoaded = false;
          .trim()
          .toUpperCase();
       if (!orderId) {
-         alert("Please enter an Order ID.");
+         showToast("Please enter an Order ID.", "error");
          orderIdBox.focus();
          return;
       }
@@ -3427,19 +3429,20 @@ let isPosCacheLoaded = false;
          .withSuccessHandler(function (response) {
             if (response && response.success) {
                orderIdBox.value = "";
-               alert("Order Deleted Successfully\n\nOrder ID : " + orderId);
+               showToast("Order Deleted Successfully - ID: " + orderId, "success");
             } else {
-               alert(
+               showToast(
                   response && response.message
                      ? response.message
                      : "Unable to delete order.",
+                  "error"
                );
             }
          })
          .deleteOrderFromWeb(orderId);
    }
 
-   function addCustomAddon() {
+  function addCustomAddon() {
       const nameInput = document.getElementById("addonName");
       const priceInput = document.getElementById("addonPrice");
       if (!nameInput || !priceInput) return;
@@ -3448,12 +3451,12 @@ let isPosCacheLoaded = false;
       const addonPrice = Number(priceInput.value || 0);
 
       if (!addonName) {
-         alert("Please enter Add-on Name.");
+         showToast("Please enter Add-on Name.", "error");
          nameInput.focus();
          return;
       }
       if (!Number.isFinite(addonPrice) || addonPrice <= 0) {
-         alert("Please enter a valid Add-on Price.");
+         showToast("Please enter a valid Add-on Price.", "error");
          priceInput.focus();
          return;
       }
@@ -4128,6 +4131,36 @@ function clearPOSForm() {
    }
 
 
+
+
+// ==========================================
+// INSTANT TOAST NOTIFICATION HELPER
+// ==========================================
+function showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `custom-toast ${type}`;
+    
+    const textSpan = document.createElement('span');
+    textSpan.innerText = message;
+    toast.appendChild(textSpan);
+
+    container.appendChild(toast);
+
+    // Auto-remove after 3 seconds with a smooth fade-out
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 
 
