@@ -337,6 +337,11 @@
          if (expense._isExpense) total += expense._amount;
       }
 
+      // Sort by date/time of addition (Newest first using expenseId)
+      filtered.sort(function (a, b) {
+         return String(b.expenseId || "").localeCompare(String(a.expenseId || ""), undefined, { numeric: true });
+      });
+
       renderPersonalExpenses(filtered);
 
       const info = document.getElementById("personalExpenseHistoryInfo");
@@ -779,7 +784,27 @@
    function selectPersonalExpenseCategory(category) {
       const categorySelect = document.getElementById("personalExpenseCategory");
       if (!categorySelect) return;
-      categorySelect.value = category;
+
+      const target = String(category || "").trim().toLowerCase();
+      let foundIndex = -1;
+
+      for (let i = 0; i < categorySelect.options.length; i++) {
+         const optVal = String(categorySelect.options[i].value || "").trim().toLowerCase();
+         const optText = String(categorySelect.options[i].textContent || "").trim().toLowerCase();
+         if (optVal === target || optText.includes(target)) {
+            foundIndex = i;
+            break;
+         }
+      }
+
+      if (foundIndex !== -1) {
+         categorySelect.selectedIndex = foundIndex;
+      } else {
+         categorySelect.value = category;
+      }
+
+      categorySelect.dispatchEvent(new Event("input", { bubbles: true }));
+      categorySelect.dispatchEvent(new Event("change", { bubbles: true }));
    }
 
    let isSavingPersonalExpense = false;
@@ -2326,8 +2351,6 @@
       let wrapper = null;
 
       try {
-         // Fixed desktop export width.
-         // Do NOT mix mm sizing with html2canvas pixel sizing.
          const EXPORT_WIDTH = 794;
 
          wrapper = document.createElement("div");
@@ -2348,16 +2371,10 @@
 
          pdfInvoice.id = "invoicePdfExport";
 
-         // Strip emojis and problematic characters that break html2canvas text metrics
          pdfInvoice.innerHTML = pdfInvoice.innerHTML
             .replace(/(❤️|☎|🧾|👤|📍|🍽|💰|💳|📝|➕)/gu, "")
             .replace(/•/g, "-");
 
-         // ==========================================
-         // MOBILE RESPONSIVE CLASS NEUTRALIZER
-         // Neutralize Bootstrap 'd-none' classes and media query dependencies
-         // so desktop card headers and sub-addresses render properly on mobile exports.
-         // ==========================================
          pdfInvoice.querySelectorAll("*").forEach(function (el) {
             if (el.className && typeof el.className === "string") {
                el.className = el.className
@@ -2378,11 +2395,6 @@
                el.style.setProperty("visibility", "visible", "important");
                el.style.setProperty("opacity", "1", "important");
             });
-         // ==========================================
-
-         // ==========================================
-         // ISOLATE PDF CLONE FROM RESPONSIVE UI CSS
-         // ==========================================
 
          pdfInvoice.style.setProperty("display", "block", "important");
 
@@ -2410,24 +2422,6 @@
 
          pdfInvoice.style.setProperty("margin-right", "0", "important");
 
-         pdfInvoice.style.setProperty(
-            "width",
-            EXPORT_WIDTH + "px",
-            "important",
-         );
-
-         pdfInvoice.style.setProperty(
-            "min-width",
-            EXPORT_WIDTH + "px",
-            "important",
-         );
-
-         pdfInvoice.style.setProperty(
-            "max-width",
-            EXPORT_WIDTH + "px",
-            "important",
-         );
-
          pdfInvoice.style.setProperty("margin", "0", "important");
 
          pdfInvoice.style.setProperty("padding", "0", "important");
@@ -2440,25 +2434,15 @@
 
          pdfInvoice.style.setProperty("transform", "none", "important");
 
-         pdfInvoice.style.setProperty("overflow", "visible", "important");
-
          pdfInvoice.style.background = "#ffffff";
          pdfInvoice.style.boxSizing = "border-box";
          pdfInvoice.style.fontFamily = "Arial, sans-serif";
-
-         // ==========================================
-         // Remove screen-only controls
-         // ==========================================
 
          pdfInvoice
             .querySelectorAll("button, .btn, .no-print")
             .forEach(function (element) {
                element.remove();
             });
-
-         // ==========================================
-         // Remove empty optional cards
-         // ==========================================
 
          const address = pdfInvoice.querySelector("#invAddress");
 
@@ -2483,10 +2467,6 @@
                card.remove();
             }
          }
-
-         // ==========================================
-         // Force desktop Bootstrap layout
-         // ==========================================
 
          pdfInvoice.querySelectorAll(".row").forEach(function (row) {
             row.style.setProperty("display", "flex", "important");
@@ -2534,10 +2514,6 @@
                column.style.boxSizing = "border-box";
             });
 
-         // ==========================================
-         // Compact cards
-         // ==========================================
-
          pdfInvoice.querySelectorAll(".card").forEach(function (card) {
             card.style.marginTop = "0";
             card.style.marginBottom = "5px";
@@ -2554,10 +2530,6 @@
             header.style.padding = "5px 9px";
             header.style.margin = "0";
          });
-
-         // ==========================================
-         // Tables
-         // ==========================================
 
          pdfInvoice.querySelectorAll("table").forEach(function (table) {
             table.style.setProperty("width", "100%", "important");
@@ -2609,10 +2581,6 @@
             cell.style.boxSizing = "border-box";
          });
 
-         // ==========================================
-         // Remove responsive overflow
-         // ==========================================
-
          pdfInvoice.querySelectorAll("*").forEach(function (element) {
             element.style.boxSizing = "border-box";
 
@@ -2620,13 +2588,6 @@
                element.style.overflowX = "visible";
             }
          });
-
-         // ==========================================
-         // EXPORT-ONLY CSS
-         // Keeps responsive/mobile UI rules away from
-         // the temporary PDF clone without changing
-         // the live Invoice screen.
-         // ==========================================
 
          const exportStyle = document.createElement("style");
 
@@ -2690,20 +2651,15 @@
 
          document.body.appendChild(wrapper);
 
-         // Allow browser to calculate the fixed layout.
          await new Promise(function (resolve) {
             requestAnimationFrame(function () {
                requestAnimationFrame(resolve);
             });
          });
 
-         // ==========================================
-         // CAPTURE EXACT INVOICE AND CONVERT TO PDF
-         // ==========================================
-
          const pdfBlob = await html2pdf()
             .set({
-               margin: [10, 0], // 10mm top/bottom margin
+               margin: [10, 0],
                image: { type: "jpeg", quality: 0.98 },
                html2canvas: {
                   scale: 2,
@@ -2739,12 +2695,6 @@
       }
    }
 
-   /**
-    * ==========================================
-    * Download Invoice PDF
-    * Compact A4 / Mobile Safe Version
-    * ==========================================
-    */
    async function downloadInvoicePdf() {
       const orderId = document.getElementById("invOrderId").innerText.trim();
 
@@ -2774,12 +2724,7 @@
 
          const fileName = orderId + "_" + fileDate + ".pdf";
 
-         // Generate PDF ONCE
          const pdfBlob = await buildInvoicePdfBlob();
-
-         // ==========================================
-         // DOWNLOAD
-         // ==========================================
 
          const downloadUrl = URL.createObjectURL(pdfBlob);
 
@@ -2798,10 +2743,6 @@
          setTimeout(function () {
             URL.revokeObjectURL(downloadUrl);
          }, 3000);
-
-         // ==========================================
-         // SAVE SAME PDF TO DRIVE
-         // ==========================================
 
          const base64Pdf = await blobToBase64(pdfBlob);
 
