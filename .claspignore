@@ -4,6 +4,7 @@ package-lock.json
 node_modules/
 server.js
 gas-emulator.js
+gas-emulator.gs
 metadata.json
 .claspignore
 .gitignore
