@@ -1,11 +1,14 @@
 <div class="container-fluid">
-   <div class="row">
-      <!-- ==========================================
-             LEFT PANEL
-        =========================================== -->
+   <!-- Hidden field to track editing ID -->
+   <input type="hidden" id="purchaseEditingId" />
+   <div id="purchaseMessage" class="alert" style="display: none;"></div>
 
-      <div class="col-lg-8">
-         <div class="card shadow-sm mb-4">
+   <div class="row mb-4">
+      <!-- ==========================================
+             LEFT PANEL (Purchase Register)
+        =========================================== -->
+      <div class="col-lg-8 mb-4 mb-lg-0">
+         <div class="card shadow-sm h-100">
             <div class="card-header bg-primary text-white">
                <h4 class="mb-0">🛒 Purchase Register</h4>
             </div>
@@ -15,10 +18,8 @@
 
                <div class="row g-3">
                   <!-- Purchase Date -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Purchase Date </label>
-
                      <input
                         type="date"
                         id="purchaseDate"
@@ -27,10 +28,8 @@
                   </div>
 
                   <!-- Quantity -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Quantity </label>
-
                      <input
                         type="number"
                         id="quantity"
@@ -40,33 +39,26 @@
                   </div>
 
                   <!-- Unit -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Unit </label>
-
                      <select id="unit" class="form-select">
                         <option value="">Select Unit</option>
                      </select>
                   </div>
 
                   <!-- Payment Type -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Payment Type </label>
-
                      <select id="paymentType" class="form-select">
                         <option value="">Select Payment Type</option>
                      </select>
                   </div>
 
                   <!-- Amount -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Amount </label>
-
                      <div class="input-group">
                         <span class="input-group-text"> ₹ </span>
-
                         <input
                            type="number"
                            id="amount"
@@ -77,10 +69,8 @@
                   </div>
 
                   <!-- Supplier -->
-
                   <div class="col-md-4">
                      <label class="form-label"> Supplier </label>
-
                      <select id="supplier" class="form-select">
                         <option value="">Select Supplier</option>
                      </select>
@@ -90,7 +80,6 @@
                <hr class="my-4" />
 
                <!-- Item Search -->
-
                <h5 class="mb-3">🔍 Search Item</h5>
 
                <div class="position-relative">
@@ -112,82 +101,75 @@
                <hr class="my-4" />
 
                <!-- Remarks -->
-
                <h5 class="mb-3">Remarks</h5>
 
                <textarea
                   id="remarks"
-                  rows="4"
+                  rows="1"
                   class="form-control"
                   placeholder="Enter Remarks (Optional)"
+                  style="height: 38px; min-height: 38px; max-height: 80px; resize: vertical;"
                ></textarea>
             </div>
          </div>
       </div>
 
       <!-- ==========================================
-             RIGHT PANEL
+             RIGHT PANEL (Purchase Summary)
         =========================================== -->
-
       <div class="col-lg-4">
-         <div class="card shadow-sm">
+         <div class="card shadow-sm h-100">
             <div class="card-header bg-success text-white">
                <h5 class="mb-0">Purchase Summary</h5>
             </div>
 
-            <div class="card-body">
-               <div class="mb-2">
-                  <strong> Purchase Date </strong>
+            <div class="card-body d-flex flex-column justify-content-between">
+               <div>
+                  <div class="mb-2">
+                     <strong> Purchase Date </strong>
+                     <div id="summaryPurchaseDate">-</div>
+                  </div>
 
-                  <div id="summaryPurchaseDate">-</div>
-               </div>
+                  <div class="mb-2">
+                     <strong> Item Name </strong>
+                     <div id="summaryItem">-</div>
+                  </div>
 
-               <div class="mb-2">
-                  <strong> Item Name </strong>
+                  <div class="mb-2">
+                     <strong> Quantity </strong>
+                     <div id="summaryQuantity">-</div>
+                  </div>
 
-                  <div id="summaryItem">-</div>
-               </div>
+                  <div class="mb-2">
+                     <strong> Unit </strong>
+                     <div id="summaryUnit">-</div>
+                  </div>
 
-               <div class="mb-2">
-                  <strong> Quantity </strong>
+                  <div class="mb-2">
+                     <strong> Payment Type </strong>
+                     <div id="summaryPaymentType">-</div>
+                  </div>
 
-                  <div id="summaryQuantity">-</div>
-               </div>
+                  <div class="mb-2">
+                     <strong> Amount </strong>
+                     <div id="summaryAmount">₹0</div>
+                  </div>
 
-               <div class="mb-2">
-                  <strong> Unit </strong>
+                  <div class="mb-2">
+                     <strong> Supplier </strong>
+                     <div id="summarySupplier">-</div>
+                  </div>
 
-                  <div id="summaryUnit">-</div>
-               </div>
-
-               <div class="mb-2">
-                  <strong> Payment Type </strong>
-
-                  <div id="summaryPaymentType">-</div>
-               </div>
-
-               <div class="mb-2">
-                  <strong> Amount </strong>
-
-                  <div id="summaryAmount">₹0</div>
-               </div>
-
-               <div class="mb-2">
-                  <strong> Supplier </strong>
-
-                  <div id="summarySupplier">-</div>
-               </div>
-
-               <div class="mb-3">
-                  <strong> Remarks </strong>
-
-                  <div id="summaryRemarks">-</div>
+                  <div class="mb-3">
+                     <strong> Remarks </strong>
+                     <div id="summaryRemarks">-</div>
+                  </div>
                </div>
 
                <button
                   id="savePurchaseBtn"
                   type="button"
-                  class="btn btn-success btn-lg w-100"
+                  class="btn btn-success btn-lg w-100 mt-3"
                   onclick="savePurchase()"
                >
                   💾 Save Purchase
@@ -196,80 +178,78 @@
          </div>
       </div>
    </div>
+
+   <!-- ==========================================
+        PURCHASE HISTORY SECTION
+   ========================================== -->
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+         <h5 class="mb-0">📜 Purchase History</h5>
+         <button type="button" class="btn btn-sm btn-outline-light" onclick="loadPurchaseHistoryBootstrap()">🔄 Refresh</button>
+      </div>
+      <div class="card-body">
+         <!-- Filters -->
+         <div class="row g-3 mb-3">
+            <div class="col-md-3">
+               <label class="form-label small text-muted">Month</label>
+               <select id="purchaseHistoryMonth" class="form-select">
+                  <option value="">Select Month</option>
+               </select>
+            </div>
+            <div class="col-md-3">
+               <label class="form-label small text-muted">Supplier</label>
+               <select id="purchaseHistorySupplier" class="form-select">
+                  <option value="">All Suppliers</option>
+               </select>
+            </div>
+            <div class="col-md-4">
+               <label class="form-label small text-muted">Search</label>
+               <input type="text" id="purchaseHistorySearch" class="form-control" placeholder="Search item, remarks, ID..." />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+               <button type="button" class="btn btn-outline-secondary w-100" onclick="clearPurchaseHistoryFilters()">Clear</button>
+            </div>
+         </div>
+
+         <div id="purchaseHistoryInfo" class="small text-muted mb-2"></div>
+
+         <!-- Desktop Table -->
+         <div class="table-responsive d-none d-md-block">
+            <table class="table table-hover align-middle mb-0">
+               <thead class="table-light">
+                  <tr>
+                     <th>Date</th>
+                     <th>Item</th>
+                     <th class="text-center">Qty</th>
+                     <th>Supplier</th>
+                     <th>Payment</th>
+                     <th class="text-end">Amount</th>
+                     <th class="text-center">Actions</th>
+                  </tr>
+               </thead>
+               <tbody id="purchaseTableBody">
+                  <tr><td colspan="7" class="text-center text-muted py-4">Loading purchases...</td></tr>
+               </tbody>
+            </table>
+         </div>
+
+         <!-- Mobile Cards View -->
+         <div class="d-md-none" id="purchaseMobileList">
+            <div class="text-center text-muted py-4">Loading purchases...</div>
+         </div>
+      </div>
+   </div>
+
+   <!-- ==========================================
+        DELETED PURCHASES SECTION
+   ========================================== -->
+   <div class="card shadow-sm mb-5 border-danger">
+      <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+         <h5 class="mb-0">🗑️ Deleted Purchases</h5>
+         <button type="button" class="btn btn-sm btn-outline-light" onclick="loadDeletedPurchases()">Load Deleted</button>
+      </div>
+      <div class="card-body" id="purchaseDeletedList" style="display: none;">
+         <div class="text-center text-muted py-3">Click 'Load Deleted' to view archived purchases.</div>
+      </div>
+   </div>
 </div>
-
-<script>
-   /**
-    * ==========================================
-    * PURCHASE MODULE
-    * ==========================================
-    */
-
-   let purchaseSettings = {};
-
-   let selectedPurchaseItem = null;
-
-   /**
-    * ==========================================
-    * Initialize Purchase Screen
-    * ==========================================
-    */
-   document.addEventListener("DOMContentLoaded", function () {
-      initializePurchase();
-   });
-
-   function initializePurchase() {
-document.getElementById("purchaseDate").value = getToday();
-
-      loadPurchaseSettings();
-   }
-
-   /**
-    * ==========================================
-    * Load Purchase Settings
-    * ==========================================
-    */
-   function loadPurchaseSettings() {
-      google.script.run
-
-         .withSuccessHandler(function (settings) {
-            purchaseSettings = settings;
-
-            populateDropdowns();
-         })
-
-         .withFailureHandler(function (error) {
-            alert(error.message);
-         })
-
-         .loadPurchaseSettings();
-   }
-
-   /**
-    * ==========================================
-    * Populate Dropdowns
-    * ==========================================
-    */
-   function populateDropdowns() {
-      fillSelect("unit", purchaseSettings.units);
-
-      fillSelect("paymentType", purchaseSettings.paymentTypes);
-
-      fillSelect("supplier", purchaseSettings.suppliers);
-   }
-
-   /**
-    * ==========================================
-    * Fill Dropdown
-    * ==========================================
-    */
-   function fillSelect(id, values) {
-      const select = document.getElementById(id);
-
-      select.innerHTML = '<option value="">Select</option>';
-
-      values.forEach(function (value) {
-         select.innerHTML += `<option value="${value}">${value}</option>`;
-      });
-   }
-</script>

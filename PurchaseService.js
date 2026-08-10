@@ -1,15 +1,11 @@
-
 /**
  * ==========================================
  * Load Purchase Settings
  * ==========================================
  */
 function loadPurchaseSettings() {
-
   const sheet = getSheet(SHEETS.SETTINGS);
-
   return {
-
     // Units (Column S)
     units: sheet
       .getRange("S2:S100")
@@ -30,9 +26,7 @@ function loadPurchaseSettings() {
       .getValues()
       .flat()
       .filter(String)
-
   };
-
 }
 
 
@@ -42,9 +36,7 @@ function loadPurchaseSettings() {
  * ==========================================
  */
 function searchPurchaseItems(keyword) {
-
   const sheet = getSheet(SHEETS.SETTINGS);
-
   const items = sheet
       .getRange("X2:X200")
       .getValues()
@@ -63,10 +55,7 @@ function searchPurchaseItems(keyword) {
           itemName: item
       }))
       .slice(0, 10);
-
 }
-
-
 
 
 /**
@@ -75,7 +64,6 @@ function searchPurchaseItems(keyword) {
  * ==========================================
  */
 function addPurchaseItem(itemName) {
-
     itemName = String(itemName).trim();
 
     if (!itemName) {
@@ -83,51 +71,161 @@ function addPurchaseItem(itemName) {
     }
 
     const sheet = getSheet(SHEETS.SETTINGS);
-
-    const values = sheet
-        .getRange("X2:X1000")
-        .getValues();
-
+    const values = sheet.getRange("X2:X1000").getValues();
     let nextRow = null;
 
     for (let i = 0; i < values.length; i++) {
-
         const value = String(values[i][0]).trim();
-
-        if (
-            value &&
-            value.toLowerCase() === itemName.toLowerCase()
-        ) {
-
+        if (value && value.toLowerCase() === itemName.toLowerCase()) {
             return {
                 success: true,
                 alreadyExists: true,
                 itemName: value
             };
-
         }
-
         if (!value && nextRow === null) {
             nextRow = i + 2;
         }
-
     }
 
     if (nextRow === null) {
         nextRow = values.length + 2;
     }
 
-    sheet
-        .getRange(nextRow, 24)
-        .setValue(itemName);
+    sheet.getRange(nextRow, 24).setValue(itemName);
 
     return {
         success: true,
         alreadyExists: false,
         itemName: itemName
     };
-
 }
+
+
+/**
+ * ==========================================
+ * Get Purchase Items (Cached)
+ * ==========================================
+ */
+function getPurchaseItems() {
+   return getCachedData("CACHE_PURCHASE_ITEMS", function() {
+      const sheet = getSheet(SHEETS.SETTINGS);
+
+      return sheet
+         .getRange("X2:X1000")
+         .getValues()
+         .flat()
+         .filter(item => item && String(item).trim() !== "")
+         .map(item => ({
+            itemName: String(item).trim(),
+            searchName: String(item).trim().toLowerCase()
+         }));
+   });
+}
+
+
+/**
+ * ==========================================
+ * CACHE MANAGEMENT HELPERS
+ * ==========================================
+ */
+function getPurchaseCacheVersion() {
+   const cache = CacheService.getScriptCache();
+   let version = cache.get("PURCHASE_CACHE_VERSION");
+   if (!version) {
+      version = String(new Date().getTime());
+      cache.put("PURCHASE_CACHE_VERSION", version, 21600); // 6 hours
+   }
+   return version;
+}
+
+function invalidatePurchaseCache() {
+   const cache = CacheService.getScriptCache();
+   cache.put("PURCHASE_CACHE_VERSION", String(new Date().getTime()), 21600);
+}
+
+/**
+ * ==========================================
+ * BLAZING-FAST CACHED PURCHASE BOOTSTRAP WITH MONTHS
+ * ==========================================
+ */
+function getPurchaseBootstrapData(targetMonth) {
+   const tz = Session.getScriptTimeZone();
+   const defaultMonth = targetMonth || Utilities.formatDate(new Date(), tz, "yyyy-MM");
+   
+   const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+   const lastRow = sheet.getLastRow();
+   
+   const monthsSet = new Set();
+   monthsSet.add(Utilities.formatDate(new Date(), tz, "yyyy-MM")); // Ensure current month is always present
+
+   const purchases = [];
+   let monthTotal = 0;
+
+   if (lastRow >= 2) {
+      // Read recent rows to quickly extract unique months and current month purchases
+      const numRowsToRead = Math.min(lastRow - 1, 1000);
+      const startRow = Math.max(2, lastRow - numRowsToRead + 1);
+      const data = sheet.getRange(startRow, 1, numRowsToRead, 11).getValues();
+
+      for (let i = 0; i < data.length; i++) {
+         const row = data[i];
+         if (!row[0]) continue;
+         const rawDate = row[1];
+         if (!rawDate) continue;
+
+         const purchaseDateKey = Utilities.formatDate(new Date(rawDate), tz, "yyyy-MM-dd");
+         const mKey = purchaseDateKey.slice(0, 7);
+         monthsSet.add(mKey);
+
+         const status = String(row[10] || "Active");
+         if (status.toLowerCase() !== "deleted" && mKey === defaultMonth) {
+            const amount = Number(row[6] || 0);
+            monthTotal += amount;
+
+            purchases.push({
+               purchaseId: String(row[0]),
+               purchaseDateRaw: purchaseDateKey,
+               purchaseDate: Utilities.formatDate(new Date(rawDate), tz, "dd/MM/yyyy"),
+               itemName: String(row[2] || ""),
+               quantity: Number(row[3] || 0),
+               unit: String(row[4] || ""),
+               paymentType: String(row[5] || ""),
+               amount: amount,
+               supplier: String(row[7] || ""),
+               remarks: String(row[8] || ""),
+               status: status
+            });
+         }
+      }
+   }
+
+   purchases.sort((a, b) => b.purchaseId.localeCompare(a.purchaseId, undefined, { numeric: true }));
+
+   // Sort months descending (newest first) and format labels
+   const sortedMonths = Array.from(monthsSet).sort().reverse();
+   const monthsList = sortedMonths.map(mKey => {
+      const parts = mKey.split("-");
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+      return {
+         value: mKey,
+         label: Utilities.formatDate(date, tz, "MMMM yyyy")
+      };
+   });
+
+   return {
+      success: true,
+      summary: {
+         thisMonth: monthTotal,
+         transactionCount: purchases.length
+      },
+      suppliers: loadPurchaseSettings().suppliers,
+      months: monthsList,
+      purchases: purchases
+   };
+}
+
+
 
 
 
@@ -138,16 +236,11 @@ function addPurchaseItem(itemName) {
  * ==========================================
  */
 function savePurchaseFromWeb(purchaseData) {
-
     try {
-
         validatePurchaseData(purchaseData);
 
-        const purchaseSheet =
-            getSheet(SHEETS.PURCHASE_REGISTER);
-
-        const purchaseId =
-            generateNextId(purchaseSheet, "PUR");
+        const purchaseSheet = getSheet(SHEETS.PURCHASE_REGISTER);
+        const purchaseId = generateNextId(purchaseSheet, "PUR");
 
         savePurchaseEntry(
             purchaseSheet,
@@ -155,21 +248,20 @@ function savePurchaseFromWeb(purchaseData) {
             purchaseData
         );
 
+        // Invalidate cache so the new purchase appears instantly
+        invalidatePurchaseCache();
+
         return {
             success: true,
             purchaseId,
             message: "Purchase Saved Successfully"
         };
-
     } catch (error) {
-
         return {
             success: false,
             message: error.message
         };
-
     }
-
 }
 
 
@@ -179,7 +271,6 @@ function savePurchaseFromWeb(purchaseData) {
  * ==========================================
  */
 function validatePurchaseData(purchaseData) {
-
   const purchase = purchaseData.purchase;
 
   if (!purchase.purchaseDate)
@@ -191,21 +282,15 @@ function validatePurchaseData(purchaseData) {
   if (!purchase.quantity || purchase.quantity <= 0)
     throw new Error("Quantity should be greater than zero.");
 
-purchase.unit = purchase.unit || "Gram";
-
-purchase.paymentType =
-    purchase.paymentType || "PhonePe";
-
-purchase.supplier =
-    purchase.supplier || "Local Market";
+  purchase.unit = purchase.unit || "Gram";
+  purchase.paymentType = purchase.paymentType || "PhonePe";
+  purchase.supplier = purchase.supplier || "Local Market";
 
   if (!purchase.amount || purchase.amount <= 0)
     throw new Error("Amount should be greater than zero.");
 
   return true;
-
 }
-
 
 
 /**
@@ -218,9 +303,7 @@ function savePurchaseEntry(
     purchaseId,
     purchaseData
 ) {
-
     const p = purchaseData.purchase;
-
     const nextRow = purchaseSheet.getLastRow() + 1;
 
     purchaseSheet
@@ -237,28 +320,158 @@ function savePurchaseEntry(
             p.remarks || "",
             new Date()
         ]]);
-
 }
 
 
+/**
+ * ==========================================
+ * Update Purchase From Web
+ * ==========================================
+ */
+function updatePurchaseFromWeb(purchaseId, purchaseData) {
+   try {
+      validatePurchaseData(purchaseData);
+      const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+      const data = sheet.getDataRange().getValues();
+
+      let targetRow = -1;
+      for (let i = 1; i < data.length; i++) {
+         if (String(data[i][0]) === String(purchaseId)) {
+            targetRow = i + 1;
+            break;
+         }
+      }
+
+      if (targetRow === -1) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
+
+      const p = purchaseData.purchase;
+      sheet.getRange(targetRow, 1, 1, 9).setValues([[
+         purchaseId,
+         new Date(p.purchaseDate),
+         p.itemName,
+         Number(p.quantity),
+         p.unit,
+         p.paymentType,
+         Number(p.amount),
+         p.supplier,
+         p.remarks || ""
+      ]]);
+
+      // Invalidate cache
+      invalidatePurchaseCache();
+
+      return { success: true, purchaseId: purchaseId };
+   } catch (err) {
+      return { success: false, message: err.message };
+   }
+}
 
 
+/**
+ * ==========================================
+ * Delete Purchase From Web (Soft Delete)
+ * ==========================================
+ */
+function deletePurchaseFromWeb(purchaseId) {
+   try {
+      const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+      const data = sheet.getDataRange().getValues();
+
+      let targetRow = -1;
+      for (let i = 1; i < data.length; i++) {
+         if (String(data[i][0]) === String(purchaseId)) {
+            targetRow = i + 1;
+            break;
+         }
+      }
+
+      if (targetRow === -1) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
+
+      sheet.getRange(targetRow, 11).setValue("Deleted");
+
+      // Invalidate cache
+      invalidatePurchaseCache();
+
+      return { success: true };
+   } catch (err) {
+      return { success: false, message: err.message };
+   }
+}
 
 
+/**
+ * ==========================================
+ * Restore Purchase From Web
+ * ==========================================
+ */
+function restorePurchaseFromWeb(purchaseId) {
+   try {
+      const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+      const data = sheet.getDataRange().getValues();
+
+      let targetRow = -1;
+      for (let i = 1; i < data.length; i++) {
+         if (String(data[i][0]) === String(purchaseId)) {
+            targetRow = i + 1;
+            break;
+         }
+      }
+
+      if (targetRow === -1) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
+
+      sheet.getRange(targetRow, 11).setValue("Active");
+
+      // Invalidate cache
+      invalidatePurchaseCache();
+
+      return { success: true };
+   } catch (err) {
+      return { success: false, message: err.message };
+   }
+}
 
 
-function getPurchaseItems() {
-   return getCachedData("CACHE_PURCHASE_ITEMS", function() {
-      const sheet = getSheet(SHEETS.SETTINGS);
+/**
+ * ==========================================
+ * Get Deleted Purchases
+ * ==========================================
+ */
+function getDeletedPurchases() {
+   const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
+   const data = sheet.getDataRange().getValues();
+   const deletedPurchases = [];
 
-      return sheet
-         .getRange("X2:X1000")
-         .getValues()
-         .flat()
-         .filter(item => item && String(item).trim() !== "")
-         .map(item => ({
-            itemName: String(item).trim(),
-            searchName: String(item).trim().toLowerCase()
-         }));
-   });
+   for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+      const status = String(row[10] || "Active");
+
+      if (status.toLowerCase() === "deleted") {
+         const rawDate = row[1];
+         deletedPurchases.push({
+            purchaseId: String(row[0]),
+            purchaseDate: rawDate ? Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), "dd/MM/yyyy") : "",
+            itemName: String(row[2] || ""),
+            quantity: Number(row[3] || 0),
+            unit: String(row[4] || ""),
+            paymentType: String(row[5] || ""),
+            amount: Number(row[6] || 0),
+            supplier: String(row[7] || ""),
+            remarks: String(row[8] || "")
+         });
+      }
+   }
+
+   deletedPurchases.sort((a, b) => b.purchaseId.localeCompare(a.purchaseId, undefined, { numeric: true }));
+
+   return {
+      success: true,
+      purchases: deletedPurchases
+   };
 }

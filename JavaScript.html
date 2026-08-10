@@ -1941,6 +1941,9 @@
 
    let isPurchaseSettingsLoaded = false;
    let isPurchaseItemsLoaded = false;
+   let purchaseHistoryCache = [];
+   let purchaseBootstrapLoaded = false;
+   let purchaseLastHistorySignature = "";
 
    function initializePurchase() {
       const purchaseDate = document.getElementById("purchaseDate");
@@ -1949,18 +1952,413 @@
          purchaseDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       }
 
+      // Pre-select current month immediately
+      const historyMonth = document.getElementById("purchaseHistoryMonth");
+      if (historyMonth && !historyMonth.value) {
+         const now = new Date();
+         historyMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      // Default Supplier filter to "All Suppliers"
+      const supplierSelect = document.getElementById("purchaseHistorySupplier");
+      if (supplierSelect && !supplierSelect.value) {
+         supplierSelect.value = "";
+      }
+
+      // Reduce remarks box height
+      const remarksBox = document.getElementById("remarks");
+      if (remarksBox) {
+         remarksBox.style.height = "38px";
+         remarksBox.style.minHeight = "38px";
+         remarksBox.style.maxHeight = "80px";
+         remarksBox.style.resize = "vertical";
+      }
+
+      // Force equal height styling for cards
+      if (!document.getElementById("equalHeightPurchaseStyle")) {
+         const style = document.createElement("style");
+         style.id = "equalHeightPurchaseStyle";
+         style.textContent = `
+            .container-fluid .row:has(#purchaseDate), .container .row:has(#purchaseDate) {
+               display: flex !important;
+               align-items: stretch !important;
+            }
+            .container-fluid .row:has(#purchaseDate) > div > .card,
+            .container .row:has(#purchaseDate) > div > .card {
+               height: 100% !important;
+               display: flex !important;
+               flex-direction: column !important;
+            }
+            .card:has(#summaryPurchaseDate) .card-body {
+               flex: 1 !important;
+               display: flex !important;
+               flex-direction: column !important;
+               justify-content: space-between !important;
+               padding: 10px 14px !important;
+            }
+            .card:has(#summaryPurchaseDate) small, 
+            .card:has(#summaryPurchaseDate) .text-muted {
+               font-size: 11px !important;
+            }
+            .card:has(#summaryPurchaseDate) div {
+               margin-bottom: 2px !important;
+            }
+         `;
+         document.head.appendChild(style);
+      }
+
       loadPurchaseSettings();
       registerPurchaseEvents();
+      registerPurchaseLocalHistoryFilters();
       updatePurchaseSummary();
+      loadPurchaseHistoryBootstrap();
 
-      if (isPurchaseItemsLoaded) return;
+      if (!isPurchaseItemsLoaded) {
+         google.script.run
+            .withSuccessHandler(function (items) {
+               purchaseItemsCache = items;
+               isPurchaseItemsLoaded = true;
+            })
+            .getPurchaseItems();
+      }
+   }
+
+   function loadPurchaseHistoryBootstrap() {
+      const monthEl = document.getElementById("purchaseHistoryMonth");
+      const now = new Date();
+      const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const selectedMonth = monthEl && monthEl.value ? monthEl.value : currentMonthVal;
 
       google.script.run
-         .withSuccessHandler(function (items) {
-            purchaseItemsCache = items;
-            isPurchaseItemsLoaded = true;
+         .withSuccessHandler(function (response) {
+            if (!response || response.success !== true) {
+               console.error("Purchase history bootstrap failed");
+               return;
+            }
+
+            purchaseBootstrapLoaded = true;
+            populatePurchaseMonths(response.months || [], selectedMonth);
+            populatePurchaseSuppliers(response.suppliers || []);
+
+            purchaseHistoryCache = Array.isArray(response.purchases) ? response.purchases : [];
+
+            for (let i = 0; i < purchaseHistoryCache.length; i++) {
+               const p = purchaseHistoryCache[i];
+               p._month = String(p.purchaseDateRaw || "").slice(0, 7);
+               p._supplier = String(p.supplier || "");
+               p._amount = Number(p.amount || 0);
+               p._search = [
+                  p.purchaseId,
+                  p.itemName,
+                  p.supplier,
+                  p.paymentType,
+                  p.remarks,
+                  p.unit,
+                  p.quantity
+               ].join(" ").toLowerCase();
+            }
+
+            purchaseLastHistorySignature = "";
+            renderPurchaseHistoryFromCache();
          })
-         .getPurchaseItems();
+         .withFailureHandler(function (error) {
+            console.error("Purchase history server failure:", error);
+         })
+         .getPurchaseBootstrapData(selectedMonth);
+   }
+
+   function populatePurchaseMonths(months, currentSelection) {
+      const select = document.getElementById("purchaseHistoryMonth");
+      if (!select) return;
+
+      const now = new Date();
+      const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const activeVal = currentSelection || select.value || currentMonthVal;
+      
+      let html = "";
+      (months || []).forEach(function (m) {
+         html += `<option value="${m.value}">${m.label}</option>`;
+      });
+
+      select.innerHTML = html;
+      
+      const exists = Array.from(select.options).some(opt => opt.value === activeVal);
+      if (exists) {
+         select.value = activeVal;
+      } else if (select.options.length > 0) {
+         select.selectedIndex = 0;
+      }
+   }
+
+   function populatePurchaseSuppliers(suppliers) {
+      const select = document.getElementById("purchaseHistorySupplier");
+      if (!select) return;
+      const current = select.value;
+      let html = '<option value="">All Suppliers</option>';
+      (suppliers || []).forEach(function (sup) {
+         sup = String(sup || "").trim();
+         if (!sup) return;
+         html += '<option value="' + escapeHtml(sup) + '">' + escapeHtml(sup) + '</option>';
+      });
+      select.innerHTML = html;
+      select.value = current;
+   }
+
+   function registerPurchaseLocalHistoryFilters() {
+      const monthEl = document.getElementById("purchaseHistoryMonth");
+      if (monthEl && monthEl.dataset.serverFetchBound !== "true") {
+         monthEl.dataset.serverFetchBound = "true";
+         monthEl.addEventListener("change", function () {
+            loadPurchaseHistoryBootstrap(); 
+         });
+      }
+
+      ["purchaseHistorySupplier", "purchaseHistorySearch"].forEach(function (id) {
+         const element = document.getElementById(id);
+         if (!element || element.dataset.localFilterBound === "true") return;
+
+         element.dataset.localFilterBound = "true";
+         const eventName = element.tagName === "INPUT" ? "input" : "change";
+         let timer = null;
+
+         element.addEventListener(eventName, function () {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(function () {
+               renderPurchaseHistoryFromCache();
+            }, 80);
+         });
+      });
+   }
+
+   function renderPurchaseHistoryFromCache() {
+      if (!purchaseBootstrapLoaded) return;
+
+      const monthEl = document.getElementById("purchaseHistoryMonth");
+      const supplierEl = document.getElementById("purchaseHistorySupplier");
+      const searchEl = document.getElementById("purchaseHistorySearch");
+
+      const month = monthEl ? String(monthEl.value || "") : "";
+      const supplier = supplierEl ? String(supplierEl.value || "") : "";
+      const search = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
+
+      const signature = month + "\u0001" + supplier + "\u0001" + search + "\u0001" + purchaseHistoryCache.length;
+      if (signature === purchaseLastHistorySignature) return;
+
+      purchaseLastHistorySignature = signature;
+      const filtered = [];
+      let total = 0;
+
+      for (let i = 0; i < purchaseHistoryCache.length; i++) {
+         const p = purchaseHistoryCache[i];
+         if (month && p._month !== month) continue;
+         if (supplier && p._supplier !== supplier) continue;
+         if (search && p._search.indexOf(search) === -1) continue;
+
+         filtered.push(p);
+         total += p._amount;
+      }
+
+      filtered.sort(function (a, b) {
+         return String(b.purchaseId || "").localeCompare(String(a.purchaseId || ""), undefined, { numeric: true });
+      });
+
+      renderPurchasesTable(filtered);
+
+      const info = document.getElementById("purchaseHistoryInfo");
+      if (info) {
+         info.textContent = filtered.length + (filtered.length === 1 ? " transaction" : " transactions") + " • Total " + formatCurrencyCustom(total);
+      }
+   }
+
+   function renderPurchasesTable(purchases) {
+      renderPurchaseDesktopTable(purchases);
+      renderPurchaseMobileCards(purchases);
+   }
+
+
+
+
+
+function renderPurchaseDesktopTable(purchases) {
+      const body = document.getElementById("purchaseTableBody");
+      if (!body) return;
+
+      if (!purchases.length) {
+         body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No purchases found for this month.</td></tr>';
+         return;
+      }
+
+      let html = "";
+      purchases.forEach(function (p) {
+         const jsonStr = JSON.stringify(p).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+         html += `
+            <tr>
+               <td>${escapeHtml(p.purchaseDate)}</td>
+               <td>
+                  <div class="fw-bold">${escapeHtml(p.itemName)}</div>
+                  ${p.remarks ? '<div class="small text-muted">' + escapeHtml(p.remarks) + '</div>' : ''}
+               </td>
+               <td class="text-center">${p.quantity} ${escapeHtml(p.unit)}</td>
+               <td>${escapeHtml(p.supplier)}</td>
+               <td>${escapeHtml(p.paymentType)}</td>
+               <td class="text-end fw-semibold">${formatCurrencyCustom(p.amount)}</td>
+               <td class="text-center text-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick='editPurchase(${jsonStr})'>✏️ Edit</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePurchase('${escapeJs(p.purchaseId)}', '${escapeJs(p.itemName)}', ${p.amount})">🗑️ Delete</button>
+               </td>
+            </tr>`;
+      });
+      body.innerHTML = html;
+   }
+
+   function renderPurchaseMobileCards(purchases) {
+      const list = document.getElementById("purchaseMobileList");
+      if (!list) return;
+
+      if (!purchases.length) {
+         list.innerHTML = '<div class="text-center text-muted py-4">No purchases found for this month.</div>';
+         return;
+      }
+
+      let html = "";
+      purchases.forEach(function (p) {
+         const jsonStr = JSON.stringify(p).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+         html += `
+            <div class="border rounded p-3 mb-2 bg-white shadow-sm">
+               <div class="d-flex justify-content-between align-items-start">
+                  <div class="fw-bold text-primary">${escapeHtml(p.itemName)}</div>
+                  <div class="fw-bold text-success">${formatCurrencyCustom(p.amount)}</div>
+               </div>
+               <div class="small text-muted mt-1">${escapeHtml(p.purchaseDate)} • Qty: ${p.quantity} ${escapeHtml(p.unit)}</div>
+               <div class="small text-muted">Supplier: ${escapeHtml(p.supplier)} | Pay: ${escapeHtml(p.paymentType)}</div>
+               ${p.remarks ? '<div class="small text-muted fst-italic mt-1">" ' + escapeHtml(p.remarks) + ' "</div>' : ''}
+               <div class="mt-3 d-flex gap-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary flex-fill" onclick='editPurchase(${jsonStr})'>✏️ Edit</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger flex-fill" onclick="deletePurchase('${escapeJs(p.purchaseId)}', '${escapeJs(p.itemName)}', ${p.amount})">🗑️ Delete</button>
+               </div>
+            </div>`;
+      });
+      list.innerHTML = html;
+   }
+
+
+
+
+
+   
+
+   function editPurchase(p) {
+      if (!p) return;
+      document.getElementById("purchaseDate").value = p.purchaseDateRaw;
+      document.getElementById("quantity").value = p.quantity;
+      document.getElementById("unit").value = p.unit;
+      document.getElementById("paymentType").value = p.paymentType;
+      document.getElementById("amount").value = p.amount;
+      document.getElementById("supplier").value = p.supplier;
+      document.getElementById("itemSearch").value = p.itemName;
+      document.getElementById("remarks").value = p.remarks || "";
+      document.getElementById("purchaseEditingId").value = p.purchaseId;
+
+      const btn = document.getElementById("savePurchaseBtn");
+      if (btn) btn.innerHTML = "✏️ Update Purchase";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+   }
+
+   function deletePurchase(purchaseId, itemName, amount) {
+      if (!confirm("Delete purchase " + purchaseId + " (" + itemName + ")?")) return;
+
+      google.script.run
+         .withSuccessHandler(function (res) {
+            if (!res || !res.success) {
+               alert(res && res.message ? res.message : "Unable to delete purchase.");
+               return;
+            }
+            loadPurchaseHistoryBootstrap();
+         })
+         .withFailureHandler(function (err) {
+            alert(err.message || err);
+         })
+         .deletePurchaseFromWeb(purchaseId);
+   }
+
+   function loadDeletedPurchases() {
+      const container = document.getElementById("purchaseDeletedList");
+      if (!container) return;
+
+      container.style.display = "block";
+      container.innerHTML = '<div class="text-center text-muted py-3">Loading deleted purchases...</div>';
+
+      google.script.run
+         .withSuccessHandler(function (res) {
+            if (!res || !res.success) {
+               container.innerHTML = '<div class="alert alert-danger mb-0">Unable to load deleted purchases.</div>';
+               return;
+            }
+            renderDeletedPurchases(res.purchases || []);
+         })
+         .withFailureHandler(function (err) {
+            container.innerHTML = '<div class="alert alert-danger mb-0">' + (err.message || err) + '</div>';
+         })
+         .getDeletedPurchases();
+   }
+
+   function renderDeletedPurchases(purchases) {
+      const container = document.getElementById("purchaseDeletedList");
+      if (!container) return;
+
+      if (!purchases.length) {
+         container.innerHTML = '<div class="text-center text-muted py-3">No deleted purchases found.</div>';
+         return;
+      }
+
+      let html = "";
+      purchases.forEach(function (p) {
+         html += `
+            <div class="border rounded p-3 mb-2 bg-light">
+               <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                     <div class="fw-bold">${escapeHtml(p.itemName)}</div>
+                     <div class="small text-muted">${escapeHtml(p.purchaseDate)} • ID: ${escapeHtml(p.purchaseId)} • Qty: ${p.quantity} ${escapeHtml(p.unit)}</div>
+                  </div>
+                  <div class="text-end">
+                     <div class="fw-bold mb-2">${formatCurrencyCustom(p.amount)}</div>
+                     <button type="button" class="btn btn-sm btn-outline-success" onclick="restorePurchase('${escapeJs(p.purchaseId)}')">↩ Restore</button>
+                  </div>
+               </div>
+            </div>`;
+      });
+      container.innerHTML = html;
+   }
+
+   function restorePurchase(purchaseId) {
+      if (!confirm("Restore purchase " + purchaseId + "?")) return;
+
+      google.script.run
+         .withSuccessHandler(function (res) {
+            if (!res || !res.success) {
+               alert(res && res.message ? res.message : "Unable to restore purchase.");
+               return;
+            }
+            loadPurchaseHistoryBootstrap();
+            loadDeletedPurchases();
+         })
+         .withFailureHandler(function (err) {
+            alert(err.message || err);
+         })
+         .restorePurchaseFromWeb(purchaseId);
+   }
+
+   function clearPurchaseHistoryFilters() {
+      const month = document.getElementById("purchaseHistoryMonth");
+      const supplier = document.getElementById("purchaseHistorySupplier");
+      const search = document.getElementById("purchaseHistorySearch");
+
+      const now = new Date();
+      if (month) month.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      if (supplier) supplier.value = "";
+      if (search) search.value = "";
+      loadPurchaseHistoryBootstrap();
    }
 
    function loadPurchaseSettings(forceRefresh) {
@@ -1974,9 +2372,6 @@
             purchaseSettings = settings;
             isPurchaseSettingsLoaded = true;
             populatePurchaseDropdowns();
-         })
-         .withFailureHandler(function (error) {
-            alert(error.message);
          })
          .loadPurchaseSettings();
    }
@@ -2112,43 +2507,47 @@
       };
    }
 
-   function savePurchase() {
+  function savePurchase() {
       if (isSavingPurchase) return;
       isSavingPurchase = true;
 
       const purchaseData = collectPurchaseData();
-      const saveButton = document.getElementById("btnSavePurchase");
+      const editingId = document.getElementById("purchaseEditingId").value.trim();
+      const saveButton = document.getElementById("savePurchaseBtn");
+      
       if (saveButton) {
          saveButton.disabled = true;
-         saveButton.innerHTML =
-            '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+         saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
       }
 
-      google.script.run
-         .withSuccessHandler(function (response) {
-            isSavingPurchase = false;
-            if (saveButton) {
-               saveButton.disabled = false;
-               saveButton.innerHTML = "💾 Save Purchase";
-            }
-            if (!response.success) {
-               alert(response.message);
-               return;
-            }
-            alert(
-               response.message + "\n\nPurchase ID : " + response.purchaseId,
-            );
-            clearPurchaseForm();
-         })
-         .withFailureHandler(function (error) {
-            isSavingPurchase = false;
-            if (saveButton) {
-               saveButton.disabled = false;
-               saveButton.innerHTML = "💾 Save Purchase";
-            }
-            alert(error.message || error);
-         })
-         .savePurchaseFromWeb(purchaseData);
+      const handler = editingId
+         ? google.script.run.withSuccessHandler(handleSaveResponse).withFailureHandler(handleSaveError).updatePurchaseFromWeb(editingId, purchaseData)
+         : google.script.run.withSuccessHandler(handleSaveResponse).withFailureHandler(handleSaveError).savePurchaseFromWeb(purchaseData);
+
+      function handleSaveResponse(response) {
+         isSavingPurchase = false;
+         if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = "💾 Save Purchase";
+         }
+         if (!response || !response.success) {
+            alert(response && response.message ? response.message : "Unable to save purchase.");
+            return;
+         }
+         alert(response.message || (editingId ? "Purchase updated successfully!" : "Purchase saved successfully!"));
+         clearPurchaseForm();
+         document.getElementById("purchaseEditingId").value = "";
+         loadPurchaseHistoryBootstrap();
+      }
+
+      function handleSaveError(error) {
+         isSavingPurchase = false;
+         if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = "💾 Save Purchase";
+         }
+         alert(error.message || error);
+      }
    }
 
    function updatePurchaseSummary() {
@@ -2186,48 +2585,6 @@
       clearPurchaseSuggestions();
       updatePurchaseSummary();
       document.getElementById("itemSearch").focus();
-   }
-
-   function clearPOSForm() {
-      function setValue(id, value) {
-         const el = document.getElementById(id);
-         if (el) el.value = value;
-      }
-      function resetSelect(id) {
-         const el = document.getElementById(id);
-         if (el) el.selectedIndex = 0;
-      }
-
-      setValue("customerName", "");
-      setValue("mobile", "");
-      setValue("houseAddress", "");
-      setValue("orderDate", getToday());
-      resetSelect("deliveryArea");
-      resetSelect("deliverySlot");
-      resetSelect("orderType");
-      resetSelect("paymentMode");
-      resetSelect("paymentStatus");
-      setValue("menuSearch", "");
-
-      const suggestionBox = document.getElementById("menuSuggestions");
-      if (suggestionBox) {
-         suggestionBox.innerHTML = "";
-         suggestionBox.style.display = "none";
-      }
-
-      setValue("specialInstructions", "");
-      setValue("discount", 0);
-      cart = [];
-      customAddons = [];
-      setValue("addonName", "");
-      setValue("addonPrice", "");
-      deliveryCharge = 0;
-      renderCustomAddons();
-      renderCart();
-      calculateTotals();
-
-      const customer = document.getElementById("customerName");
-      if (customer) customer.focus();
    }
 
    /* ==========================================
@@ -2332,15 +2689,6 @@
       printWindow.close();
    }
 
-   /**
-    * ==========================================
-    * BUILD INVOICE PDF BLOB
-    *
-    * Shared by:
-    * - Download PDF
-    * - WhatsApp PDF
-    * ==========================================
-    */
    async function buildInvoicePdfBlob() {
       const invoice = document.getElementById("invoicePdfContainer");
 
@@ -3658,5 +4006,17 @@
             searchPurchaseItems();
          }
       }, 200);
+   }
+
+   function escapeHtml(str) {
+      return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+   }
+
+   function escapeJs(str) {
+      return String(str || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+   }
+
+   function formatCurrencyCustom(amount) {
+      return "₹" + Number(amount || 0).toFixed(2);
    }
 </script>
