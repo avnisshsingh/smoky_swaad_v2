@@ -343,8 +343,7 @@ function updateOrderFromWeb(orderId, orderData) {
     // 4. Format addons string
     const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
     
-    // 5. Update exact columns based on the sheet layout
-    ordersSheet.getRange(orderRowIndex, 2).setValue(orderData.meta.orderDate);       // Col B: Order Date
+    // 5. Update order row values (Note: Column B / Order Date is intentionally excluded so original date is preserved)
     ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName); // Col C: Customer Name
     ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);       // Col D: Mobile Number
     ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea); // Col E: Delivery Area
