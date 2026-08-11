@@ -10,20 +10,32 @@
 }
 
 /* ==========================================
-   SMOOTH MICRO-INTERACTIONS (Desktop & Mobile)
+   SMOOTH MICRO-INTERACTIONS & MOBILE SPEED
 ========================================== */
 html {
     scroll-behavior: smooth;
+}
+
+/* Eliminate 300ms mobile tap delay instantly across all interactive elements */
+button, 
+a, 
+input, 
+select, 
+textarea,
+.list-group-item {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
 }
 
 .btn, .card, .list-group-item, .form-control, .form-select {
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* Tactile button press feedback */
 .btn:active, 
 #sidebar .list-group-item:active, 
 .pe-quick-btn:active {
-    transform: scale(0.96) !important;
+    transform: scale(0.97) !important;
     opacity: 0.9;
 }
 
@@ -74,11 +86,12 @@ html, body{
 }
 
 /* ==========================================
-   TYPOGRAPHY
+   TYPOGRAPHY & ANTI-GLARE READABILITY
 ========================================== */
 body { 
     font-size: 14px; 
     font-weight: 500 !important; 
+    -webkit-font-smoothing: antialiased;
 }
 
 p, span, td, th, .form-control, .form-select, .list-group-item {
@@ -131,11 +144,6 @@ h5{ font-size:1.05rem; }
     background: #f4f6f9;
     overflow-x: hidden !important;
     overflow-y: auto !important;
-  }
-
-  body, button, input, select, textarea, .btn, .list-group-item {
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
   }
 
   body {
@@ -296,7 +304,6 @@ h5{ font-size:1.05rem; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    touch-action: manipulation;
   }
   .btn-sm { min-height: 38px; }
   .btn-lg { min-height: 52px; }
@@ -505,5 +512,4 @@ h5{ font-size:1.05rem; }
         max-width: 100%;
     }
 }
-
 </style>
