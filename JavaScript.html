@@ -1915,37 +1915,64 @@ function loadSettingsCache() {
    }
 
 
-
-   function saveOrder() {
-   if (isSavingOrder) return;
-   const orderData = collectOrderData();
-   isSavingOrder = true;
-
-   const saveButton = document.getElementById("btnSaveOrder");
-   if (saveButton) {
-      saveButton.disabled = true;
-      saveButton.innerHTML =
-         '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+function resetOrderEditState() {
+      const editIdField = document.getElementById("posEditingOrderId");
+      if (editIdField) editIdField.value = "";
+      const editInput = document.getElementById("editOrderIdInput");
+      if (editInput) editInput.value = "";
+      
+      const indicator = document.getElementById("editOrderIndicator");
+      if (indicator) indicator.style.display = "none";
+      
+      const saveBtn = document.getElementById("btnSaveOrder");
+      if (saveBtn) saveBtn.innerHTML = "💾 Save Order";
    }
 
-   google.script.run
-      .withSuccessHandler(function (response) {
+   function saveOrder() {
+      if (isSavingOrder) return;
+      
+      const editingIdField = document.getElementById("posEditingOrderId");
+      const editingId = editingIdField ? editingIdField.value.trim() : "";
+      
+      const orderData = collectOrderData();
+      isSavingOrder = true;
+
+      const saveButton = document.getElementById("btnSaveOrder");
+      if (saveButton) {
+         saveButton.disabled = true;
+         saveButton.innerHTML = editingId
+            ? '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...'
+            : '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+      }
+
+      const runner = editingId
+         ? google.script.run
+              .withSuccessHandler(handleResponse)
+              .withFailureHandler(handleError)
+              .updateOrderFromWeb(editingId, orderData)
+         : google.script.run
+              .withSuccessHandler(handleResponse)
+              .withFailureHandler(handleError)
+              .saveOrderFromWeb(orderData);
+
+      function handleResponse(response) {
          isSavingOrder = false;
+         if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.innerHTML = "💾 Save Order";
+         }
          if (response && response.success) {
             clearPOSForm();
-            if (saveButton) {
-               saveButton.disabled = false;
-               saveButton.innerHTML = "💾 Save Order";
+            if (editingId) {
+               resetOrderEditState();
             }
             showToast(
-               "Order Saved Successfully - ID: " + response.orderId,
+               editingId
+                  ? "Order Updated Successfully - ID: " + response.orderId
+                  : "Order Saved Successfully - ID: " + response.orderId,
                "success"
             );
          } else {
-            if (saveButton) {
-               saveButton.disabled = false;
-               saveButton.innerHTML = "💾 Save Order";
-            }
             showToast(
                response && response.message
                   ? response.message
@@ -1953,8 +1980,9 @@ function loadSettingsCache() {
                "error"
             );
          }
-      })
-      .withFailureHandler(function (error) {
+      }
+
+      function handleError(error) {
          isSavingOrder = false;
          if (saveButton) {
             saveButton.disabled = false;
@@ -1964,9 +1992,9 @@ function loadSettingsCache() {
             error && error.message ? error.message : "Unable to save order.",
             "error"
          );
-      })
-      .saveOrderFromWeb(orderData);
-}
+      }
+   }
+
 
 
    function clearMenuSuggestions() {
@@ -4163,6 +4191,92 @@ function showToast(message, type = 'success') {
 }
 
 
+
+function loadOrderForEditing() {
+    const orderIdInput = document.getElementById("editOrderIdInput");
+    if (!orderIdInput) return;
+    const orderId = orderIdInput.value.trim().toUpperCase();
+    if (!orderId) {
+        showToast("Please enter a valid Order ID.", "error");
+        orderIdInput.focus();
+        return;
+    }
+
+    showToast("Loading order for editing...", "info");
+
+    google.script.run
+       .withSuccessHandler(function (response) {
+          if (!response || !response.success) {
+             showToast(response && response.message ? response.message : "Order not found.", "error");
+             return;
+          }
+          
+          const order = response.order;
+          const items = response.items || [];
+
+          // Populate Customer & Form Fields
+          document.getElementById("customerName").value = order.customerName || "";
+          document.getElementById("mobile").value = order.mobile || "";
+          document.getElementById("houseAddress").value = order.houseAddress || "";
+          document.getElementById("deliveryArea").value = order.deliveryArea || "";
+          document.getElementById("deliverySlot").value = order.deliverySlot || "Lunch";
+          document.getElementById("orderType").value = order.orderType || "Delivery";
+          document.getElementById("paymentMode").value = order.paymentMode || "Cash";
+          document.getElementById("paymentStatus").value = order.paymentStatus || "Pending";
+          document.getElementById("specialInstructions").value = order.specialInstructions || "";
+          document.getElementById("discount").value = order.discount || "0";
+          if (document.getElementById("orderDate") && order.orderDateRaw) {
+             document.getElementById("orderDate").value = order.orderDateRaw;
+          }
+
+          // Set editing state
+          document.getElementById("posEditingOrderId").value = order.orderId;
+          const indicator = document.getElementById("editOrderIndicator");
+          const badge = document.getElementById("activeEditBadge");
+          if (indicator && badge) {
+             badge.textContent = order.orderId;
+             indicator.style.display = "block";
+          }
+
+          // Populate Cart
+          cart = items.map(function(item) {
+             return {
+                itemId: item.itemId || "",
+                itemName: item.itemName,
+                price: Number(item.price),
+                cost: Number(item.cost || 0),
+                qty: Number(item.qty),
+                lineTotal: Number(item.total),
+                profit: (Number(item.price) - Number(item.cost || 0)) * Number(item.qty)
+             };
+          });
+
+          // Populate Add-ons if present
+          customAddons = [];
+          if (order.addonsList && Array.isArray(order.addonsList)) {
+             customAddons = order.addonsList.map(a => ({ name: a.name, price: Number(a.price) }));
+          }
+
+          renderCart();
+          renderCustomAddons();
+          updateDeliveryCharge();
+
+          const saveBtn = document.getElementById("btnSaveOrder");
+          if (saveBtn) saveBtn.innerHTML = "💾 Update Order";
+
+          showToast("Order loaded successfully for editing!", "success");
+       })
+       .withFailureHandler(function (error) {
+          showToast(error.message || String(error), "error");
+       })
+       .getInvoice(orderId); // Reuses your existing robust backend order fetcher
+}
+
+function cancelOrderEdit() {
+   resetOrderEditState();
+   clearPOSForm();
+   showToast("Edit cancelled. Form reset.", "info");
+}
 
 
 

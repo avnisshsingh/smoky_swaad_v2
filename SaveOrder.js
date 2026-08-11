@@ -288,3 +288,80 @@ function clearPOS() {
   pos.getRange(POS.DELIVERY_CHARGE).setValue(0);
 
 }
+
+
+
+
+
+function updateOrderFromWeb(orderId, orderData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ordersSheet = ss.getSheetByName("Orders");
+    const itemsSheet = ss.getSheetByName("OrderItems");
+    
+    if (!ordersSheet) throw new Error("Orders sheet not found.");
+    
+    // 1. Find order row in Orders sheet
+    const ordersData = ordersSheet.getDataRange().getValues();
+    let orderRowIndex = -1;
+    for (let i = 1; i < ordersData.length; i++) {
+      if (String(ordersData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
+        orderRowIndex = i + 1; // 1-based index
+        break;
+      }
+    }
+    
+    if (orderRowIndex === -1) {
+      return { success: false, message: "Order ID not found for update." };
+    }
+    
+    // 2. Remove old order items from OrderItems sheet
+    if (itemsSheet) {
+      const itemsData = itemsSheet.getDataRange().getValues();
+      for (let i = itemsData.length - 1; i >= 1; i--) {
+        if (String(itemsData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
+          itemsSheet.deleteRow(i + 1);
+        }
+      }
+    }
+    
+    // 3. Append new order items
+    if (itemsSheet && orderData.cart && orderData.cart.length > 0) {
+      orderData.cart.forEach(function(item) {
+        itemsSheet.appendRow([
+          orderId,
+          item.itemName,
+          item.qty,
+          item.price,
+          item.lineTotal,
+          item.cost || 0,
+          item.profit || 0
+        ]);
+      });
+    }
+    
+    // 4. Format addons string
+    const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
+    
+    // 5. Update exact columns based on the sheet layout
+    ordersSheet.getRange(orderRowIndex, 2).setValue(orderData.meta.orderDate);       // Col B: Order Date
+    ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName); // Col C: Customer Name
+    ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);       // Col D: Mobile Number
+    ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea); // Col E: Delivery Area
+    ordersSheet.getRange(orderRowIndex, 6).setValue(orderData.customer.houseAddress); // Col F: House Address
+    ordersSheet.getRange(orderRowIndex, 7).setValue(orderData.customer.deliverySlot); // Col G: Delivery Slot
+    ordersSheet.getRange(orderRowIndex, 8).setValue(orderData.order.orderType);     // Col H: Order Type
+    ordersSheet.getRange(orderRowIndex, 9).setValue(orderData.payment.paymentMode); // Col I: Payment Mode
+    ordersSheet.getRange(orderRowIndex, 10).setValue(orderData.payment.paymentStatus);// Col J: Payment Status
+    ordersSheet.getRange(orderRowIndex, 11).setValue(orderData.totals.grandTotal);  // Col K: Grand Total
+    ordersSheet.getRange(orderRowIndex, 13).setValue(orderData.order.specialInstructions); // Col M: Special Instructions
+    ordersSheet.getRange(orderRowIndex, 15).setValue(orderData.totals.deliveryCharge); // Col O: Delivery Charge
+    ordersSheet.getRange(orderRowIndex, 16).setValue(orderData.totals.discount);    // Col P: Discount
+    ordersSheet.getRange(orderRowIndex, 17).setValue(addonNames);                   // Col Q: Add-ons
+    ordersSheet.getRange(orderRowIndex, 18).setValue(orderData.totals.addonTotal);  // Col R: Add-on Total
+    
+    return { success: true, orderId: orderId };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
