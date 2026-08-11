@@ -4026,20 +4026,47 @@ let isPosCacheLoaded = false;
       link.click();
    }
 
-   function shareBulkWhatsApp() {
+function shareBulkWhatsApp() {
       if (!selectedBulkData) return;
       const mobile = selectedBulkData.customerMobile;
       const totals = selectedBulkData.totals;
+      const fileName = selectedBulkData.blobName || "Bulk_Statement.pdf";
+      const base64Pdf = selectedBulkData.base64Data;
 
-      let message = `*Smoky Swaad - Consolidated Statement*\n\nGrand Total: ₹${totals.grandTotal.toFixed(2)}\nPaid: ₹${totals.paidAmount.toFixed(2)}\n`;
-      if (totals.pendingAmount > 0)
-         message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
-      message += `\nThank you for ordering with Smoky Swaad! ❤️`;
+      if (!base64Pdf) {
+         showToast("Bulk PDF data not found. Please regenerate invoice.", "error");
+         return;
+      }
 
-      window.open(
-         `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`,
-         "_blank",
-      );
+      showToast("Saving statement to Drive & opening WhatsApp...", "info");
+
+      google.script.run
+         .withSuccessHandler(function (response) {
+            if (!response || response.success !== true) {
+               showToast("Unable to save statement to Google Drive.", "error");
+               return;
+            }
+
+            const fileUrl = response.fileUrl || "";
+            let message = `*Smoky Swaad - Consolidated Statement*\n\nGrand Total: ₹${totals.grandTotal.toFixed(2)}\nPaid: ₹${totals.paidAmount.toFixed(2)}\n`;
+            if (totals.pendingAmount > 0)
+               message += `*Pending Due: ₹${totals.pendingAmount.toFixed(2)}*\n`;
+
+            if (fileUrl) {
+               message += `\n📄 Download Statement PDF:\n${fileUrl}\n`;
+            }
+
+            message += `\nThank you for ordering with Smoky Swaad! ❤️\n🍛 Smoky Swaad`;
+
+            window.open(
+               `https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`,
+               "_blank",
+            );
+         })
+         .withFailureHandler(function (error) {
+            showToast("Unable to save statement to Google Drive.", "error");
+         })
+         .saveInvoicePdf(fileName, base64Pdf);
    }
 
    /**
