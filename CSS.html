@@ -463,29 +463,31 @@ h5{ font-size:1.05rem; }
 }
 
 /* ==========================================
-   INSTANT TOAST NOTIFICATIONS (Client-Side)
+   INSTANT TOAST NOTIFICATIONS (Top Header Area)
 ========================================== */
 #toast-container {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1080;
     display: flex;
     flex-direction: column;
     gap: 10px;
     pointer-events: none;
+    max-width: 450px;
+    width: calc(100% - 40px);
 }
 
 .custom-toast {
-    min-width: 260px;
-    max-width: 360px;
-    padding: 14px 18px;
-    border-radius: 12px;
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 8px;
     color: #fff;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    animation: toastSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    animation: toastSlideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     pointer-events: auto;
     display: flex;
     align-items: center;
@@ -495,21 +497,42 @@ h5{ font-size:1.05rem; }
 
 .custom-toast.success { background: #198754; } /* Success Green */
 .custom-toast.error { background: #dc3545; }   /* Danger Red */
-.custom-toast.info { background: #212529; }    /* Dark Info */
+.custom-toast.info { background: #212529; border: 1px solid rgba(255,255,255,0.15); }    /* Dark Info */
 
-@keyframes toastSlideIn {
-    from { transform: translateY(30px); opacity: 0; }
+@keyframes toastSlideDown {
+    from { transform: translateY(-20px); opacity: 0; }
     to { transform: translateY(0); opacity: 0.95; }
 }
 
 @media (max-width: 768px) {
     #toast-container {
-        bottom: 16px;
-        right: 16px;
-        left: 16px;
-    }
-    .custom-toast {
+        top: 8px;
+        left: 12px;
+        right: 12px;
+        transform: none;
+        width: auto;
         max-width: 100%;
+    }
+}
+
+/* ==========================================
+   MOBILE-FRIENDLY CONFIRMATION MODAL
+========================================== */
+@media (max-width: 768px) {
+    #customConfirmModal .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+        align-items: center;
+        min-height: calc(100% - 2rem);
+    }
+    #customConfirmModal .modal-content {
+        border-radius: 16px !important;
+        padding: 4px;
+    }
+    #customConfirmModal .modal-footer .btn {
+        min-height: 44px; /* Thumb-friendly tap target */
+        font-size: 15px;
+        flex: 1;
     }
 }
 </style>

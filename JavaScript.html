@@ -1001,44 +1001,41 @@ function savePersonalExpense() {
       if (!expenseId) return;
 
       const amountText = formatPersonalExpenseCurrency(amount);
-      const confirmed = confirm(
-         "Delete this expense?\n\n" +
-            expenseId +
-            "\n" +
-            description +
-            "\n" +
-            amountText +
-            "\n\nIt will be removed from expense totals but retained for audit.",
+      showCustomConfirm(
+         "Delete Expense",
+         "Delete this expense?\n\n" + expenseId + "\n" + description + "\n" + amountText + "\n\nIt will be removed from expense totals but retained for audit.",
+         "Delete Expense",
+         "btn-danger",
+         function() {
+            google.script.run
+               .withSuccessHandler(function (response) {
+                  if (!response || response.success !== true) {
+                     showPersonalExpenseMessage(
+                        response && response.message
+                           ? response.message
+                           : "Unable to delete expense.",
+                        "danger",
+                     );
+                     return;
+                  }
+                  showPersonalExpenseMessage(
+                     "Expense deleted. " +
+                        expenseId +
+                        " can be restored from Deleted Expenses.",
+                     "warning",
+                  );
+                  loadPersonalExpenses();
+                  loadPersonalExpenseHistory();
+               })
+               .withFailureHandler(function (error) {
+                  showPersonalExpenseMessage(
+                     error && error.message ? error.message : String(error),
+                     "danger",
+                  );
+               })
+               .deletePersonalExpenseFromWeb(expenseId);
+         }
       );
-      if (!confirmed) return;
-
-      google.script.run
-         .withSuccessHandler(function (response) {
-            if (!response || response.success !== true) {
-               showPersonalExpenseMessage(
-                  response && response.message
-                     ? response.message
-                     : "Unable to delete expense.",
-                  "danger",
-               );
-               return;
-            }
-            showPersonalExpenseMessage(
-               "Expense deleted. " +
-                  expenseId +
-                  " can be restored from Deleted Expenses.",
-               "warning",
-            );
-            loadPersonalExpenses();
-            loadPersonalExpenseHistory();
-         })
-         .withFailureHandler(function (error) {
-            showPersonalExpenseMessage(
-               error && error.message ? error.message : String(error),
-               "danger",
-            );
-         })
-         .deletePersonalExpenseFromWeb(expenseId);
    }
 
    function loadDeletedPersonalExpenses() {
@@ -2328,21 +2325,27 @@ function resetOrderEditState() {
    }
 
 function deletePurchase(purchaseId, itemName, amount) {
-      if (!confirm("Delete purchase " + purchaseId + " (" + itemName + ")?")) return;
-
-      google.script.run
-         .withSuccessHandler(function (res) {
-            if (!res || !res.success) {
-               showToast(res && res.message ? res.message : "Unable to delete purchase.", "error");
-               return;
-            }
-            showToast("Purchase deleted successfully", "success");
-            loadPurchaseHistoryBootstrap();
-         })
-         .withFailureHandler(function (err) {
-            showToast(err.message || err, "error");
-         })
-         .deletePurchaseFromWeb(purchaseId);
+      showCustomConfirm(
+         "Delete Purchase",
+         "Delete purchase " + purchaseId + " (" + itemName + ")?",
+         "Delete Purchase",
+         "btn-danger",
+         function() {
+            google.script.run
+               .withSuccessHandler(function (res) {
+                  if (!res || !res.success) {
+                     showToast(res && res.message ? res.message : "Unable to delete purchase.", "error");
+                     return;
+                  }
+                  showToast("Purchase deleted successfully", "success");
+                  loadPurchaseHistoryBootstrap();
+               })
+               .withFailureHandler(function (err) {
+                  showToast(err.message || err, "error");
+               })
+               .deletePurchaseFromWeb(purchaseId);
+         }
+      );
    }
 
    function loadDeletedPurchases() {
@@ -2526,33 +2529,47 @@ function deletePurchase(purchaseId, itemName, amount) {
       updatePurchaseSummary();
    }
 
-function addNewPurchaseItem() {
-      const itemName = document.getElementById("itemSearch").value.trim();
-      if (!itemName) return;
+let isAddingPurchaseItem = false;
 
-      google.script.run
-         .withSuccessHandler(function (response) {
-            const exists = purchaseItemsCache.some(
-               (item) =>
-                  item.itemName.toLowerCase() ===
-                  response.itemName.toLowerCase(),
-            );
-            if (!exists) {
-               purchaseItemsCache.push({
-                  itemName: response.itemName,
-                  searchName: response.itemName.toLowerCase(),
-               });
-            }
-            document.getElementById("itemSearch").value = response.itemName;
-            clearPurchaseSuggestions();
-            selectPurchaseItem(response.itemName);
-            showToast("New item added to purchase list", "success");
-         })
-         .withFailureHandler(function (error) {
-            showToast(error.message || error, "error");
-         })
-         .addPurchaseItem(itemName);
+function addNewPurchaseItem() {
+   if (isAddingPurchaseItem) return;
+   const itemName = document.getElementById("itemSearch").value.trim();
+   if (!itemName) return;
+
+   isAddingPurchaseItem = true;
+   const suggestionBox = document.getElementById("itemSuggestions");
+   if (suggestionBox) {
+      suggestionBox.style.pointerEvents = "none";
    }
+
+   google.script.run
+      .withSuccessHandler(function (response) {
+         isAddingPurchaseItem = false;
+         if (suggestionBox) suggestionBox.style.pointerEvents = "auto";
+
+         const exists = purchaseItemsCache.some(
+            (item) =>
+               item.itemName.toLowerCase() ===
+               response.itemName.toLowerCase(),
+         );
+         if (!exists) {
+            purchaseItemsCache.push({
+               itemName: response.itemName,
+               searchName: response.itemName.toLowerCase(),
+            });
+         }
+         document.getElementById("itemSearch").value = response.itemName;
+         clearPurchaseSuggestions();
+         selectPurchaseItem(response.itemName);
+         showToast("New item added to purchase list", "success");
+      })
+      .withFailureHandler(function (error) {
+         isAddingPurchaseItem = false;
+         if (suggestionBox) suggestionBox.style.pointerEvents = "auto";
+         showToast(error.message || error, "error");
+      })
+      .addPurchaseItem(itemName);
+}
 
    function clearPurchaseSuggestions() {
       const el = document.getElementById("itemSuggestions");
@@ -3451,23 +3468,29 @@ let isPosCacheLoaded = false;
          return;
       }
 
-      if (!confirm("Delete Order " + orderId + "?")) return;
-
-      google.script.run
-         .withSuccessHandler(function (response) {
-            if (response && response.success) {
-               orderIdBox.value = "";
-               showToast("Order Deleted Successfully - ID: " + orderId, "success");
-            } else {
-               showToast(
-                  response && response.message
-                     ? response.message
-                     : "Unable to delete order.",
-                  "error"
-               );
-            }
-         })
-         .deleteOrderFromWeb(orderId);
+      showCustomConfirm(
+         "Delete Order",
+         "Are you sure you want to delete Order " + orderId + "? This action will remove it from active records.",
+         "Delete Order",
+         "btn-danger",
+         function() {
+            google.script.run
+               .withSuccessHandler(function (response) {
+                  if (response && response.success) {
+                     orderIdBox.value = "";
+                     showToast("Order Deleted Successfully - ID: " + orderId, "success");
+                  } else {
+                     showToast(
+                        response && response.message
+                           ? response.message
+                           : "Unable to delete order.",
+                        "error"
+                     );
+                  }
+               })
+               .deleteOrderFromWeb(orderId);
+         }
+      );
    }
 
   function addCustomAddon() {
@@ -4305,6 +4328,33 @@ function cancelOrderEdit() {
    showToast("Edit cancelled. Form reset.", "info");
 }
 
+// ==========================================
+// BRANDED CUSTOM CONFIRMATION MODAL HELPER
+// ==========================================
+function showCustomConfirm(title, message, confirmText = "Confirm", btnClass = "btn-danger", onConfirm) {
+    let modalEl = document.getElementById('customConfirmModal');
+    if (!modalEl) return;
 
+    document.getElementById('customConfirmTitle').innerText = title;
+    document.getElementById('customConfirmMessage').innerText = message;
+    
+    const confirmBtn = document.getElementById('customConfirmBtn');
+    confirmBtn.innerText = confirmText;
+    confirmBtn.className = `btn ${btnClass} px-4`;
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+    newConfirmBtn.addEventListener('click', function() {
+        bsModal.hide();
+        if (typeof onConfirm === 'function') {
+            onConfirm();
+        }
+    });
+
+    bsModal.show();
+}
 
 </script>
