@@ -1,4 +1,4 @@
-<!-- Bootstrap Bundle -->
+// Bootstrap Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script
    src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
@@ -70,11 +70,15 @@
     * MOBILE VIEWPORT & BUTTER-SMOOTH UI ENHANCEMENTS
     * ==========================================
     */
-   function injectMobileSmoothStyles() {
+function injectMobileSmoothStyles() {
       if (document.getElementById("smokySmoothMobileStyle")) return;
       const style = document.createElement("style");
       style.id = "smokySmoothMobileStyle";
       style.textContent = `
+         /* Adjusted padding to prevent navbar overlap without creating whitespace */
+         body {
+            padding-top: 15px !important;
+         }
          @media (max-width: 768px) {
             /* Prevent iOS auto-zoom on input focus by maintaining 16px minimum font size */
             input.form-control, select.form-select, textarea.form-control {
@@ -100,7 +104,6 @@
       `;
       document.head.appendChild(style);
    }
-
    /* ==========================================
    Navigation
 ========================================== */
@@ -140,6 +143,9 @@
                   const orderDate = document.getElementById("orderDate");
                   if (orderDate) {
                      orderDate.value = getToday();
+                  }
+                  if (typeof initOrderHistory === "function") {
+                     initOrderHistory();
                   }
                }, 100);
             } else if (screen === "Purchase") {
@@ -2700,37 +2706,34 @@ function searchInvoice() {
          .getInvoice(orderId);
    }
 
-   function renderInvoice(data) {
+function renderInvoice(data) {
       const order = data.order;
       const items = data.items;
       let subtotal = 0;
 
-      document.getElementById("invOrderId").innerText = order.orderId;
-      document.getElementById("invDate").innerText = order.orderDate;
-      document.getElementById("invCustomer").innerText = order.customerName;
-      document.getElementById("invMobile").innerText = order.mobile;
-      document.getElementById("invDeliveryArea").innerText = order.deliveryArea;
-      document.getElementById("invOrderType").innerText = order.orderType;
-      document.getElementById("invAddress").innerHTML = (
-         order.houseAddress || ""
-      ).replace(/\n/g, "<br>");
-      document.getElementById("invPaymentMode2").innerText = order.paymentMode;
-      document.getElementById("invInstructions").innerText =
-         order.specialInstructions || "-";
+      const setVal = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+      const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
 
-      document.getElementById("invStatus").innerHTML =
-         `<span class="badge bg-primary">${order.status}</span>`;
-      document.getElementById("invPaymentStatus").innerHTML =
-         `<span class="badge bg-success">${order.paymentStatus}</span>`;
+      setVal("invOrderId", order.orderId);
+      setVal("invDate", order.orderDate);
+      setVal("invCustomer", order.customerName);
+      setVal("invMobile", order.mobile);
+      setVal("invDeliveryArea", order.deliveryArea);
+      setVal("invOrderType", order.orderType);
+      setHtml("invAddress", (order.houseAddress || "").replace(/\n/g, "<br>"));
+      setVal("invPaymentMode2", order.paymentMode);
+      setVal("invInstructions", order.specialInstructions || "-");
+
+      setHtml("invStatus", `<span class="badge bg-primary">${order.status}</span>`);
+      setHtml("invPaymentStatus", `<span class="badge bg-success">${order.paymentStatus}</span>`);
 
       let rows = "";
       items.forEach(function (item) {
          subtotal += item.total;
          rows += `<tr><td>${item.itemName}</td><td class="text-center">${item.qty}</td><td class="text-end">₹${item.price.toFixed(2)}</td><td class="text-end">₹${item.total.toFixed(2)}</td></tr>`;
       });
-      document.getElementById("invoiceItemsBody").innerHTML = rows;
-      document.getElementById("invSubtotal").innerText =
-         "₹" + subtotal.toFixed(2);
+      setHtml("invoiceItemsBody", rows);
+      setVal("invSubtotal", "₹" + subtotal.toFixed(2));
 
       const addonsRow = document.getElementById("invAddonsRow");
       const addonsText = document.getElementById("invAddons");
@@ -2741,20 +2744,16 @@ function searchInvoice() {
       if (addons && addonTotal > 0) {
          if (addonsRow) addonsRow.style.display = "";
          if (addonsText) addonsText.innerText = addons;
-         if (addonTotalElement)
-            addonTotalElement.innerText = "₹" + addonTotal.toFixed(2);
+         if (addonTotalElement) addonTotalElement.innerText = "₹" + addonTotal.toFixed(2);
       } else {
          if (addonsRow) addonsRow.style.display = "none";
          if (addonsText) addonsText.innerText = "";
          if (addonTotalElement) addonTotalElement.innerText = "₹0.00";
       }
 
-      document.getElementById("invDeliveryCharge").innerText =
-         "₹" + Number(order.deliveryCharge || 0).toFixed(2);
-      document.getElementById("invDiscount").innerText =
-         "₹" + Number(order.discount || 0).toFixed(2);
-      document.getElementById("invGrandTotal").innerText =
-         "₹" + Number(order.grandTotal || 0).toFixed(2);
+      setVal("invDeliveryCharge", "₹" + Number(order.deliveryCharge || 0).toFixed(2));
+      setVal("invDiscount", "₹" + Number(order.discount || 0).toFixed(2));
+      setVal("invGrandTotal", "₹" + Number(order.grandTotal || 0).toFixed(2));
    }
 
 function printInvoice() {
@@ -4212,18 +4211,21 @@ function clearPOSForm() {
 
 
 // ==========================================
-// INSTANT TOAST NOTIFICATION HELPER
+// INSTANT TOAST NOTIFICATION HELPER (Centered & Bold)
 // ==========================================
 function showToast(message, type = 'success') {
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'toast-container';
+        container.style.cssText = "position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; align-items: center;";
         document.body.appendChild(container);
     }
 
     const toast = document.createElement('div');
     toast.className = `custom-toast ${type}`;
+    // Added font-weight: 600 for a bolder text appearance
+    toast.style.cssText = "background-color: #198754; color: white; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 5px; text-align: center; width: 100%; display: flex; justify-content: center; align-items: center; font-weight: 600;";
     
     const textSpan = document.createElement('span');
     textSpan.innerText = message;
@@ -4357,4 +4359,488 @@ function showCustomConfirm(title, message, confirmText = "Confirm", btnClass = "
     bsModal.show();
 }
 
+
+
+
+
+/* ==========================================
+   ORDER HISTORY & MANAGEMENT MODULE
+========================================== */
+let orderHistoryCache = [];
+
+function initOrderHistory() {
+   const monthEl = document.getElementById("orderHistoryMonth");
+   if (monthEl && !monthEl.value) {
+      const now = new Date();
+      monthEl.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+   }
+   loadOrderHistory();
+}
+
+
+function filterOrderHistory() {
+   renderOrderHistoryFiltered();
+}
+
+function renderOrderHistoryFiltered() {
+   const monthEl = document.getElementById("orderHistoryMonth");
+   const searchEl = document.getElementById("orderHistorySearch");
+   const month = monthEl ? monthEl.value : "";
+   const search = searchEl ? searchEl.value.trim().toLowerCase() : "";
+
+   const filtered = orderHistoryCache.filter(o => {
+      if (month && o._month !== month) return false;
+      if (search && o._search.indexOf(search) === -1) return false;
+      return true;
+   });
+
+   renderOrderHistoryTables(filtered);
+}
+
+
+// Load order back to POS form for editing
+function loadOrderToPOS(orderId) {
+   const editInput = document.getElementById("editOrderIdInput");
+   if (editInput) {
+      editInput.value = orderId;
+   } else {
+      const altInput = document.getElementById("searchOrderId");
+      if (altInput) altInput.value = orderId;
+   }
+   loadOrderForEditing();
+   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Delete order from history table using custom confirmation modal
+function deleteOrderFromHistory(orderId) {
+   showCustomConfirm(
+      "Delete Order",
+      `Are you sure you want to delete Order ${orderId}? This action will remove it from active records and recalculate customer history.`,
+      "Delete Order",
+      "btn-danger",
+      function() {
+         google.script.run
+            .withSuccessHandler(function (response) {
+               if (response && response.success) {
+                  showToast("Order Deleted Successfully - ID: " + orderId, "success");
+                  loadOrderHistory();
+               } else {
+                  showToast(response && response.message ? response.message : "Unable to delete order.", "error");
+               }
+            })
+            .deleteOrderFromWeb(orderId);
+      }
+   );
+}
+
+
+function loadOrderHistory() {
+   const monthEl = document.getElementById("orderHistoryMonth");
+   const month = monthEl ? monthEl.value : "";
+
+   google.script.run
+      .withSuccessHandler(function (response) {
+         if (!response || !response.success) {
+            showToast("Unable to load order history.", "error");
+            return;
+         }
+         orderHistoryCache = Array.isArray(response.orders) ? response.orders : [];
+         
+         orderHistoryCache.forEach(o => {
+            o._month = String(o.orderDateRaw || "").slice(0, 7);
+            
+            // Extract items cleanly from backend response
+            let itemsSummary = "-";
+            let itemList = [];
+
+            if (Array.isArray(o.items) && o.items.length > 0) {
+               itemList = o.items.map(it => `${escapeHtml(it.name || it.itemName)} (${it.qty || it.quantity})`);
+            } else if (o.itemSummary) {
+               itemList = String(o.itemSummary).split(",").map(s => s.trim()).filter(Boolean);
+            } else if (o.itemsSummary) {
+               itemList = String(o.itemsSummary).split(",").map(s => s.trim()).filter(Boolean);
+            }
+
+            if (itemList.length > 0) {
+               const lines = [];
+               for (let i = 0; i < itemList.length; i += 3) {
+                  const chunk = itemList.slice(i, i + 3);
+                  lines.push(chunk.join(", "));
+               }
+               itemsSummary = lines.join("<br>");
+            }
+
+            o._itemsText = itemsSummary;
+            o._search = [o.orderId, o.customerName, o.mobile, o.paymentStatus, o.orderType, o._itemsText].join(" ").toLowerCase();
+         });
+
+         renderOrderHistoryFiltered();
+      })
+      .withFailureHandler(function (err) {
+         showToast(err.message || String(err), "error");
+      })
+      .getOrderHistoryData(month);
+}
+
+function renderOrderHistoryTables(orders) {
+   const desktopBody = document.getElementById("orderHistoryTableBody");
+   const mobileList = document.getElementById("orderHistoryMobileList");
+   const infoTop = document.getElementById("orderHistoryInfoTop");
+   const infoBottom = document.getElementById("orderHistoryInfo");
+
+   if (!orders.length) {
+      if (desktopBody) desktopBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No orders found.</td></tr>';
+      if (mobileList) mobileList.innerHTML = '<div class="text-center text-muted py-4">No orders found.</div>';
+      if (infoTop) infoTop.textContent = "0 orders • Total Sales: ₹0.00";
+      if (infoBottom) infoBottom.textContent = "0 orders • Total Sales: ₹0.00";
+      return;
+   }
+
+   orders.sort(function (a, b) {
+      return String(b.orderId || "").localeCompare(String(a.orderId || ""), undefined, { numeric: true });
+   });
+
+   let totalAmount = 0;
+   let desktopHtml = "";
+   let mobileHtml = "";
+
+   orders.forEach(o => {
+      totalAmount += Number(o.grandTotal || 0);
+      const statusBadge = String(o.paymentStatus).toLowerCase() === "paid" ? "bg-success" : "bg-warning text-dark";
+      const itemsHtml = o._itemsText || "-";
+
+      desktopHtml += `
+         <tr>
+            <td>
+               <div class="fw-bold text-primary">${o.orderId}</div>
+               <div class="small text-muted">${o.orderDate}</div>
+            </td>
+            <td>${escapeHtml(o.customerName)}</td>
+            <td>${escapeHtml(o.mobile)}</td>
+            <td><small class="text-dark fw-medium" style="line-height: 1.5; display: block; max-width: 320px;">${itemsHtml}</small></td>
+            <td><span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></td>
+            <td class="text-end fw-semibold">₹${Number(o.grandTotal).toFixed(2)}</td>
+            <td class="text-center text-nowrap">
+               <button class="btn btn-sm btn-outline-info px-3" onclick="viewPosOrderInvoice('${o.orderId}')" title="View Invoice">👁️ View</button>
+            </td>
+         </tr>
+      `;
+
+      mobileHtml += `
+         <div class="border rounded p-3 mb-2 bg-white shadow-sm">
+            <div class="d-flex justify-content-between align-items-start">
+               <div>
+                  <span class="fw-bold text-primary">${o.orderId}</span>
+                  <div class="small text-muted">${o.orderDate}</div>
+               </div>
+               <div class="fw-bold text-success">₹${Number(o.grandTotal).toFixed(2)}</div>
+            </div>
+            <div class="mt-2">
+               <div><strong>${escapeHtml(o.customerName)}</strong> (${escapeHtml(o.mobile)})</div>
+               <div class="small text-dark mt-1"><strong>Items:</strong><br>${itemsHtml}</div>
+               <div class="small text-muted mt-1">Status: <span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></div>
+            </div>
+            <div class="mt-3">
+               <button class="btn btn-sm btn-outline-info w-100" onclick="viewPosOrderInvoice('${o.orderId}')">👁️ View Invoice</button>
+            </div>
+         </div>
+      `;
+   });
+
+   if (desktopBody) desktopBody.innerHTML = desktopHtml;
+   if (mobileList) mobileList.innerHTML = mobileHtml;
+
+   const summaryText = orders.length + (orders.length === 1 ? " order" : " orders") + " • Total Sales: ₹" + totalAmount.toFixed(2);
+   if (infoTop) infoTop.textContent = summaryText;
+   if (infoBottom) infoBottom.textContent = summaryText;
+}
+
+
+// ==========================================
+// ROBUST POS ORDER PREVIEW & EXPORT HELPERS
+// ==========================================
+
+let currentPosPreviewOrderData = null;
+
+function viewPosOrderInvoice(orderId) {
+   google.script.run
+      .withSuccessHandler(function (response) {
+         if (!response || !response.success) {
+            showToast("Unable to fetch order details.", "error");
+            return;
+         }
+         
+         currentPosPreviewOrderData = response;
+         renderPosOrderPreview(response);
+         
+         const previewCard = document.getElementById("posInvoicePreviewCard");
+         if (previewCard) {
+            previewCard.style.display = "block";
+            
+            // Calculate precise scroll position leaving room for the top navbar
+            const navbarHeight = 70; // Height of your top black navbar
+            const cardPosition = previewCard.getBoundingClientRect().top + window.pageYOffset;
+            window.scrollTo({
+               top: cardPosition - navbarHeight,
+               behavior: "smooth"
+            });
+         }
+         showToast("Invoice preview loaded successfully!", "success");
+      })
+      .withFailureHandler(function (err) {
+         showToast(err.message || String(err), "error");
+      })
+      .getInvoice(orderId);
+}
+
+
+function closePosInvoicePreview() {
+   const previewCard = document.getElementById("posInvoicePreviewCard");
+   if (previewCard) previewCard.style.display = "none";
+   currentPosPreviewOrderData = null;
+}
+
+function renderPosOrderPreview(data) {
+   const order = data.order;
+   const items = data.items || [];
+   let subtotal = 0;
+
+   const container = document.getElementById("posPreviewContentContainer");
+   const titleId = document.getElementById("posPreviewOrderId");
+   if (titleId) titleId.textContent = order.orderId;
+   if (!container) return;
+
+   let itemsRows = "";
+   items.forEach(function (item) {
+      subtotal += item.total;
+      itemsRows += `<tr>
+         <td style="padding: 8px 10px; border: 1px solid #dee2e6; text-align: left; word-break: break-word;">${escapeHtml(item.itemName)}</td>
+         <td style="padding: 8px 10px; border: 1px solid #dee2e6; text-align: center; white-space: nowrap; width: 12%;">${item.qty}</td>
+         <td style="padding: 8px 10px; border: 1px solid #dee2e6; text-align: right; white-space: nowrap; width: 18%;">₹${Number(item.price || 0).toFixed(2)}</td>
+         <td style="padding: 8px 10px; border: 1px solid #dee2e6; text-align: right; white-space: nowrap; width: 18%;">₹${Number(item.total || 0).toFixed(2)}</td>
+      </tr>`;
+   });
+
+   const addons = String(order.addons || "").trim();
+   const addonTotal = Number(order.addonTotal || 0);
+   let addonsRow = "";
+   if (addons && addonTotal > 0) {
+      addonsRow = `<tr>
+         <td style="padding: 6px 10px; border: 1px solid #dee2e6;" colspan="3">Add-ons (${escapeHtml(addons)})</td>
+         <td style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right;">₹${addonTotal.toFixed(2)}</td>
+      </tr>`;
+   }
+
+   container.innerHTML = `
+      <div style="width: 734px; background: #ffffff; font-family: Arial, sans-serif; font-size: 13px; color: #000000; box-sizing: border-box; padding: 10px;">
+         <div style="text-align: center; border-bottom: 2px solid #212529; padding-bottom: 12px; margin-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: bold; color: #212529;">Smoky Swaad</h2>
+            <div style="font-size: 11px; color: #6c757d; font-weight: bold; margin-top: 2px;">Fresh-Hot-Homemade</div>
+            <div style="font-size: 11px; color: #6c757d;">Brajrajnagar, Odisha</div>
+         </div>
+
+         <div style="font-weight: bold; font-size: 11px; color: #495057; margin-bottom: 4px; text-transform: uppercase;">Invoice Information</div>
+         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px;">
+            <tr style="background: #f1f3f5;">
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 33%;">Invoice No</th>
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 34%;">Order Date</th>
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 33%;">Status</th>
+            </tr>
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-weight: bold; word-break: break-all;">${escapeHtml(order.orderId)}</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">${escapeHtml(order.orderDate)}</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">${escapeHtml(order.status || 'New')}</td>
+            </tr>
+         </table>
+
+         <div style="font-weight: bold; font-size: 11px; color: #495057; margin-bottom: 4px; text-transform: uppercase;">Customer Information</div>
+         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px;">
+            <tr style="background: #f1f3f5;">
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 50%;">Customer Name</th>
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 50%;">Mobile Number</th>
+            </tr>
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-weight: bold; word-break: break-word;">${escapeHtml(order.customerName)}</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">${escapeHtml(order.mobile)}</td>
+            </tr>
+            <tr style="background: #f1f3f5;">
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left;">Delivery Area</th>
+               <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left;">Order Type</th>
+            </tr>
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; word-break: break-word;">${escapeHtml(order.deliveryArea || '-')}</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">${escapeHtml(order.orderType)}</td>
+            </tr>
+            ${order.houseAddress ? `
+            <tr>
+               <td colspan="2" style="padding: 6px 10px; border: 1px solid #dee2e6; word-break: break-word;"><strong>Address:</strong> ${escapeHtml(order.houseAddress)}</td>
+            </tr>` : ''}
+         </table>
+
+         <div style="font-weight: bold; font-size: 11px; color: #495057; margin-bottom: 4px; text-transform: uppercase;">Ordered Items</div>
+         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px;">
+            <thead>
+               <tr style="background: #f1f3f5;">
+                  <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: left; width: 52%;">Item</th>
+                  <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: center; width: 12%;">Qty</th>
+                  <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right; width: 18%;">Price</th>
+                  <th style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right; width: 18%;">Amount</th>
+               </tr>
+            </thead>
+            <tbody>
+               ${itemsRows}
+            </tbody>
+         </table>
+
+         <div style="font-weight: bold; font-size: 11px; color: #495057; margin-bottom: 4px; text-transform: uppercase;">Payment Summary</div>
+         <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px;">
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; width: 70%;">Subtotal</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right; width: 30%;">₹${subtotal.toFixed(2)}</td>
+            </tr>
+            ${addonsRow}
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">Delivery Charge</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right;">₹${Number(order.deliveryCharge || 0).toFixed(2)}</td>
+            </tr>
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">Discount</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right;">₹${Number(order.discount || 0).toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight: bold; background: #f8f9fa;">
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">Grand Total</td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; text-align: right; color: #198754; font-size: 13px;">₹${Number(order.grandTotal || 0).toFixed(2)}</td>
+            </tr>
+         </table>
+
+         <div style="font-weight: bold; font-size: 11px; color: #495057; margin-bottom: 4px; text-transform: uppercase;">Payment Information</div>
+         <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; background: #f1f3f5; width: 50%;"><strong>Payment Mode</strong></td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; width: 50%;">${escapeHtml(order.paymentMode)}</td>
+            </tr>
+            <tr>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6; background: #f1f3f5;"><strong>Payment Status</strong></td>
+               <td style="padding: 6px 10px; border: 1px solid #dee2e6;">${escapeHtml(order.paymentStatus)}</td>
+            </tr>
+         </table>
+
+         <div style="text-align: center; border-top: 1px dashed #dee2e6; padding-top: 15px; color: #6c757d; font-size: 11px;">
+            <div style="font-weight: bold; color: #212529; font-size: 12px;">Thank You For Ordering With Smoky Swaad</div>
+            <div style="margin-top: 2px;">Fresh - Hot - Homemade</div>
+            <div style="font-weight: bold; color: #0d6efd; margin-top: 4px; font-size: 13px;">7873337525</div>
+            <div>Call/WhatsApp 7873337525</div>
+         </div>
+      </div>
+   `;
+}
+
+async function downloadPosPreviewPdf() {
+   if (!currentPosPreviewOrderData) return;
+   const orderId = currentPosPreviewOrderData.order.orderId;
+   showToast("Generating PDF for " + orderId + "...", "info");
+
+   const previewEl = document.getElementById("posPreviewContentContainer");
+   if (!previewEl) {
+      showToast("Invoice preview not found.", "error");
+      return;
+   }
+
+   try {
+      const pdfBlob = await html2pdf()
+         .set({
+            margin: [10, 0],
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+               scale: 2,
+               useCORS: true,
+               logging: false,
+               windowWidth: 794,
+               backgroundColor: "#ffffff"
+            },
+            jsPDF: {
+               unit: "mm",
+               format: "a4",
+               orientation: "portrait"
+            }
+         })
+         .from(previewEl)
+         .output("blob");
+
+      const downloadUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = orderId + ".pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(downloadUrl);
+      showToast("Invoice downloaded successfully!", "success");
+   } catch (err) {
+      console.error("PDF generation error:", err);
+      showToast("Failed to generate PDF: " + err.message, "error");
+   }
+}
+
+async function sharePosPreviewWhatsApp() {
+   if (!currentPosPreviewOrderData) return;
+   const order = currentPosPreviewOrderData.order;
+   const orderId = order.orderId;
+   const customerName = order.customerName;
+   let mobile = String(order.mobile || "").replace(/\D/g, "");
+   if (mobile.length === 10) mobile = "91" + mobile;
+   const grandTotal = order.grandTotal;
+
+   showToast("Preparing WhatsApp message & PDF...", "info");
+
+   const previewEl = document.getElementById("posPreviewContentContainer");
+   if (!previewEl) {
+      showToast("Invoice preview not found.", "error");
+      return;
+   }
+
+   try {
+      const pdfBlob = await html2pdf()
+         .set({
+            margin: [10, 0],
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: {
+               scale: 2,
+               useCORS: true,
+               logging: false,
+               windowWidth: 794,
+               backgroundColor: "#ffffff"
+            },
+            jsPDF: {
+               unit: "mm",
+               format: "a4",
+               orientation: "portrait"
+            }
+         })
+         .from(previewEl)
+         .output("blob");
+
+      const base64Pdf = await blobToBase64(pdfBlob);
+      const fileName = orderId + ".pdf";
+
+      google.script.run
+         .withSuccessHandler(function (driveRes) {
+            if (!driveRes || driveRes.success !== true) {
+               showToast("Unable to save invoice to Drive.", "error");
+               return;
+            }
+            const fileUrl = driveRes.fileUrl || "";
+            const message = `Hello ${customerName},\n\nThank you for choosing Smoky Swaad.\n\n🧾 Invoice No : ${orderId}\n💰 Amount : ₹${Number(grandTotal).toFixed(2)}\n\n📄 Your Invoice PDF\n${fileUrl}\n\n🍛 Smoky Swaad`;
+            window.open("https://wa.me/" + mobile + "?text=" + encodeURIComponent(message), "_blank");
+            showToast("WhatsApp share ready!", "success");
+         })
+         .withFailureHandler(function () {
+            showToast("Unable to save invoice to Drive.", "error");
+         })
+         .saveInvoicePdf(fileName, base64Pdf);
+   } catch (err) {
+      console.error("WhatsApp share error:", err);
+      showToast("Failed to generate PDF for WhatsApp.", "error");
+   }
+}
 </script>
