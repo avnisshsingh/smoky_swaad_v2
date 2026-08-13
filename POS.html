@@ -1,5 +1,9 @@
 <style>
-/* ===== POS Stage-2 Mobile Polish ===== */
+/* ===== POS Stage-2 Mobile Polish & Fixes ===== */
+.pos-mobile-stage1 {
+   padding-top: 10px;
+}
+
 @media (max-width:768px){
 #orderSummaryCard .input-group>.form-control,
 #orderSummaryCard .input-group>.form-select,
@@ -30,6 +34,27 @@ align-items:center;
 }
 #orderSummaryCard .card-body{
 padding:12px!important;
+}
+
+/* Fix Invoice Preview breaking on mobile */
+#posInvoicePreviewCard .card-body {
+   padding: 10px !important;
+   overflow-x: auto;
+}
+#posPreviewContentContainer {
+   padding: 12px !important;
+   width: 100% !important;
+   max-width: 100% !important;
+   box-sizing: border-box !important;
+}
+#posPreviewContentContainer table {
+   width: 100% !important;
+   font-size: 12px !important;
+}
+#posPreviewContentContainer th, 
+#posPreviewContentContainer td {
+   padding: 6px 4px !important;
+   word-break: break-word;
 }
 }
 </style>
@@ -366,9 +391,9 @@ padding:12px!important;
                      </div>
                   </div>
 
-        <!-- ==========================================
-        DELIVERY CHARGE
-   ========================================== -->
+        <!-- ========================================== -->
+        <!-- DELIVERY CHARGE                            -->
+        <!-- ========================================== -->
 
    <div class="d-flex justify-content-between mb-3">
 
@@ -381,9 +406,9 @@ padding:12px!important;
    </div>
 
 
-   <!-- ==========================================
-        CUSTOM ADD-ONS
-   ========================================== -->
+        <!-- ========================================== -->
+        <!-- CUSTOM ADD-ONS                             -->
+        <!-- ========================================== -->
 
    <div class="border-top pt-3 mt-2">
 
@@ -451,7 +476,7 @@ padding:12px!important;
            <div class="col-2">
 
                <button
-                   type="button"
+                  type="button"
                    id="btnAddAddon"
                    class="btn btn-outline-success btn-sm w-100"
                    onclick="addCustomAddon()">
@@ -465,9 +490,9 @@ padding:12px!important;
        </div>
 
 
-       <!-- ======================================
-            ADDED ADD-ONS APPEAR HERE
-       ======================================= -->
+       <!-- ====================================== -->
+       <!-- ADDED ADD-ONS APPEAR HERE              -->
+       <!-- ====================================== -->
 
        <div
            id="addonList"
@@ -583,8 +608,8 @@ padding:12px!important;
                <h5 class="mb-0">Invoice Preview: <span id="posPreviewOrderId">-</span></h5>
                <button type="button" class="btn-close btn-close-white" onclick="closePosInvoicePreview()"></button>
             </div>
-            <div class="card-body bg-light py-4">
-               <div id="posPreviewContentContainer" style="background: #ffffff; padding: 30px; border-radius: 8px; max-width: 794px; margin: 0 auto; box-shadow: 0 0 10px rgba(0,0,0,0.05);"></div>
+            <div class="card-body bg-light py-4" style="overflow-x: auto;">
+               <div id="posPreviewContentContainer" style="background: #ffffff; padding: 30px; border-radius: 8px; max-width: 794px; width: 100%; margin: 0 auto; box-shadow: 0 0 10px rgba(0,0,0,0.05); box-sizing: border-box;"></div>
             </div>
          </div>
       </div>
