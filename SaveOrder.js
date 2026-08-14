@@ -1,93 +1,194 @@
 /**
  * ==========================================
  * SMOKY SWAAD ERP
- * Save Order Module
+ * Save Order Module (Supports both Web UI payload & direct execution)
  * ==========================================
  */
 
 /**
- * Main Function (Optimized)
+ * Main Function - Handles orders coming from Web UI (orderData) or spreadsheet cells.
  */
-function saveOrder() {
+function saveOrder(orderData) {
+  try {
+    // If called from the Web UI with an order payload object
+    if (orderData && (orderData.cart || orderData.customer)) {
+      return saveOrderFromWebPayload(orderData);
+    }
 
-  // Validate Order
-  const validation = validateOrder();
+    // Fallback for legacy spreadsheet execution
+    const validation = validateOrder();
 
-  if (!validation.valid) {
+    if (!validation.valid) {
+      showError(
+        "Validation Failed\n\n" +
+        validation.errors.join("\n")
+      );
+      return { success: false, message: "Validation failed" };
+    }
 
-    showError(
-      "Validation Failed\n\n" +
-      validation.errors.join("\n")
-    );
+    const orderID = generateOrderID();
+    saveOrderHeader(orderID);
+    saveOrderItems(orderID);
+    updateCustomer();
+    clearPOS();
 
-    return;
+    SpreadsheetApp.flush();
+    showSuccess("Order Saved : " + orderID);
+    return { success: true, orderId: orderID };
 
+  } catch (error) {
+    console.error("Error in saveOrder: " + error.message);
+    return { success: false, message: error.message };
   }
-
-  // Generate Order ID
-  const orderID = generateOrderID();
-
-  // Save Header
-  saveOrderHeader(orderID);
-
-  // Save Items
-  saveOrderItems(orderID);
-
-  // Update Customer
-  updateCustomer();
-
-  // Clear POS
-  clearPOS();
-
-  // Apply pending sheet changes
-  SpreadsheetApp.flush();
-
-  // Success Message
-  showSuccess("Order Saved : " + orderID);
-
 }
 
+/**
+ * Handles saving order when triggered from the Web UI with orderData
+ */
+function saveOrderFromWebPayload(orderData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ordersSheet = ss.getSheetByName(SHEETS.ORDERS) || ss.getSheetByName("Orders");
+  const itemsSheet = ss.getSheetByName(SHEETS.ORDER_ITEMS) || ss.getSheetByName("OrderItems");
+  
+  if (!ordersSheet) throw new Error("Orders sheet not found.");
 
+  // 1. Generate Order ID
+  const orderID = generateOrderID();
+  const orderDate = orderData.order && orderData.order.orderDate ? orderData.order.orderDate : new Date();
 
+  // 2. Format Addons string
+  const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
 
+  // 3. Extract Customer & Order Details
+  const customerName = orderData.customer ? orderData.customer.customerName : "";
+  const mobile = orderData.customer ? orderData.customer.mobile : "";
+  const deliveryArea = orderData.customer ? orderData.customer.deliveryArea : "";
+  const houseAddress = orderData.customer ? orderData.customer.houseAddress : "";
+  const deliverySlot = orderData.customer ? orderData.customer.deliverySlot : "";
+  const orderType = orderData.order ? orderData.order.orderType : "";
+  const paymentMode = orderData.payment ? orderData.payment.paymentMode : "";
+  const paymentStatus = orderData.payment ? orderData.payment.paymentStatus : "";
+  const grandTotal = orderData.totals ? orderData.totals.grandTotal : 0;
+  const specialInstructions = orderData.order ? orderData.order.specialInstructions : "";
+  const deliveryCharge = orderData.totals ? orderData.totals.deliveryCharge : 0;
+  const discount = orderData.totals ? orderData.totals.discount : 0;
+  const addonTotal = orderData.totals ? orderData.totals.addonTotal : 0;
 
+  // 4. Save Header to Orders sheet
+  const headerRow = [
+    orderID,                // A: Order ID
+    orderDate,              // B: Order Date
+    customerName,           // C: Customer Name
+    mobile,                 // D: Mobile
+    deliveryArea,           // E: Delivery Area
+    houseAddress,           // F: House Address
+    deliverySlot,           // G: Delivery Slot
+    orderType,              // H: Order Type
+    paymentMode,            // I: Payment Mode
+    paymentStatus,          // J: Payment Status
+    grandTotal,             // K: Grand Total
+    "New",                  // L: Status
+    specialInstructions,    // M: Special Instructions
+    new Date(),             // N: Created At
+    deliveryCharge,         // O: Delivery Charge
+    discount,               // P: Discount
+    addonNames,             // Q: Add-ons
+    addonTotal              // R: Add-on Total
+  ];
 
+  ordersSheet.appendRow(headerRow);
+
+  // 5. Resolve Customer ID via Mobile
+  const customerID = getCustomerIDByMobile(mobile);
+
+  // 6. Save Order Items to OrderItems sheet (Columns A through G mapped correctly)
+  if (itemsSheet && orderData.cart && orderData.cart.length > 0) {
+    orderData.cart.forEach(function(item) {
+      itemsSheet.appendRow([
+        orderID,                  // Col A: Order ID
+        item.itemName || item[0], // Col B: Menu Item
+        item.qty || item[2],      // Col C: Qty
+        item.price || item[1],    // Col D: Unit Price
+        item.lineTotal || item[3],// Col E: Total
+        customerID,               // Col F: Customer ID
+        orderDate                 // Col G: Order Date
+      ]);
+    });
+  }
+
+  // 7. Update Customer database stats
+  updateCustomerFromPayload(orderData);
+
+  SpreadsheetApp.flush();
+  return { success: true, orderId: orderID };
+}
+
+/**
+ * Helper to update customer stats from web payload
+ */
+function updateCustomerFromPayload(orderData) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const customers = ss.getSheetByName(SHEETS.CUSTOMERS) || ss.getSheetByName("Customers");
+  if (!customers) return;
+
+  const customerName = orderData.customer ? orderData.customer.customerName : "";
+  const mobile = orderData.customer ? orderData.customer.mobile : "";
+  const orderDate = orderData.order && orderData.order.orderDate ? orderData.order.orderDate : new Date();
+  const deliveryArea = orderData.customer ? orderData.customer.deliveryArea : "";
+  const houseAddress = orderData.customer ? orderData.customer.houseAddress : "";
+  const grandTotal = orderData.totals ? Number(orderData.totals.grandTotal) || 0 : 0;
+
+  const lastRow = customers.getLastRow();
+  if (lastRow > 1) {
+    const customerData = customers.getRange(2, 1, lastRow - 1, 9).getValues();
+    for (let i = 0; i < customerData.length; i++) {
+      if (String(customerData[i][2]).trim() === String(mobile).trim()) {
+        customerData[i][1] = customerName;
+        customerData[i][3] = deliveryArea;
+        customerData[i][4] = houseAddress;
+        customerData[i][6] = orderDate;
+        customerData[i][7] = Number(customerData[i][7]) + 1;
+        customerData[i][8] = Number(customerData[i][8]) + grandTotal;
+        customers.getRange(i + 2, 1, 1, 9).setValues([customerData[i]]);
+        return;
+      }
+    }
+  }
+
+  const customerID = "CUS" + String(lastRow).padStart(5, "0");
+  customers.appendRow([
+    customerID,
+    customerName,
+    mobile,
+    deliveryArea,
+    houseAddress,
+    orderDate,
+    orderDate,
+    1,
+    grandTotal
+  ]);
+}
 
 /**
  * Generate Order ID
  */
 function generateOrderID() {
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
   const config = ss.getSheetByName(SHEETS.CONFIG);
-
   let lastNumber = Number(config.getRange("B1").getValue());
-
   lastNumber++;
-
   config.getRange("B1").setValue(lastNumber);
-
   return "SS" + lastNumber.toString().padStart(5, "0");
-
 }
 
-
-
-
-
-
 /**
- * Save Order Header (Optimized)
+ * Save Order Header (Optimized for spreadsheet sheet execution)
  */
 function saveOrderHeader(orderID) {
-
   const pos = getSheet(SHEETS.POS);
   const orders = getSheet(SHEETS.ORDERS);
-
   const nextRow = getNextRow(orders);
 
-  // Read entire form once
   const form = pos.getRange("B2:B30").getValues();
 
   const rowData = [[
@@ -107,29 +208,22 @@ function saveOrderHeader(orderID) {
     new Date()      // N Created At
   ]];
 
-  orders
-    .getRange(nextRow, 1, 1, rowData[0].length)
-    .setValues(rowData);
-
+  orders.getRange(nextRow, 1, 1, rowData[0].length).setValues(rowData);
 }
 
-
-
-
-
-
-
 /**
- * Save Order Items (Optimized)
+ * Save Order Items (Optimized for spreadsheet sheet execution)
  */
 function saveOrderItems(orderID) {
-
   const pos = getSheet(SHEETS.POS);
   const orderItems = getSheet(SHEETS.ORDER_ITEMS);
-
   const nextRow = getNextRow(orderItems);
 
-  // Read all order rows in ONE API call
+  const form = pos.getRange("B2:B30").getValues();
+  const orderDate = form[2][0];
+  const mobile = form[1][0];
+  const customerID = getCustomerIDByMobile(mobile);
+
   const items = pos.getRange(
     POS.ITEM_START_ROW,
     POS.ITEM_COL,
@@ -140,52 +234,61 @@ function saveOrderItems(orderID) {
   const data = [];
 
   items.forEach(row => {
-
     const item  = row[0];
     const price = row[1];
     const qty   = row[2];
     const total = row[3];
 
     if (item !== "" && item !== null) {
-
       data.push([
-        orderID,
-        item,
-        qty,
-        price,
-        total
+        orderID,     // Col A: Order ID
+        item,        // Col B: Menu Item
+        qty,         // Col C: Qty
+        price,       // Col D: Unit Price
+        total,       // Col E: Total
+        customerID,  // Col F: Customer ID
+        orderDate    // Col G: Order Date
       ]);
-
     }
-
   });
 
   if (data.length > 0) {
-
-    orderItems
-      .getRange(nextRow, 1, data.length, data[0].length)
-      .setValues(data);
-
+    orderItems.getRange(nextRow, 1, data.length, data[0].length).setValues(data);
   }
-
 }
 
+/**
+ * Unified Helper function to find Customer ID from the Customers sheet using mobile number
+ */
+function getCustomerIDByMobile(mobile) {
+  if (!mobile) return "";
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const customers = ss.getSheetByName(SHEETS.CUSTOMERS);
+    if (!customers) return "";
+    
+    const lastRow = customers.getLastRow();
+    if (lastRow < 2) return "";
 
-
-
-
-
-
+    const customerData = customers.getRange(2, 1, lastRow - 1, 3).getValues();
+    for (let i = 0; i < customerData.length; i++) {
+      if (customerData[i][2] && String(customerData[i][2]).trim() === String(mobile).trim()) {
+        return customerData[i][0];
+      }
+    }
+  } catch (e) {
+    // Fallback gracefully
+  }
+  return "";
+}
 
 /**
  * Add or Update Customer (Optimized)
  */
 function updateCustomer() {
-
   const pos = getSheet(SHEETS.POS);
   const customers = getSheet(SHEETS.CUSTOMERS);
 
-  // Read POS data in one call
   const formData = pos.getRange("B2:B30").getValues();
 
   const customerName = formData[0][0];
@@ -195,41 +298,27 @@ function updateCustomer() {
   const houseAddress = formData[4][0];
   const grandTotal = Number(formData[28][0]);
 
-  // Read Customers sheet once
   const lastRow = customers.getLastRow();
 
   if (lastRow > 1) {
-
     const customerData = customers.getRange(2, 1, lastRow - 1, 9).getValues();
 
     for (let i = 0; i < customerData.length; i++) {
-
-      // Column C = Mobile Number
       if (customerData[i][2] == mobile) {
+        customerData[i][1] = customerName;
+        customerData[i][3] = deliveryArea;
+        customerData[i][4] = houseAddress;
+        customerData[i][6] = orderDate;
+        customerData[i][7] = Number(customerData[i][7]) + 1;
+        customerData[i][8] = Number(customerData[i][8]) + grandTotal;
 
-        customerData[i][1] = customerName;                     // Customer Name
-        customerData[i][3] = deliveryArea;                     // Delivery Area
-        customerData[i][4] = houseAddress;                     // House Address
-        customerData[i][6] = orderDate;                        // Last Order Date
-        customerData[i][7] = Number(customerData[i][7]) + 1;   // Total Orders
-        customerData[i][8] = Number(customerData[i][8]) + grandTotal; // Lifetime Spend
-
-        // Write only one row back
-        customers
-          .getRange(i + 2, 1, 1, 9)
-          .setValues([customerData[i]]);
-
+        customers.getRange(i + 2, 1, 1, 9).setValues([customerData[i]]);
         return;
-
       }
-
     }
-
   }
 
-  // New Customer
   const customerID = "CUS" + String(lastRow).padStart(5, "0");
-
   customers.appendRow([
     customerID,
     customerName,
@@ -241,31 +330,16 @@ function updateCustomer() {
     1,
     grandTotal
   ]);
-
 }
-
-
-
-
-
-
-
-
-
-
-
 
 /**
  * Clear POS Screen (Optimized)
  */
 function clearPOS() {
-
   const pos = getSheet(SHEETS.POS);
 
-  // Customer Details
   pos.getRange("B2:B11").clearContent();
 
-  // Menu Items (Column A)
   pos.getRange(
     POS.ITEM_START_ROW,
     POS.ITEM_COL,
@@ -273,7 +347,6 @@ function clearPOS() {
     1
   ).clearContent();
 
-  // Quantity (Column C)
   pos.getRange(
     POS.ITEM_START_ROW,
     POS.QTY_COL,
@@ -281,18 +354,13 @@ function clearPOS() {
     1
   ).clearContent();
 
-  // Reset Discount
   pos.getRange(POS.DISCOUNT).setValue(0);
-
-  // Reset Delivery Charge
   pos.getRange(POS.DELIVERY_CHARGE).setValue(0);
-
 }
 
-
-
-
-
+/**
+ * Update Order From Web (Preserved fully)
+ */
 function updateOrderFromWeb(orderId, orderData) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -301,12 +369,13 @@ function updateOrderFromWeb(orderId, orderData) {
     
     if (!ordersSheet) throw new Error("Orders sheet not found.");
     
-    // 1. Find order row in Orders sheet
     const ordersData = ordersSheet.getDataRange().getValues();
     let orderRowIndex = -1;
+    let orderDate = "";
     for (let i = 1; i < ordersData.length; i++) {
       if (String(ordersData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
-        orderRowIndex = i + 1; // 1-based index
+        orderRowIndex = i + 1;
+        orderDate = ordersData[i][1];
         break;
       }
     }
@@ -315,7 +384,6 @@ function updateOrderFromWeb(orderId, orderData) {
       return { success: false, message: "Order ID not found for update." };
     }
     
-    // 2. Remove old order items from OrderItems sheet
     if (itemsSheet) {
       const itemsData = itemsSheet.getDataRange().getValues();
       for (let i = itemsData.length - 1; i >= 1; i--) {
@@ -325,7 +393,9 @@ function updateOrderFromWeb(orderId, orderData) {
       }
     }
     
-    // 3. Append new order items
+    const mobile = orderData.customer && orderData.customer.mobile ? orderData.customer.mobile : "";
+    const customerID = getCustomerIDByMobile(mobile);
+
     if (itemsSheet && orderData.cart && orderData.cart.length > 0) {
       orderData.cart.forEach(function(item) {
         itemsSheet.appendRow([
@@ -334,30 +404,28 @@ function updateOrderFromWeb(orderId, orderData) {
           item.qty,
           item.price,
           item.lineTotal,
-          item.cost || 0,
-          item.profit || 0
+          customerID,
+          orderDate
         ]);
       });
     }
     
-    // 4. Format addons string
     const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
     
-    // 5. Update order row values (Note: Column B / Order Date is intentionally excluded so original date is preserved)
-    ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName); // Col C: Customer Name
-    ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);       // Col D: Mobile Number
-    ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea); // Col E: Delivery Area
-    ordersSheet.getRange(orderRowIndex, 6).setValue(orderData.customer.houseAddress); // Col F: House Address
-    ordersSheet.getRange(orderRowIndex, 7).setValue(orderData.customer.deliverySlot); // Col G: Delivery Slot
-    ordersSheet.getRange(orderRowIndex, 8).setValue(orderData.order.orderType);     // Col H: Order Type
-    ordersSheet.getRange(orderRowIndex, 9).setValue(orderData.payment.paymentMode); // Col I: Payment Mode
-    ordersSheet.getRange(orderRowIndex, 10).setValue(orderData.payment.paymentStatus);// Col J: Payment Status
-    ordersSheet.getRange(orderRowIndex, 11).setValue(orderData.totals.grandTotal);  // Col K: Grand Total
-    ordersSheet.getRange(orderRowIndex, 13).setValue(orderData.order.specialInstructions); // Col M: Special Instructions
-    ordersSheet.getRange(orderRowIndex, 15).setValue(orderData.totals.deliveryCharge); // Col O: Delivery Charge
-    ordersSheet.getRange(orderRowIndex, 16).setValue(orderData.totals.discount);    // Col P: Discount
-    ordersSheet.getRange(orderRowIndex, 17).setValue(addonNames);                   // Col Q: Add-ons
-    ordersSheet.getRange(orderRowIndex, 18).setValue(orderData.totals.addonTotal);  // Col R: Add-on Total
+    ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName);
+    ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);
+    ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea);
+    ordersSheet.getRange(orderRowIndex, 6).setValue(orderData.customer.houseAddress);
+    ordersSheet.getRange(orderRowIndex, 7).setValue(orderData.customer.deliverySlot);
+    ordersSheet.getRange(orderRowIndex, 8).setValue(orderData.order.orderType);
+    ordersSheet.getRange(orderRowIndex, 9).setValue(orderData.payment.paymentMode);
+    ordersSheet.getRange(orderRowIndex, 10).setValue(orderData.payment.paymentStatus);
+    ordersSheet.getRange(orderRowIndex, 11).setValue(orderData.totals.grandTotal);
+    ordersSheet.getRange(orderRowIndex, 13).setValue(orderData.order.specialInstructions);
+    ordersSheet.getRange(orderRowIndex, 15).setValue(orderData.totals.deliveryCharge);
+    ordersSheet.getRange(orderRowIndex, 16).setValue(orderData.totals.discount);
+    ordersSheet.getRange(orderRowIndex, 17).setValue(addonNames);
+    ordersSheet.getRange(orderRowIndex, 18).setValue(orderData.totals.addonTotal);
     
     return { success: true, orderId: orderId };
   } catch (error) {
