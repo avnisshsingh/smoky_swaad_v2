@@ -6,34 +6,44 @@
  */
 
 /**
- * Main Function - Handles orders coming from Web UI (orderData) or spreadsheet cells.
+ * Main Function - Handles orders coming from Web UI payload or sheet cells
  */
 function saveOrder(orderData) {
   try {
-    // If called from the Web UI with an order payload object
+    let orderID, orderDate, mobile, customerID;
+
+    // Check if data is coming directly from the Web UI JSON payload
     if (orderData && (orderData.cart || orderData.customer)) {
-      return saveOrderFromWebPayload(orderData);
+      orderID = generateOrderID();
+      orderDate = orderData.order && orderData.order.orderDate ? orderData.order.orderDate : new Date();
+      mobile = orderData.customer ? orderData.customer.mobile : "";
+      customerID = getCustomerIDByMobile(mobile);
+
+      // 1. Save Header to Orders sheet
+      saveOrderHeaderFromWeb(orderID, orderData, orderDate);
+
+      // 2. Save Items to OrderItems sheet (Columns A through G)
+      saveOrderItemsFromWeb(orderID, orderData, customerID, orderDate);
+
+      // 3. Update Customer stats
+      updateCustomerFromPayload(orderData);
+      clearPOS();
+    } else {
+      // Fallback for legacy spreadsheet execution
+      const validation = validateOrder();
+      if (!validation.valid) {
+        showError("Validation Failed\n\n" + validation.errors.join("\n"));
+        return { success: false, message: "Validation failed" };
+      }
+
+      orderID = generateOrderID();
+      saveOrderHeader(orderID);
+      saveOrderItems(orderID);
+      updateCustomer();
+      clearPOS();
     }
-
-    // Fallback for legacy spreadsheet execution
-    const validation = validateOrder();
-
-    if (!validation.valid) {
-      showError(
-        "Validation Failed\n\n" +
-        validation.errors.join("\n")
-      );
-      return { success: false, message: "Validation failed" };
-    }
-
-    const orderID = generateOrderID();
-    saveOrderHeader(orderID);
-    saveOrderItems(orderID);
-    updateCustomer();
-    clearPOS();
 
     SpreadsheetApp.flush();
-    showSuccess("Order Saved : " + orderID);
     return { success: true, orderId: orderID };
 
   } catch (error) {
@@ -42,6 +52,74 @@ function saveOrder(orderData) {
   }
 }
 
+/**
+ * Saves order items specifically from Web UI payload, ensuring Customer ID & Order Date populate F & G
+ */
+function saveOrderItemsFromWeb(orderID, orderData, customerID, orderDate) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const itemsSheet = ss.getSheetByName(SHEETS.ORDER_ITEMS) || ss.getSheetByName("OrderItems");
+  if (!itemsSheet) return;
+
+  const nextRow = itemsSheet.getLastRow() + 1;
+  const data = [];
+
+  if (orderData.cart && orderData.cart.length > 0) {
+    orderData.cart.forEach(function(item) {
+      data.push([
+        orderID,                  // Col A: Order ID
+        item.itemName || item[0], // Col B: Menu Item
+        item.qty || item[2],      // Col C: Qty
+        item.price || item[1],    // Col D: Unit Price
+        item.lineTotal || item[3],// Col E: Total
+        customerID,               // Col F: Customer ID
+        orderDate                 // Col G: Order Date
+      ]);
+    });
+  }
+
+  if (data.length > 0) {
+    itemsSheet.getRange(nextRow, 1, data.length, data[0].length).setValues(data);
+  }
+}
+
+/**
+ * Saves order header from Web UI payload
+ */
+function saveOrderHeaderFromWeb(orderID, orderData, orderDate) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ordersSheet = ss.getSheetByName(SHEETS.ORDERS) || ss.getSheetByName("Orders");
+  if (!ordersSheet) return;
+
+  const nextRow = ordersSheet.getLastRow() + 1;
+  const customer = orderData.customer || {};
+  const order = orderData.order || {};
+  const payment = orderData.payment || {};
+  const totals = orderData.totals || {};
+  const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
+
+  const rowData = [[
+    orderID,                        // A: Order ID
+    orderDate,                      // B: Order Date
+    customer.customerName || "",    // C: Customer Name
+    customer.mobile || "",          // D: Mobile
+    customer.deliveryArea || "",    // E: Delivery Area
+    customer.houseAddress || "",    // F: House Address
+    customer.deliverySlot || "",    // G: Delivery Slot
+    order.orderType || "",          // H: Order Type
+    payment.paymentMode || "",      // I: Payment Mode
+    payment.paymentStatus || "",    // J: Payment Status
+    totals.grandTotal || 0,         // K: Grand Total
+    "New",                          // L: Status
+    order.specialInstructions || "",// M: Special Instructions
+    new Date(),                     // N: Created At
+    totals.deliveryCharge || 0,     // O: Delivery Charge
+    totals.discount || 0,           // P: Discount
+    addonNames,                     // Q: Add-ons
+    totals.addonTotal || 0          // R: Add-on Total
+  ]];
+
+  ordersSheet.getRange(nextRow, 1, 1, rowData[0].length).setValues(rowData);
+}
 /**
  * Handles saving order when triggered from the Web UI with orderData
  */
@@ -126,17 +204,22 @@ function saveOrderFromWebPayload(orderData) {
 /**
  * Helper to update customer stats from web payload
  */
+/**
+ * Helper to update customer stats from web payload
+ */
 function updateCustomerFromPayload(orderData) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const customers = ss.getSheetByName(SHEETS.CUSTOMERS) || ss.getSheetByName("Customers");
   if (!customers) return;
 
-  const customerName = orderData.customer ? orderData.customer.customerName : "";
-  const mobile = orderData.customer ? orderData.customer.mobile : "";
+  const customer = orderData.customer || {};
+  const totals = orderData.totals || {};
+  const customerName = customer.customerName || "";
+  const mobile = customer.mobile || "";
   const orderDate = orderData.order && orderData.order.orderDate ? orderData.order.orderDate : new Date();
-  const deliveryArea = orderData.customer ? orderData.customer.deliveryArea : "";
-  const houseAddress = orderData.customer ? orderData.customer.houseAddress : "";
-  const grandTotal = orderData.totals ? Number(orderData.totals.grandTotal) || 0 : 0;
+  const deliveryArea = customer.deliveryArea || "";
+  const houseAddress = customer.houseAddress || "";
+  const grandTotal = Number(totals.grandTotal) || 0;
 
   const lastRow = customers.getLastRow();
   if (lastRow > 1) {

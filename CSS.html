@@ -48,8 +48,8 @@ textarea,
 
 html, body{
     height:100%;
-    margin:0;
-    padding:0;
+    margin:0 !important;
+    padding:0 !important;
     background:#f5f7fa;
     font-family:Arial, Helvetica, sans-serif;
     overflow:hidden;
@@ -144,10 +144,12 @@ h5{ font-size:1.05rem; }
     background: #f4f6f9;
     overflow-x: hidden !important;
     overflow-y: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   body {
-    padding-top: env(safe-area-inset-top);
+    padding-top: 0 !important;
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
@@ -160,6 +162,7 @@ h5{ font-size:1.05rem; }
     position: sticky;
     top: 0;
     z-index: 1050;
+    margin-top: 0 !important;
   }
   
   .navbar-brand {
@@ -534,5 +537,90 @@ h5{ font-size:1.05rem; }
         font-size: 15px;
         flex: 1;
     }
+}
+</style>
+
+<style>
+/* ==========================================
+   INVOICE PAYMENT SUMMARY — FIXED STYLING
+   Applies to desktop, mobile, PDF preview and print
+========================================== */
+
+#invoicePdfContainer .payment-summary-table,
+#posPreviewContentContainer table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+}
+
+#invoicePdfContainer .payment-summary-table td,
+#invoicePdfContainer .payment-summary-table th,
+#posPreviewContentContainer td,
+#posPreviewContentContainer th {
+    padding: 8px 12px !important;
+    vertical-align: middle !important;
+    border: none !important;
+    overflow: hidden !important;
+}
+
+#invoicePdfContainer .payment-summary-table td:first-child,
+#invoicePdfContainer .payment-summary-table th:first-child,
+#posPreviewContentContainer tr td:first-child,
+#posPreviewContentContainer tr th:first-child {
+    width: 70% !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: left !important;
+}
+
+#invoicePdfContainer .payment-summary-table td:last-child,
+#invoicePdfContainer .payment-summary-table th:last-child,
+#posPreviewContentContainer tr td:last-child,
+#posPreviewContentContainer tr th:last-child {
+    width: 30% !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+}
+
+@media (max-width: 768px){
+    #invoicePdfContainer .payment-summary-table td,
+    #invoicePdfContainer .payment-summary-table th,
+    #posPreviewContentContainer td,
+    #posPreviewContentContainer th {
+        padding: 7px 10px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* Outer Container Border & Shadow */
+.invoice-container, .receipt-box {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    background-color: #ffffff;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+/* Table and Grid Borders */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+th, td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+/* Section Dividers */
+.section-divider, .invoice-section {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
 }
 </style>
