@@ -3,17 +3,31 @@
 
 <style>
 /* ==========================================
-   GLOBAL
+   GLOBAL RESET & SEAMLESS VIEWPORT
 ========================================== */
-:root{
-    --brand:#ff6b00;
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-/* ==========================================
-   SMOOTH MICRO-INTERACTIONS & MOBILE SPEED
-========================================== */
 html {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #212529 !important;
     scroll-behavior: smooth;
+}
+
+body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-top: 0 !important;
+    background: #f5f7fa;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+}
+
+:root{
+    --brand:#ff6b00;
 }
 
 /* Eliminate 300ms mobile tap delay instantly across all interactive elements */
@@ -46,20 +60,39 @@ textarea,
     }
 }
 
-html, body{
-    height:100%;
-    margin:0 !important;
-    padding:0 !important;
-    background:#f5f7fa;
-    font-family:Arial, Helvetica, sans-serif;
-    overflow:hidden;
-}
-
 /* ==========================================
    HEADER
 ========================================== */
-.navbar{
-    height:60px;
+.navbar,
+.navbar.fixed-top,
+nav.navbar,
+nav.navbar.fixed-top {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    z-index: 1050 !important;
+    background-color: #212529 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.navbar > .container-fluid {
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
 /* ==========================================
@@ -122,9 +155,7 @@ h5{ font-size:1.05rem; }
    SIDEBAR MENU
 ========================================== */
 #sidebar .list-group-item{ padding:12px 16px; }
-</style>
 
-<style>
 /* ==========================================================
    GLOBAL MOBILE UX POLISH & NATIVE DROPDOWN SUPPORT
 ========================================================== */
@@ -135,34 +166,53 @@ h5{ font-size:1.05rem; }
     --mobile-control-height: 48px;
   }
 
-  html, body { 
+  html {
+    background: #212529 !important;
+    background-color: #212529 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body { 
     height: auto !important;
     min-height: 100% !important;
     -webkit-text-size-adjust: 100%; 
     overscroll-behavior-y: auto !important; 
     -webkit-overflow-scrolling: touch !important;
     background: #f4f6f9;
+    background-color: #f4f6f9;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-
-  body {
     padding-top: 0 !important;
+    margin-top: 0 !important;
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
 
-  .navbar {
-    min-height: 60px;
+  .navbar,
+  .navbar.fixed-top,
+  nav.navbar,
+  nav.navbar.fixed-top {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
     padding: 8px 12px !important;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    position: sticky;
-    top: 0;
-    z-index: 1050;
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    z-index: 1050 !important;
+    margin: 0 !important;
     margin-top: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #212529 !important;
+    background-color: #212529 !important;
   }
   
   .navbar-brand {
@@ -180,6 +230,15 @@ h5{ font-size:1.05rem; }
     padding: 6px 9px;
   }
 
+  #sidebar { 
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-top: 60px !important; /* Positioned directly flush below the 60px top navbar */
+    top: auto !important;
+    box-shadow: none !important;
+  }
+
   #main-content { 
     margin-left: 0 !important;
     margin-top: 0 !important;
@@ -187,20 +246,6 @@ h5{ font-size:1.05rem; }
     height: auto !important;
     min-height: calc(100vh - 60px);
     overflow: visible !important;
-  }
-  
-  #content {
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  #sidebar { 
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
-    margin-top: 0 !important;
-    top: auto !important;
-    box-shadow: none !important;
   }
 
   #sidebar-menu {
@@ -456,6 +501,27 @@ h5{ font-size:1.05rem; }
     -moz-appearance: menulist !important;
     background-image: none !important;
     padding-right: 1.5rem !important;
+  }
+
+  /* Mobile Sticky Bottom Checkout Bar */
+  #mobilePosCheckoutBar {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    z-index: 1040;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    animation: slideUpCheckout 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideUpCheckout {
+    from { transform: translateY(120%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }
 

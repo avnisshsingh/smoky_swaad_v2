@@ -11,7 +11,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#ff6b00">
+  <meta name="theme-color" content="#212529">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff6b00'/><text x='50%' y='55%' font-size='50' text-anchor='middle' dominant-baseline='central'>🍛</text></svg>">
   
   <title>Smoky Swaad</title>
   
@@ -19,22 +21,6 @@
 </head>
 
 <body>
-
-<!-- ========================================== -->
-<!-- PIN LOCK SCREEN OVERLAY -->
-<!-- ========================================== -->
-<div id="pin-lock-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1e293b; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
-  
-  <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Smoky Swaad ERP</h1>
-  <p style="margin-bottom: 30px; color: #94a3b8; font-size: 1.2rem;">Enter PIN to unlock</p>
-  
-  <input type="password" id="app-pin-input" maxlength="4" style="font-size: 32px; width: 150px; text-align: center; letter-spacing: 15px; padding: 15px; border-radius: 8px; border: none; outline: none; margin-bottom: 20px; color: #0f172a; font-weight: bold;" oninput="this.value = this.value.replace(/[^0-9]/g, '')" autofocus>
-  
-  <button onclick="unlockSystem()" style="background-color: #3b82f6; color: white; border: none; padding: 15px 50px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">UNLOCK</button>
-  
-  <p id="pin-error-msg" style="color: #ef4444; margin-top: 20px; font-size: 1.1rem; font-weight: bold; visibility: hidden;">Incorrect PIN</p>
-
-</div>
 
   <!-- Header -->
   <?!= include('Header'); ?>
@@ -48,6 +34,21 @@
       <?!= include('POS'); ?>
     </div>
   </div>
+
+  <!-- PIN LOCK SCREEN OVERLAY (Disabled by default) -->
+  <div id="pin-lock-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1e293b; z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
+    <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Smoky Swaad ERP</h1>
+    <p style="margin-bottom: 30px; color: #94a3b8; font-size: 1.2rem;">Enter PIN to unlock</p>
+    <input type="password" id="app-pin-input" maxlength="4" style="font-size: 32px; width: 150px; text-align: center; letter-spacing: 15px; padding: 15px; border-radius: 8px; border: none; outline: none; margin-bottom: 20px; color: #0f172a; font-weight: bold;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+    <button onclick="unlockSystem()" style="background-color: #3b82f6; color: white; border: none; padding: 15px 50px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">UNLOCK</button>
+    <p id="pin-error-msg" style="color: #ef4444; margin-top: 20px; font-size: 1.1rem; font-weight: bold; visibility: hidden;">Incorrect PIN</p>
+  </div>
+  <script>
+  function unlockSystem() {
+    var overlay = document.getElementById("pin-lock-screen");
+    if (overlay) overlay.style.display = "none";
+  }
+  </script>
 
   <!-- Client-side Logic -->
   <?!= include('JavaScript'); ?>
