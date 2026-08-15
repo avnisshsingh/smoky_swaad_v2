@@ -50,6 +50,7 @@ html, body{
     height:100%;
     margin:0 !important;
     padding:0 !important;
+    padding-top:0 !important;
     background:#f5f7fa;
     font-family:Arial, Helvetica, sans-serif;
     overflow:hidden;
@@ -60,6 +61,8 @@ html, body{
 ========================================== */
 .navbar{
     height:60px;
+    top:0 !important;
+    margin-top:0 !important;
 }
 
 /* ==========================================
@@ -456,6 +459,27 @@ h5{ font-size:1.05rem; }
     -moz-appearance: menulist !important;
     background-image: none !important;
     padding-right: 1.5rem !important;
+  }
+
+  /* Mobile Sticky Bottom Checkout Bar */
+  #mobilePosCheckoutBar {
+    position: fixed;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 10px 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    z-index: 1040;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    animation: slideUpCheckout 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideUpCheckout {
+    from { transform: translateY(120%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }
 

@@ -231,6 +231,16 @@ app.post('/api/rpc', (req, res) => {
   }
 });
 
+// PWA Manifest Route
+app.get('/manifest.json', (req, res) => {
+  const manifestPath = path.join(process.cwd(), 'manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    return res.sendFile(manifestPath);
+  }
+  res.status(404).send('Not Found');
+});
+
 // Main Web App Handler
 app.get('*', (req, res) => {
   try {
