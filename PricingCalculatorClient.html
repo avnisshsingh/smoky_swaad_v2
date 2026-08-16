@@ -43,93 +43,63 @@ window.businessCosts = [];
       }
 
       const rowCount = tbody.rows.length + 1;
-
       const row = tbody.insertRow();
 
+      // Fallback: If window.ingredients is empty, try loading them on the fly
+      const ingredientOptions = (window.ingredients && window.ingredients.length > 0) 
+         ? window.ingredients 
+         : [];
+
       row.innerHTML = `
-
         <td class="text-center">
-
             ${rowCount}
-
         </td>
-
         <td>
-
-<select
-    class="form-select ingredientName"
-     onchange="ingredientChanged(this)">
-
-    <option value="">
-
-        Select Ingredient
-
-    </option>
-
-  ${(window.ingredients || [])
-     .map(function (item) {
-        return `<option value="${item}">${item}</option>`;
-     })
-     .join("")}
-
-</select>
-
+          <select class="form-select ingredientName" onchange="ingredientChanged(this)">
+              <option value="">Select Ingredient</option>
+              ${ingredientOptions.map(function (item) {
+                 return `<option value="${item}">${item}</option>`;
+              }).join("")}
+          </select>
         </td>
-
         <td>
-
-<input
-    type="number"
-    class="form-control text-end ingredientQty"
-    value=""
-    min="0"
-    step="0.001"
-    placeholder="Enter Qty"
-    oninput="recalculatePricing()">
-
+          <input type="number" class="form-control text-end ingredientQty" value="" min="0" step="0.001" placeholder="Enter Qty" oninput="recalculatePricing()">
         </td>
-
         <td>
-
-           <select
-    class="form-select ingredientUnit"
-    onchange="recalculatePricing()">
-
+           <select class="form-select ingredientUnit" onchange="recalculatePricing()">
                 <option value="Kg">Kg</option>
                 <option value="Gram">Gram</option>
                 <option value="Litre">Litre</option>
                 <option value="ml">ml</option>
                 <option value="Unit">Unit</option>
-
             </select>
-
         </td>
-
-<td class="text-end ingredientRate">
-
-    ₹0.00
-
-</td>
-
-<td class="text-end ingredientCost">
-
-    ₹0.00
-
-</td>
-
+        <td class="text-end ingredientRate">
+            ₹0.00
+        </td>
+        <td class="text-end ingredientCost">
+            ₹0.00
+        </td>
         <td class="text-center">
-
-            <button
-                class="btn btn-sm btn-danger"
-                onclick="removeIngredientRow(this)">
-
+            <button class="btn btn-sm btn-danger" onclick="removeIngredientRow(this)">
                 ✖
-
             </button>
-
         </td>
-
     `;
+      
+      // If ingredients weren't loaded yet when row was added, trigger a quick reload for this select
+      if (ingredientOptions.length === 0) {
+          google.script.run.withSuccessHandler(function(res) {
+              if(res.success && res.ingredients) {
+                  window.ingredients = res.ingredients;
+                  const selectEl = row.querySelector('.ingredientName');
+                  const currentVal = selectEl.value;
+                  selectEl.innerHTML = '<option value="">Select Ingredient</option>' + 
+                      res.ingredients.map(item => `<option value="${item}">${item}</option>`).join("");
+                  selectEl.value = currentVal;
+              }
+          }).getIngredients();
+      }
    }
 
    /**
@@ -604,7 +574,7 @@ function recalculatePricing() {
 
          .withSuccessHandler(function (data) {
             if (!data.success) {
-               alert(data.message);
+               showCustomToast(data.message, "error");
 
                return;
             }
@@ -653,8 +623,7 @@ function recalculatePricing() {
 
          .withFailureHandler(function (error) {
             console.error(error);
-
-            alert(error);
+            showCustomToast(error.toString(), "error");
          })
 
          .getLatestPurchase(ingredient);
@@ -674,8 +643,7 @@ function recalculatePricing() {
 
          .withFailureHandler(function (error) {
             console.error(error);
-
-            alert(error);
+            showCustomToast(error.toString(), "error");
          })
 
          .getMenuItems();
@@ -699,8 +667,7 @@ function recalculatePricing() {
 
          .withFailureHandler(function (error) {
             console.error(error);
-
-            alert(error);
+            showCustomToast(error.toString(), "error");
          })
 
          .getIngredients();
@@ -719,9 +686,7 @@ function loadBusinessCosts() {
         .withSuccessHandler(function(response){
 
             if (!response.success){
-
-                alert("Unable to load Business Costs.");
-
+                showCustomToast("Unable to load Business Costs.", "error");
                 return;
 
             }
@@ -736,8 +701,7 @@ function loadBusinessCosts() {
         .withFailureHandler(function(error){
 
             console.error(error);
-
-            alert(error);
+            showCustomToast(error.toString(), "error");
 
         })
 
@@ -821,5 +785,84 @@ function menuItemChanged() {
     }
 
 
+
+
+/**
+ * ==========================================
+ * Save Recipe & Pricing Data
+ * ==========================================
+ */
+function saveRecipePricing() {
+    const menuItemSelect = document.getElementById("pricingMenuItem");
+    const menuItem = menuItemSelect ? menuItemSelect.value : "";
+    const category = document.getElementById("pricingCategory") ? document.getElementById("pricingCategory").value : "";
+    const sellingPrice = Number(document.getElementById("sellingPrice").value) || 0;
+
+    if (!menuItem) {
+        showCustomToast("Please select a Menu Item before saving.", "error");
+        menuItemSelect.focus();
+        return;
+    }
+
+    const rows = document.querySelectorAll("#ingredientTableBody tr");
+    const ingredients = [];
+
+    rows.forEach(function(row) {
+        // Skip placeholder rows
+        if (row.cells.length < 7) return;
+
+        const nameEl = row.querySelector(".ingredientName");
+        const qtyEl = row.querySelector(".ingredientQty");
+        const unitEl = row.querySelector(".ingredientUnit");
+
+        const ingredientName = nameEl ? nameEl.value : "";
+        const qty = Number(qtyEl ? qtyEl.value : 0) || 0;
+        const unit = unitEl ? unitEl.value : "";
+        const rate = Number(row.dataset.purchaseRate) || 0;
+        const cost = Number(row.dataset.ingredientCost) || (qty * rate);
+
+        if (ingredientName && qty > 0) {
+            ingredients.push({
+                name: ingredientName,
+                qty: qty,
+                unit: unit,
+                rate: rate,
+                cost: cost
+            });
+        }
+    });
+
+    if (ingredients.length === 0) {
+        showCustomToast("Please add at least one valid ingredient with quantity.", "error");
+        return;
+    }
+
+    const payload = {
+        menuItem: menuItem,
+        category: category,
+        sellingPrice: sellingPrice,
+        ingredientTotal: window.pricingSummary.ingredientTotal,
+        businessCost: window.pricingSummary.businessCost,
+        totalCost: window.pricingSummary.totalCost,
+        profit: window.pricingSummary.profit,
+        profitPercentage: window.pricingSummary.profitPercentage,
+        foodCostPercentage: window.pricingSummary.foodCostPercentage,
+        ingredients: ingredients
+    };
+
+    google.script.run
+        .withSuccessHandler(function(response) {
+            if (response.success) {
+                showCustomToast("Recipe and Pricing saved successfully for " + menuItem + "!", "success");
+            } else {
+                showCustomToast("Error saving: " + response.message, "error");
+            }
+        })
+        .withFailureHandler(function(error) {
+            console.error(error);
+            showCustomToast("Failed to save recipe: " + error, "error");
+        })
+        .saveRecipeData(payload);
+}
 
 </script>
