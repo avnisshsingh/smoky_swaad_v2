@@ -122,6 +122,16 @@ h5{ font-size:1.05rem; }
    SIDEBAR MENU
 ========================================== */
 #sidebar .list-group-item{ padding:12px 16px; }
+
+/* ==========================================
+   QUICK CATEGORY TILES - BOLD TEXT ENHANCEMENT
+========================================== */
+.pe-quick-btn, 
+.quick-category-btn, 
+.card .btn-outline-secondary, 
+.card button[onclick*="selectCategory"] {
+    font-weight: 700 !important;
+}
 </style>
 
 <style>
@@ -457,6 +467,12 @@ h5{ font-size:1.05rem; }
     background-image: none !important;
     padding-right: 1.5rem !important;
   }
+
+  /* Bold Quick Category text on mobile view */
+  .pe-quick-btn span, 
+  .quick-category-btn span {
+      font-weight: 700 !important;
+  }
 }
 
 @media (max-width: 420px) {
@@ -602,6 +618,11 @@ h5{ font-size:1.05rem; }
     background-color: #ffffff;
     max-width: 800px;
     margin: 20px auto;
+}
+
+/* Table and Grid Borders */
+title {
+    display: none;
 }
 
 /* Table and Grid Borders */
