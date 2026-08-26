@@ -140,10 +140,9 @@ function addPurchaseItem(itemName) {
     };
 }
 
-
 /**
  * ==========================================
- * Load Purchase Items List (Optimized with Server-Side Caching)
+ * Load Purchase Items List (Fixed & Optimized)
  * ==========================================
  */
 function getPurchaseItems() {
@@ -160,18 +159,19 @@ function getPurchaseItems() {
       }
    }
 
-   // 2. YOUR ORIGINAL SHEET FETCHING & MAPPING LOGIC:
-   // (If your original function reads from a sheet or list, keep your core logic right here)
-   const sheet = getSheet(SHEETS.PURCHASE_ITEMS); // Or your existing sheet reference
-   const lastRow = sheet.getLastRow();
+   // 2. Fixed logic: Read items from the Settings sheet, Column X (X2:X1000)
+   const sheet = getSheet(SHEETS.SETTINGS);
+   const values = sheet.getRange("X2:X1000").getValues();
    
    let items = [];
-   if (lastRow >= 2) {
-      const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues(); // Adjust range columns if needed
-      items = data.filter(row => row[0]).map(row => ({
-         itemName: row[0],
-         searchName: String(row[0] || "").trim().toLowerCase()
-      }));
+   for (let i = 0; i < values.length; i++) {
+      const val = String(values[i][0]).trim();
+      if (val) {
+         items.push({
+            itemName: val,
+            searchName: val.toLowerCase()
+         });
+      }
    }
 
    // 3. Store the items array in cache for 6 hours (21600 seconds)

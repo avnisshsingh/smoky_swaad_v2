@@ -150,7 +150,7 @@ function saveOrderFromWebPayload(orderData) {
   const specialInstructions = orderData.order ? orderData.order.specialInstructions : "";
   const deliveryCharge = orderData.totals ? orderData.totals.deliveryCharge : 0;
   const discount = orderData.totals ? orderData.totals.discount : 0;
-  const addonTotal = orderData.totals ? orderData.totals.addonTotal : 0;
+  const addonTotal = typeof getCustomAddonTotal === "function" ? getCustomAddonTotal() : 0;
 
   // 4. Save Header to Orders sheet
   const headerRow = [
@@ -441,32 +441,38 @@ function clearPOS() {
   pos.getRange(POS.DELIVERY_CHARGE).setValue(0);
 }
 
+
+
 /**
- * Update Order From Web (Preserved fully)
+ * Update Order From Web (Fixed to support Order Date updates)
  */
 function updateOrderFromWeb(orderId, orderData) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const ordersSheet = ss.getSheetByName("Orders");
     const itemsSheet = ss.getSheetByName("OrderItems");
-    
+
     if (!ordersSheet) throw new Error("Orders sheet not found.");
-    
+
     const ordersData = ordersSheet.getDataRange().getValues();
     let orderRowIndex = -1;
-    let orderDate = "";
+    let existingOrderDate = "";
     for (let i = 1; i < ordersData.length; i++) {
       if (String(ordersData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
         orderRowIndex = i + 1;
-        orderDate = ordersData[i][1];
+        existingOrderDate = ordersData[i][1];
         break;
       }
     }
-    
+
     if (orderRowIndex === -1) {
       return { success: false, message: "Order ID not found for update." };
     }
-    
+
+    // Capture the new order date sent from the form, or fall back to the existing sheet date
+    const newDateInput = orderData.orderDate || (orderData.meta && orderData.meta.orderDate);
+    const finalOrderDate = newDateInput ? new Date(newDateInput) : existingOrderDate;
+
     if (itemsSheet) {
       const itemsData = itemsSheet.getDataRange().getValues();
       for (let i = itemsData.length - 1; i >= 1; i--) {
@@ -475,7 +481,7 @@ function updateOrderFromWeb(orderId, orderData) {
         }
       }
     }
-    
+
     const mobile = orderData.customer && orderData.customer.mobile ? orderData.customer.mobile : "";
     const customerID = getCustomerIDByMobile(mobile);
 
@@ -488,13 +494,17 @@ function updateOrderFromWeb(orderId, orderData) {
           item.price,
           item.lineTotal,
           customerID,
-          orderDate
+          finalOrderDate
         ]);
       });
     }
-    
+
     const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
-    
+
+    // 1. Update Order Date in Column B (Index 2)
+    ordersSheet.getRange(orderRowIndex, 2).setValue(finalOrderDate);
+
+    // 2. Update all other order details
     ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName);
     ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);
     ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea);
@@ -509,7 +519,7 @@ function updateOrderFromWeb(orderId, orderData) {
     ordersSheet.getRange(orderRowIndex, 16).setValue(orderData.totals.discount);
     ordersSheet.getRange(orderRowIndex, 17).setValue(addonNames);
     ordersSheet.getRange(orderRowIndex, 18).setValue(orderData.totals.addonTotal);
-    
+
     return { success: true, orderId: orderId };
   } catch (error) {
     return { success: false, message: error.message };

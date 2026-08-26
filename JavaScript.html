@@ -1764,7 +1764,7 @@ function loadSettingsCache() {
       if (grandEl) grandEl.innerText = "₹" + grandTotal.toFixed(2);
    }
 
-   function collectOrderData() {
+  function collectOrderData() {
       const getValue = function (id) {
          const element = document.getElementById(id);
          return element ? element.value : "";
@@ -1792,7 +1792,7 @@ function loadSettingsCache() {
          return sum + (Number(item.price) || 0) * (Number(item.qty) || 0);
       }, 0);
 
-      const addonTotal = getCustomAddonTotal();
+      const addonTotal = typeof getCustomAddonTotal === "function" ? getCustomAddonTotal() : 0;
       let discount = parseFloat(getValue("discount"));
       if (!Number.isFinite(discount) || discount < 0) discount = 0;
       if (discount > subTotal + addonTotal) discount = subTotal + addonTotal;
@@ -1802,10 +1802,13 @@ function loadSettingsCache() {
          : 0;
       const grandTotal = subTotal + addonTotal - discount + safeDeliveryCharge;
 
+      const selectedDate = getValue("orderDate") || getToday();
+
       return {
          customer: customer,
          order: order,
          payment: payment,
+         orderDate: selectedDate,
          totals: {
             subTotal,
             addonTotal,
@@ -1822,7 +1825,7 @@ function loadSettingsCache() {
                price: Number(addon.price) || 0,
             };
          }),
-         meta: { orderDate: getValue("orderDate"), source: "WEB" },
+         meta: { orderDate: selectedDate, source: "WEB" },
       };
    }
 
@@ -4220,20 +4223,28 @@ function showToast(message, type = 'success') {
         container.id = 'toast-container';
         container.style.cssText = "position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; align-items: center;";
         document.body.appendChild(container);
+    } else {
+        // Clear any existing toasts so they never stack up
+        container.innerHTML = '';
     }
 
     const toast = document.createElement('div');
     toast.className = `custom-toast ${type}`;
-    // Added font-weight: 600 for a bolder text appearance
-    toast.style.cssText = "background-color: #198754; color: white; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 5px; text-align: center; width: 100%; display: flex; justify-content: center; align-items: center; font-weight: 600;";
+    toast.style.cssText = "background-color: #198754; color: white; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 5px; text-align: center; width: auto; max-width: 90vw; display: flex; justify-content: center; align-items: center; font-weight: 600;";
     
+    if (type === 'error' || type === 'danger') {
+        toast.style.backgroundColor = '#dc3545';
+    } else if (type === 'info') {
+        toast.style.backgroundColor = '#0dcaf0';
+        toast.style.color = '#000';
+    }
+
     const textSpan = document.createElement('span');
     textSpan.innerText = message;
     toast.appendChild(textSpan);
 
     container.appendChild(toast);
 
-    // Auto-remove after 3 seconds with a smooth fade-out
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(10px)';
@@ -4561,10 +4572,17 @@ function renderOrderHistoryTables(orders) {
 // ==========================================
 
 let currentPosPreviewOrderData = null;
+let isFetchingPosPreview = false;
 
 function viewPosOrderInvoice(orderId) {
+   if (isFetchingPosPreview) return; // Prevent multiple clicks while loading
+   isFetchingPosPreview = true;
+
+   showToast("Loading invoice preview...", "info");
+
    google.script.run
       .withSuccessHandler(function (response) {
+         isFetchingPosPreview = false; // Reset lock
          if (!response || !response.success) {
             showToast("Unable to fetch order details.", "error");
             return;
@@ -4576,9 +4594,7 @@ function viewPosOrderInvoice(orderId) {
          const previewCard = document.getElementById("posInvoicePreviewCard");
          if (previewCard) {
             previewCard.style.display = "block";
-            
-            // Calculate precise scroll position leaving room for the top navbar
-            const navbarHeight = 70; // Height of your top black navbar
+            const navbarHeight = 70;
             const cardPosition = previewCard.getBoundingClientRect().top + window.pageYOffset;
             window.scrollTo({
                top: cardPosition - navbarHeight,
@@ -4588,6 +4604,7 @@ function viewPosOrderInvoice(orderId) {
          showToast("Invoice preview loaded successfully!", "success");
       })
       .withFailureHandler(function (err) {
+         isFetchingPosPreview = false; // Reset lock on error
          showToast(err.message || String(err), "error");
       })
       .getInvoice(orderId);
