@@ -402,14 +402,20 @@ function savePurchaseEntry(
 
 /**
  * ==========================================
- * Update Purchase From Web
+ * Update Purchase From Web (Optimized Range)
  * ==========================================
  */
 function updatePurchaseFromWeb(purchaseId, purchaseData) {
    try {
       validatePurchaseData(purchaseData);
       const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
-      const data = sheet.getDataRange().getValues();
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
+      
+      // Optimization: Fetch only active rows/columns instead of entire sheet getDataRange()
+      const data = sheet.getRange(1, 1, lastRow, 11).getValues();
 
       let targetRow = -1;
       for (let i = 1; i < data.length; i++) {
@@ -448,14 +454,18 @@ function updatePurchaseFromWeb(purchaseId, purchaseData) {
 
 /**
  * ==========================================
- * Delete Purchase From Web (Soft Delete)
+ * Delete Purchase From Web (Soft Delete - Optimized)
  * ==========================================
  */
 function deletePurchaseFromWeb(purchaseId) {
    try {
       const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
-      const data = sheet.getDataRange().getValues();
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
 
+      const data = sheet.getRange(1, 1, lastRow, 11).getValues();
       let targetRow = -1;
       for (let i = 1; i < data.length; i++) {
          if (String(data[i][0]) === String(purchaseId)) {
@@ -482,14 +492,18 @@ function deletePurchaseFromWeb(purchaseId) {
 
 /**
  * ==========================================
- * Restore Purchase From Web
+ * Restore Purchase From Web (Optimized)
  * ==========================================
  */
 function restorePurchaseFromWeb(purchaseId) {
    try {
       const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
-      const data = sheet.getDataRange().getValues();
+      const lastRow = sheet.getLastRow();
+      if (lastRow < 2) {
+         throw new Error("Purchase ID not found: " + purchaseId);
+      }
 
+      const data = sheet.getRange(1, 1, lastRow, 11).getValues();
       let targetRow = -1;
       for (let i = 1; i < data.length; i++) {
          if (String(data[i][0]) === String(purchaseId)) {
@@ -516,36 +530,40 @@ function restorePurchaseFromWeb(purchaseId) {
 
 /**
  * ==========================================
- * Get Deleted Purchases
+ * Get Deleted Purchases (Optimized Range)
  * ==========================================
  */
 function getDeletedPurchases() {
    const sheet = getSheet(SHEETS.PURCHASE_REGISTER);
-   const data = sheet.getDataRange().getValues();
+   const lastRow = sheet.getLastRow();
    const deletedPurchases = [];
 
-   for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      if (!row[0]) continue;
-      const status = String(row[10] || "Active");
+   if (lastRow >= 2) {
+      const data = sheet.getRange(1, 1, lastRow, 11).getValues();
 
-      if (status.toLowerCase() === "deleted") {
-         const rawDate = row[1];
-         deletedPurchases.push({
-            purchaseId: String(row[0]),
-            purchaseDate: rawDate ? Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), "dd/MM/yyyy") : "",
-            itemName: String(row[2] || ""),
-            quantity: Number(row[3] || 0),
-            unit: String(row[4] || ""),
-            paymentType: String(row[5] || ""),
-            amount: Number(row[6] || 0),
-            supplier: String(row[7] || ""),
-            remarks: String(row[8] || "")
-         });
+      for (let i = 1; i < data.length; i++) {
+         const row = data[i];
+         if (!row[0]) continue;
+         const status = String(row[10] || "Active");
+
+         if (status.toLowerCase() === "deleted") {
+            const rawDate = row[1];
+            deletedPurchases.push({
+               purchaseId: String(row[0]),
+               purchaseDate: rawDate ? Utilities.formatDate(new Date(rawDate), Session.getScriptTimeZone(), "dd/MM/yyyy") : "",
+               itemName: String(row[2] || ""),
+               quantity: Number(row[3] || 0),
+               unit: String(row[4] || ""),
+               paymentType: String(row[5] || ""),
+               amount: Number(row[6] || 0),
+               supplier: String(row[7] || ""),
+               remarks: String(row[8] || "")
+            });
+         }
       }
-   }
 
-   deletedPurchases.sort((a, b) => b.purchaseId.localeCompare(a.purchaseId, undefined, { numeric: true }));
+      deletedPurchases.sort((a, b) => b.purchaseId.localeCompare(a.purchaseId, undefined, { numeric: true }));
+   }
 
    return {
       success: true,

@@ -2023,7 +2023,7 @@ function resetOrderEditState() {
    let purchaseBootstrapLoaded = false;
    let purchaseLastHistorySignature = "";
 
-   function initializePurchase() {
+  function initializePurchase() {
       const purchaseDate = document.getElementById("purchaseDate");
       if (purchaseDate && !purchaseDate.value) {
          const today = new Date();
@@ -2091,15 +2091,40 @@ function resetOrderEditState() {
       updatePurchaseSummary();
       loadPurchaseHistoryBootstrap();
 
-      if (!isPurchaseItemsLoaded) {
+      // Phase 1 Optimization: Load cached purchase items instantly from browser storage
+      try {
+         const cachedPurchaseItems = localStorage.getItem("smoky_swaad_purchase_items_cache");
+         if (cachedPurchaseItems) {
+            purchaseItemsCache = JSON.parse(cachedPurchaseItems);
+            isPurchaseItemsLoaded = true;
+         }
+      } catch (e) {
+         console.warn("Could not read local purchase items cache:", e);
+      }
+
+      // Background sync to keep purchase items updated
+      if (!isPurchaseItemsLoaded || purchaseItemsCache.length === 0) {
          google.script.run
             .withSuccessHandler(function (items) {
                purchaseItemsCache = items;
                isPurchaseItemsLoaded = true;
+               try {
+                  localStorage.setItem("smoky_swaad_purchase_items_cache", JSON.stringify(items));
+               } catch (err) {}
+            })
+            .getPurchaseItems();
+      } else {
+         google.script.run
+            .withSuccessHandler(function (items) {
+               purchaseItemsCache = items;
+               try {
+                  localStorage.setItem("smoky_swaad_purchase_items_cache", JSON.stringify(items));
+               } catch (err) {}
             })
             .getPurchaseItems();
       }
    }
+
 
    function loadPurchaseHistoryBootstrap() {
       const monthEl = document.getElementById("purchaseHistoryMonth");
@@ -2406,24 +2431,30 @@ function deletePurchase(purchaseId, itemName, amount) {
       container.innerHTML = html;
    }
 
-   function restorePurchase(purchaseId) {
-      if (!confirm("Restore purchase " + purchaseId + "?")) return;
-
-      google.script.run
-         .withSuccessHandler(function (res) {
-            if (!res || !res.success) {
-               showToast(res && res.message ? res.message : "Unable to restore purchase.", "error");
-               return;
-            }
-            showToast("Purchase restored successfully", "success");
-            loadPurchaseHistoryBootstrap();
-            loadDeletedPurchases();
-         })
-         .withFailureHandler(function (err) {
-            showToast(err.message || err, "error");
-         })
-         .restorePurchaseFromWeb(purchaseId);
-   }
+function restorePurchase(purchaseId) {
+   showCustomConfirm(
+      "Restore Purchase",
+      "Restore purchase " + purchaseId + "?\n\nIt will again be included in active purchase reports.",
+      "Restore Purchase",
+      "btn-success",
+      function() {
+         google.script.run
+            .withSuccessHandler(function (res) {
+               if (!res || !res.success) {
+                  showToast(res && res.message ? res.message : "Unable to restore purchase.", "error");
+                  return;
+               }
+               showToast("Purchase restored successfully", "success");
+               loadPurchaseHistoryBootstrap();
+               loadDeletedPurchases();
+            })
+            .withFailureHandler(function (err) {
+               showToast(err.message || err, "error");
+            })
+            .restorePurchaseFromWeb(purchaseId);
+      }
+   );
+}
 
 
 
@@ -3402,60 +3433,69 @@ function printInvoice() {
 
 
 
+
 let isPosCacheLoaded = false;
-   function loadPOSCache(forceRefresh) {
-      // 1. Instantly load from localStorage if available so UI renders with zero lag
-      if (!forceRefresh && !isPosCacheLoaded) {
-         try {
-            const localRaw = localStorage.getItem("smoky_swaad_pos_cache");
-            if (localRaw) {
-               const localData = JSON.parse(localRaw);
+function loadPOSCache(forceRefresh) {
+   const CACHE_EXPIRY_MS = 4 * 60 * 60 * 1000; // 4 Hours
+
+   // 1. Instantly load from localStorage if available and not expired
+   if (!forceRefresh && !isPosCacheLoaded) {
+      try {
+         const localRaw = localStorage.getItem("smoky_swaad_pos_cache");
+         if (localRaw) {
+            const localData = JSON.parse(localRaw);
+            const isExpired = localData.timestamp && (Date.now() - localData.timestamp > CACHE_EXPIRY_MS);
+            
+            if (!isExpired) {
                menuCache = localData.menu || [];
                appSettings = localData.settings || {};
                customerCache = localData.customers || [];
                isPosCacheLoaded = true;
                populatePOSDropdowns();
             }
-         } catch (e) {
-            console.warn("Could not read POS local storage cache:", e);
          }
+      } catch (e) {
+         console.warn("Could not read POS local storage cache:", e);
       }
-
-      // If already loaded in memory and no force refresh is requested, return early
-      if (isPosCacheLoaded && !forceRefresh) {
-         populatePOSDropdowns();
-      }
-
-      // 2. Fetch fresh data from the server in the background to keep cache up to date
-      google.script.run
-         .withSuccessHandler(function (data) {
-            if (!data) return;
-            menuCache = data.menu || [];
-            appSettings = data.settings || {};
-            customerCache = data.customers || [];
-            isPosCacheLoaded = true;
-            populatePOSDropdowns();
-
-            // Save fresh payload to localStorage for subsequent instant opens
-            try {
-               localStorage.setItem(
-                  "smoky_swaad_pos_cache",
-                  JSON.stringify({
-                     menu: menuCache,
-                     settings: appSettings,
-                     customers: customerCache,
-                     timestamp: Date.now()
-                  })
-               );
-            } catch (e) {
-               console.warn("Could not write POS cache to local storage:", e);
-            }
-         })
-         .withFailureHandler(function (error) {
-            console.error("Background POS cache sync failed:", error);
-         })
-         .loadPOSCache();
    }
+
+   if (isPosCacheLoaded && !forceRefresh) {
+      populatePOSDropdowns();
+   }
+
+   // 2. Fetch fresh data from the server in the background
+   google.script.run
+      .withSuccessHandler(function (data) {
+         if (!data) return;
+         menuCache = data.menu || [];
+         appSettings = data.settings || {};
+         customerCache = data.customers || [];
+         isPosCacheLoaded = true;
+         populatePOSDropdowns();
+
+         try {
+            localStorage.setItem(
+               "smoky_swaad_pos_cache",
+               JSON.stringify({
+                  menu: menuCache,
+                  settings: appSettings,
+                  customers: customerCache,
+                  timestamp: Date.now()
+               })
+            );
+         } catch (e) {
+            console.warn("Could not write POS cache to local storage:", e);
+         }
+      })
+      .withFailureHandler(function (error) {
+         console.error("Background POS cache sync failed:", error);
+      })
+      .loadPOSCache();
+}
+
+
+
+
 
    function deleteOrder() {
       const orderIdBox = document.getElementById("deleteOrderId");

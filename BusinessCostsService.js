@@ -1,6 +1,6 @@
 /**
  * ==========================================
- * Get Business Costs (Optimized with Caching)
+ * Get Business Costs (Optimized with Caching & Bounded Range)
  * ==========================================
  */
 function getBusinessCosts() {
@@ -18,11 +18,14 @@ function getBusinessCosts() {
         }
     }
 
-    // 2. Original Sheet Reading & Mapping Logic
+    // 2. Optimized Sheet Reading & Mapping Logic (Bounded Range)
     const sheet = getSheet(SHEETS.BUSINESS_COSTS);
-    const data = sheet.getDataRange().getValues();
+    const lastRow = sheet.getLastRow();
+    const data = lastRow >= 1 ? sheet.getRange(1, 1, lastRow, 5).getValues() : [];
 
-    data.shift(); // Remove Header
+    if (data.length > 0) {
+        data.shift(); // Remove Header
+    }
 
     const businessCosts = [];
     let totalBusinessCost = 0;
@@ -79,14 +82,14 @@ function getBusinessCosts() {
 
 /**
  * ==========================================
- * Save / Update Business Cost
+ * Save / Update Business Cost (Bounded Range)
  * ==========================================
  */
 function saveBusinessCost(cost) {
 
     const sheet = getSheet(SHEETS.BUSINESS_COSTS);
-
-    const data = sheet.getDataRange().getValues();
+    const lastRow = sheet.getLastRow();
+    const data = lastRow >= 1 ? sheet.getRange(1, 1, lastRow, 5).getValues() : [];
 
     const rowNumber = Number(cost.rowNumber);
 

@@ -454,9 +454,16 @@ function updateOrderFromWeb(orderId, orderData) {
 
     if (!ordersSheet) throw new Error("Orders sheet not found.");
 
-    const ordersData = ordersSheet.getDataRange().getValues();
+    const lastRow = ordersSheet.getLastRow();
+    if (lastRow < 2) {
+      return { success: false, message: "No orders found in sheet." };
+    }
+
+    // Optimization: Read only columns 1 through 18 up to the last active row instead of entire getDataRange()
+    const ordersData = ordersSheet.getRange(1, 1, lastRow, 18).getValues();
     let orderRowIndex = -1;
     let existingOrderDate = "";
+    
     for (let i = 1; i < ordersData.length; i++) {
       if (String(ordersData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
         orderRowIndex = i + 1;
@@ -469,15 +476,19 @@ function updateOrderFromWeb(orderId, orderData) {
       return { success: false, message: "Order ID not found for update." };
     }
 
-    // Capture the new order date sent from the form, or fall back to the existing sheet date
     const newDateInput = orderData.orderDate || (orderData.meta && orderData.meta.orderDate);
     const finalOrderDate = newDateInput ? new Date(newDateInput) : existingOrderDate;
 
+    // Optimized OrderItems clean-up scan
     if (itemsSheet) {
-      const itemsData = itemsSheet.getDataRange().getValues();
-      for (let i = itemsData.length - 1; i >= 1; i--) {
-        if (String(itemsData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
-          itemsSheet.deleteRow(i + 1);
+      const itemsLastRow = itemsSheet.getLastRow();
+      if (itemsLastRow >= 2) {
+        const itemsData = itemsSheet.getRange(1, 1, itemsLastRow, 7).getValues();
+        // Loop backwards to safely delete rows matching the orderId
+        for (let i = itemsData.length - 1; i >= 1; i--) {
+          if (String(itemsData[i][0]).trim().toUpperCase() === String(orderId).trim().toUpperCase()) {
+            itemsSheet.deleteRow(i + 1);
+          }
         }
       }
     }
@@ -486,39 +497,45 @@ function updateOrderFromWeb(orderId, orderData) {
     const customerID = getCustomerIDByMobile(mobile);
 
     if (itemsSheet && orderData.cart && orderData.cart.length > 0) {
-      orderData.cart.forEach(function(item) {
-        itemsSheet.appendRow([
-          orderId,
-          item.itemName,
-          item.qty,
-          item.price,
-          item.lineTotal,
-          customerID,
-          finalOrderDate
-        ]);
-      });
+      const newItemsRows = orderData.cart.map(item => [
+        orderId,
+        item.itemName,
+        item.qty,
+        item.price,
+        item.lineTotal,
+        customerID,
+        finalOrderDate
+      ]);
+      // Batch append instead of looping individual appendRow calls
+      itemsSheet.getRange(itemsSheet.getLastRow() + 1, 1, newItemsRows.length, 7).setValues(newItemsRows);
     }
 
     const addonNames = (orderData.customAddons || []).map(a => a.name + " - ₹" + a.price).join(", ");
 
-    // 1. Update Order Date in Column B (Index 2)
-    ordersSheet.getRange(orderRowIndex, 2).setValue(finalOrderDate);
+    // Batch update fields to minimize spreadsheet API roundtrips
+    const updateValues = [
+      [
+        finalOrderDate,
+        orderData.customer.customerName,
+        orderData.customer.mobile,
+        orderData.customer.deliveryArea,
+        orderData.customer.houseAddress,
+        orderData.customer.deliverySlot,
+        orderData.order.orderType,
+        orderData.payment.paymentMode,
+        orderData.payment.paymentStatus,
+        orderData.totals.grandTotal,
+        ordersSheet.getRange(orderRowIndex, 12).getValue(), // Preserve column 12 (status/remarks if any)
+        orderData.order.specialInstructions,
+        ordersSheet.getRange(orderRowIndex, 14).getValue(), // Preserve column 14
+        orderData.totals.deliveryCharge,
+        orderData.totals.discount,
+        addonNames,
+        orderData.totals.addonTotal
+      ]
+    ];
 
-    // 2. Update all other order details
-    ordersSheet.getRange(orderRowIndex, 3).setValue(orderData.customer.customerName);
-    ordersSheet.getRange(orderRowIndex, 4).setValue(orderData.customer.mobile);
-    ordersSheet.getRange(orderRowIndex, 5).setValue(orderData.customer.deliveryArea);
-    ordersSheet.getRange(orderRowIndex, 6).setValue(orderData.customer.houseAddress);
-    ordersSheet.getRange(orderRowIndex, 7).setValue(orderData.customer.deliverySlot);
-    ordersSheet.getRange(orderRowIndex, 8).setValue(orderData.order.orderType);
-    ordersSheet.getRange(orderRowIndex, 9).setValue(orderData.payment.paymentMode);
-    ordersSheet.getRange(orderRowIndex, 10).setValue(orderData.payment.paymentStatus);
-    ordersSheet.getRange(orderRowIndex, 11).setValue(orderData.totals.grandTotal);
-    ordersSheet.getRange(orderRowIndex, 13).setValue(orderData.order.specialInstructions);
-    ordersSheet.getRange(orderRowIndex, 15).setValue(orderData.totals.deliveryCharge);
-    ordersSheet.getRange(orderRowIndex, 16).setValue(orderData.totals.discount);
-    ordersSheet.getRange(orderRowIndex, 17).setValue(addonNames);
-    ordersSheet.getRange(orderRowIndex, 18).setValue(orderData.totals.addonTotal);
+    ordersSheet.getRange(orderRowIndex, 2, 1, 17).setValues(updateValues);
 
     return { success: true, orderId: orderId };
   } catch (error) {
