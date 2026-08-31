@@ -104,24 +104,6 @@ function injectMobileSmoothStyles() {
       `;
       document.head.appendChild(style);
    }
-
-
-/**
- * Debounce utility to optimize high-frequency events like typing in search bars.
- * Ensures the callback only runs after the user stops typing for the specified delay.
- */
-function debounce(func, wait) {
-   let timeout;
-   return function (...args) {
-      const context = this;
-      clearTimeout(timeout);
-      timeout = setTimeout(function () {
-         func.apply(context, args);
-      }, wait || 300);
-   };
-}
-
-
    /* ==========================================
    Navigation
 ========================================== */
@@ -348,10 +330,14 @@ function debounce(func, wait) {
 
          element.dataset.localFilterBound = "true";
          const eventName = element.tagName === "INPUT" ? "input" : "change";
+         let timer = null;
 
-         element.addEventListener(eventName, debounce(function () {
-            renderPersonalExpenseHistoryFromCache();
-         }, 300));
+         element.addEventListener(eventName, function () {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(function () {
+               renderPersonalExpenseHistoryFromCache();
+            }, 80);
+         });
       });
    }
 
@@ -483,13 +469,15 @@ function debounce(func, wait) {
       if (!input || input.dataset.smartSearchBound === "true") return;
 
       input.dataset.smartSearchBound = "true";
+      let searchTimer = null;
 
-      const handleSmartSearch = debounce(function () {
-         showPersonalExpenseDescriptionSuggestions(input.value);
-         applyPersonalExpenseSmartCategory();
-      }, 300);
-
-      input.addEventListener("input", handleSmartSearch);
+      input.addEventListener("input", function () {
+         if (searchTimer) clearTimeout(searchTimer);
+         searchTimer = setTimeout(function () {
+            showPersonalExpenseDescriptionSuggestions(input.value);
+            applyPersonalExpenseSmartCategory();
+         }, 80);
+      });
 
       input.addEventListener("focus", function () {
          if (String(input.value || "").trim().length >= 2) {
@@ -2035,107 +2023,130 @@ function resetOrderEditState() {
    let purchaseBootstrapLoaded = false;
    let purchaseLastHistorySignature = "";
 
-  function initializePurchase() {
-      const purchaseDate = document.getElementById("purchaseDate");
-      if (purchaseDate && !purchaseDate.value) {
-         const today = new Date();
-         purchaseDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      }
-
-      // Pre-select current month immediately
-      const historyMonth = document.getElementById("purchaseHistoryMonth");
-      if (historyMonth && !historyMonth.value) {
-         const now = new Date();
-         historyMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      }
-
-      // Default Supplier filter to "All Suppliers"
-      const supplierSelect = document.getElementById("purchaseHistorySupplier");
-      if (supplierSelect && !supplierSelect.value) {
-         supplierSelect.value = "";
-      }
-
-      // Reduce remarks box height
-      const remarksBox = document.getElementById("remarks");
-      if (remarksBox) {
-         remarksBox.style.height = "38px";
-         remarksBox.style.minHeight = "38px";
-         remarksBox.style.maxHeight = "80px";
-         remarksBox.style.resize = "vertical";
-      }
-
-      // Force equal height styling for cards
-      if (!document.getElementById("equalHeightPurchaseStyle")) {
-         const style = document.createElement("style");
-         style.id = "equalHeightPurchaseStyle";
-         style.textContent = `
-            .container-fluid .row:has(#purchaseDate), .container .row:has(#purchaseDate) {
-               display: flex !important;
-               align-items: stretch !important;
-            }
-            .container-fluid .row:has(#purchaseDate) > div > .card,
-            .container .row:has(#purchaseDate) > div > .card {
-               height: 100% !important;
-               display: flex !important;
-               flex-direction: column !important;
-            }
-            .card:has(#summaryPurchaseDate) .card-body {
-               flex: 1 !important;
-               display: flex !important;
-               flex-direction: column !important;
-               justify-content: space-between !important;
-               padding: 10px 14px !important;
-            }
-            .card:has(#summaryPurchaseDate) small, 
-            .card:has(#summaryPurchaseDate) .text-muted {
-               font-size: 11px !important;
-            }
-            .card:has(#summaryPurchaseDate) div {
-               margin-bottom: 2px !important;
-            }
-         `;
-         document.head.appendChild(style);
-      }
-
-      loadPurchaseSettings();
-      registerPurchaseEvents();
-      registerPurchaseLocalHistoryFilters();
-      updatePurchaseSummary();
-      loadPurchaseHistoryBootstrap();
-
-      // Phase 1 Optimization: Load cached purchase items instantly from browser storage
-      try {
-         const cachedPurchaseItems = localStorage.getItem("smoky_swaad_purchase_items_cache");
-         if (cachedPurchaseItems) {
-            purchaseItemsCache = JSON.parse(cachedPurchaseItems);
-            isPurchaseItemsLoaded = true;
-         }
-      } catch (e) {
-         console.warn("Could not read local purchase items cache:", e);
-      }
-
-      // Background sync to keep purchase items updated
-      if (!isPurchaseItemsLoaded || purchaseItemsCache.length === 0) {
-         google.script.run
-            .withSuccessHandler(function (items) {
-               purchaseItemsCache = items;
-               isPurchaseItemsLoaded = true;
-               try {
-                  localStorage.setItem("smoky_swaad_purchase_items_cache", JSON.stringify(items));
-               } catch (err) {}
-            })
-            .getPurchaseItems();
-      } else {
-         google.script.run
-            .withSuccessHandler(function (items) {
-               purchaseItemsCache = items;
-               try {
-                  localStorage.setItem("smoky_swaad_purchase_items_cache", JSON.stringify(items));
-               } catch (err) {}
-            })
-            .getPurchaseItems();
-      }
+ function initializePurchase() {
+   const purchaseDate = document.getElementById("purchaseDate");
+   if (purchaseDate && !purchaseDate.value) {
+      const today = new Date();
+      purchaseDate.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
    }
+
+   const historyMonth = document.getElementById("purchaseHistoryMonth");
+   const now = new Date();
+   const currentMonthVal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+   const selectedMonth = historyMonth && historyMonth.value ? historyMonth.value : currentMonthVal;
+
+   if (historyMonth && !historyMonth.value) {
+      historyMonth.value = currentMonthVal;
+   }
+
+   const supplierSelect = document.getElementById("purchaseHistorySupplier");
+   if (supplierSelect && !supplierSelect.value) {
+      supplierSelect.value = "";
+   }
+
+   const remarksBox = document.getElementById("remarks");
+   if (remarksBox) {
+      remarksBox.style.height = "38px";
+      remarksBox.style.minHeight = "38px";
+      remarksBox.style.maxHeight = "80px";
+      remarksBox.style.resize = "vertical";
+   }
+
+   if (!document.getElementById("equalHeightPurchaseStyle")) {
+      const style = document.createElement("style");
+      style.id = "equalHeightPurchaseStyle";
+      style.textContent = `
+         .container-fluid .row:has(#purchaseDate), .container .row:has(#purchaseDate) {
+            display: flex !important;
+            align-items: stretch !important;
+         }
+         .container-fluid .row:has(#purchaseDate) > div > .card,
+         .container .row:has(#purchaseDate) > div > .card {
+            height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+         }
+         .card:has(#summaryPurchaseDate) .card-body {
+            flex: 1 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            padding: 10px 14px !important;
+         }
+         .card:has(#summaryPurchaseDate) small, 
+         .card:has(#summaryPurchaseDate) .text-muted {
+            font-size: 11px !important;
+         }
+         .card:has(#summaryPurchaseDate) div {
+            margin-bottom: 2px !important;
+         }
+      `;
+      document.head.appendChild(style);
+   }
+
+   try {
+      const cachedPurchaseItems = localStorage.getItem("smoky_swaad_purchase_items_cache");
+      if (cachedPurchaseItems) {
+         purchaseItemsCache = JSON.parse(cachedPurchaseItems);
+         isPurchaseItemsLoaded = true;
+      }
+   } catch (e) {
+      console.warn("Could not read local purchase items cache:", e);
+   }
+
+   updatePurchaseSummary();
+   registerPurchaseEvents();
+   registerPurchaseLocalHistoryFilters();
+
+   google.script.run
+      .withSuccessHandler(function (response) {
+         if (!response || response.success !== true) {
+            console.error("Purchase module bootstrap failed");
+            return;
+         }
+
+         purchaseSettings = response.settings || {};
+         isPurchaseSettingsLoaded = true;
+         populatePurchaseDropdowns();
+
+         if (response.items && Array.isArray(response.items)) {
+            purchaseItemsCache = response.items;
+            isPurchaseItemsLoaded = true;
+            try {
+               localStorage.setItem("smoky_swaad_purchase_items_cache", JSON.stringify(response.items));
+            } catch (err) {}
+         }
+
+         purchaseBootstrapLoaded = true;
+         populatePurchaseMonths(response.months || [], selectedMonth);
+         populatePurchaseSuppliers(response.suppliers || []);
+
+         purchaseHistoryCache = Array.isArray(response.purchases) ? response.purchases : [];
+         for (let i = 0; i < purchaseHistoryCache.length; i++) {
+            const p = purchaseHistoryCache[i];
+            p._month = String(p.purchaseDateRaw || "").slice(0, 7);
+            p._supplier = String(p.supplier || "");
+            p._amount = Number(p.amount || 0);
+            p._search = [
+               p.purchaseId,
+               p.itemName,
+               p.supplier,
+               p.paymentType,
+               p.remarks,
+               p.unit,
+               p.quantity
+            ].join(" ").toLowerCase();
+         }
+
+         purchaseLastHistorySignature = "";
+         renderPurchaseHistoryFromCache();
+         updatePurchaseSummary();
+      })
+      .withFailureHandler(function (error) {
+         console.error("Purchase module bootstrap server failure:", error);
+      })
+      .getPurchaseModuleBootstrapData(selectedMonth);
+}
 
 
    function loadPurchaseHistoryBootstrap() {
@@ -2234,57 +2245,163 @@ function resetOrderEditState() {
 
          element.dataset.localFilterBound = "true";
          const eventName = element.tagName === "INPUT" ? "input" : "change";
+         let timer = null;
 
-         element.addEventListener(eventName, debounce(function () {
-            renderPurchaseHistoryFromCache();
-         }, 300));
+         element.addEventListener(eventName, function () {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(function () {
+               renderPurchaseHistoryFromCache();
+            }, 80);
+         });
       });
    }
 
-   function renderPurchaseHistoryFromCache() {
-      if (!purchaseBootstrapLoaded) return;
+   let currentPurchaseHistoryPage = 1;
+const purchaseHistoryPageSize = 25;
+let filteredPurchaseHistoryCache = [];
 
-      const monthEl = document.getElementById("purchaseHistoryMonth");
-      const supplierEl = document.getElementById("purchaseHistorySupplier");
-      const searchEl = document.getElementById("purchaseHistorySearch");
+function renderPurchaseHistoryFromCache() {
+   if (!purchaseBootstrapLoaded) return;
 
-      const month = monthEl ? String(monthEl.value || "") : "";
-      const supplier = supplierEl ? String(supplierEl.value || "") : "";
-      const search = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
+   const monthEl = document.getElementById("purchaseHistoryMonth");
+   const supplierEl = document.getElementById("purchaseHistorySupplier");
+   const searchEl = document.getElementById("purchaseHistorySearch");
 
-      const signature = month + "\u0001" + supplier + "\u0001" + search + "\u0001" + purchaseHistoryCache.length;
-      if (signature === purchaseLastHistorySignature) return;
+   const month = monthEl ? String(monthEl.value || "") : "";
+   const supplier = supplierEl ? String(supplierEl.value || "") : "";
+   const search = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
 
-      purchaseLastHistorySignature = signature;
-      const filtered = [];
-      let total = 0;
+   const signature = month + "\u0001" + supplier + "\u0001" + search + "\u0001" + purchaseHistoryCache.length;
+   if (signature === purchaseLastHistorySignature) return;
 
-      for (let i = 0; i < purchaseHistoryCache.length; i++) {
-         const p = purchaseHistoryCache[i];
-         if (month && p._month !== month) continue;
-         if (supplier && p._supplier !== supplier) continue;
-         if (search && p._search.indexOf(search) === -1) continue;
+   purchaseLastHistorySignature = signature;
+   
+   filteredPurchaseHistoryCache = [];
+   let total = 0;
 
-         filtered.push(p);
-         total += p._amount;
-      }
+   for (let i = 0; i < purchaseHistoryCache.length; i++) {
+      const p = purchaseHistoryCache[i];
+      if (month && p._month !== month) continue;
+      if (supplier && p._supplier !== supplier) continue;
+      if (search && p._search.indexOf(search) === -1) continue;
 
-      filtered.sort(function (a, b) {
-         return String(b.purchaseId || "").localeCompare(String(a.purchaseId || ""), undefined, { numeric: true });
-      });
+      filteredPurchaseHistoryCache.push(p);
+      total += p._amount;
+   }
 
-      renderPurchasesTable(filtered);
+   filteredPurchaseHistoryCache.sort(function (a, b) {
+      return String(b.purchaseId || "").localeCompare(String(a.purchaseId || ""), undefined, { numeric: true });
+   });
 
-      const info = document.getElementById("purchaseHistoryInfo");
-      if (info) {
-         info.textContent = filtered.length + (filtered.length === 1 ? " transaction" : " transactions") + " • Total " + formatCurrencyCustom(total);
+   // Reset to page 1 on filter/search change
+   currentPurchaseHistoryPage = 1;
+   renderPurchasesTable();
+
+   const info = document.getElementById("purchaseHistoryInfo");
+   if (info) {
+      info.textContent = filteredPurchaseHistoryCache.length + (filteredPurchaseHistoryCache.length === 1 ? " transaction" : " transactions") + " • Total " + formatCurrencyCustom(total);
+   }
+}
+
+function changePurchaseHistoryPage(direction) {
+   const maxPage = Math.ceil(filteredPurchaseHistoryCache.length / purchaseHistoryPageSize) || 1;
+   currentPurchaseHistoryPage += direction;
+   if (currentPurchaseHistoryPage < 1) currentPurchaseHistoryPage = 1;
+   if (currentPurchaseHistoryPage > maxPage) currentPurchaseHistoryPage = maxPage;
+   renderPurchasesTable();
+}
+
+function renderPurchasesTable() {
+   const body = document.getElementById("purchaseTableBody");
+   const list = document.getElementById("purchaseMobileList");
+
+   if (!filteredPurchaseHistoryCache.length) {
+      if (body) body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No purchases found for this month.</td></tr>';
+      if (list) list.innerHTML = '<div class="text-center text-muted py-4">No purchases found for this month.</div>';
+      renderPurchaseHistoryPaginationControls(0);
+      return;
+   }
+
+   // Slice records for current page
+   const startIndex = (currentPurchaseHistoryPage - 1) * purchaseHistoryPageSize;
+   const endIndex = startIndex + purchaseHistoryPageSize;
+   const paginatedPurchases = filteredPurchaseHistoryCache.slice(startIndex, endIndex);
+
+   let desktopHtml = "";
+   let mobileHtml = "";
+
+   paginatedPurchases.forEach(function (p) {
+      const jsonStr = JSON.stringify(p).replace(/&/g, "&amp;").replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      
+      desktopHtml += `
+         <tr>
+            <td>${escapeHtml(p.purchaseDate)}</td>
+            <td>
+               <div class="fw-bold">${escapeHtml(p.itemName)}</div>
+               ${p.remarks ? '<div class="small text-muted">' + escapeHtml(p.remarks) + '</div>' : ''}
+            </td>
+            <td class="text-center">${p.quantity} ${escapeHtml(p.unit)}</td>
+            <td>${escapeHtml(p.supplier)}</td>
+            <td>${escapeHtml(p.paymentType)}</td>
+            <td class="text-end fw-semibold">${formatCurrencyCustom(p.amount)}</td>
+            <td class="text-center text-nowrap">
+               <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick='editPurchase(${jsonStr})'>✏️ Edit</button>
+               <button type="button" class="btn btn-sm btn-outline-danger" onclick="deletePurchase('${escapeJs(p.purchaseId)}', '${escapeJs(p.itemName)}', ${p.amount})">🗑️ Delete</button>
+            </td>
+         </tr>`;
+
+      mobileHtml += `
+         <div class="border rounded p-3 mb-2 bg-white shadow-sm">
+            <div class="d-flex justify-content-between align-items-start">
+               <div class="fw-bold text-primary">${escapeHtml(p.itemName)}</div>
+               <div class="fw-bold text-success">${formatCurrencyCustom(p.amount)}</div>
+            </div>
+            <div class="small text-muted mt-1">${escapeHtml(p.purchaseDate)} • Qty: ${p.quantity} ${escapeHtml(p.unit)}</div>
+            <div class="small text-muted">Supplier: ${escapeHtml(p.supplier)} | Pay: ${escapeHtml(p.paymentType)}</div>
+            ${p.remarks ? '<div class="small text-muted fst-italic mt-1">" ' + escapeHtml(p.remarks) + ' "</div>' : ''}
+            <div class="mt-3 d-flex gap-2">
+               <button type="button" class="btn btn-sm btn-outline-primary flex-fill" onclick='editPurchase(${jsonStr})'>✏️ Edit</button>
+               <button type="button" class="btn btn-sm btn-outline-danger flex-fill" onclick="deletePurchase('${escapeJs(p.purchaseId)}', '${escapeJs(p.itemName)}', ${p.amount})">🗑️ Delete</button>
+            </div>
+         </div>`;
+   });
+
+   if (body) body.innerHTML = desktopHtml;
+   if (list) list.innerHTML = mobileHtml;
+
+   renderPurchaseHistoryPaginationControls(filteredPurchaseHistoryCache.length);
+}
+
+function renderPurchaseHistoryPaginationControls(totalRecords) {
+   const maxPage = Math.ceil(totalRecords / purchaseHistoryPageSize) || 1;
+   let paginationContainer = document.getElementById("purchaseHistoryPagination");
+   
+   if (!paginationContainer && totalRecords > purchaseHistoryPageSize) {
+      const targetTable = document.getElementById("purchaseTableBody")?.closest(".table-responsive");
+      if (targetTable) {
+         paginationContainer = document.createElement("div");
+         paginationContainer.id = "purchaseHistoryPagination";
+         paginationContainer.className = "d-flex justify-content-between align-items-center my-3 px-2";
+         targetTable.parentNode.insertBefore(paginationContainer, targetTable.nextSibling);
       }
    }
 
-   function renderPurchasesTable(purchases) {
-      renderPurchaseDesktopTable(purchases);
-      renderPurchaseMobileCards(purchases);
+   if (!paginationContainer) return;
+
+   if (totalRecords <= purchaseHistoryPageSize) {
+      paginationContainer.innerHTML = "";
+      return;
    }
+
+   paginationContainer.innerHTML = `
+      <div class="small text-muted">Page ${currentPurchaseHistoryPage} of ${maxPage}</div>
+      <div class="btn-group">
+         <button class="btn btn-sm btn-outline-secondary" ${currentPurchaseHistoryPage === 1 ? 'disabled' : ''} onclick="changePurchaseHistoryPage(-1)">Previous</button>
+         <button class="btn btn-sm btn-outline-secondary" ${currentPurchaseHistoryPage === maxPage ? 'disabled' : ''} onclick="changePurchaseHistoryPage(1)">Next</button>
+      </div>
+   `;
+}
+
 
    function renderPurchaseDesktopTable(purchases) {
       const body = document.getElementById("purchaseTableBody");
@@ -4193,11 +4310,17 @@ function shareBulkWhatsApp() {
       });
    });
 
-   const debouncedPurchaseSearch = debounce(function () {
-      if (typeof searchPurchaseItems === "function") {
-         searchPurchaseItems();
-      }
-   }, 300);
+   let purchaseSearchTimer = null;
+
+   function debouncedPurchaseSearch() {
+      clearTimeout(purchaseSearchTimer);
+
+      purchaseSearchTimer = setTimeout(function () {
+         if (typeof searchPurchaseItems === "function") {
+            searchPurchaseItems();
+         }
+      }, 200);
+   }
 
    function escapeHtml(str) {
       return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -4435,21 +4558,146 @@ function filterOrderHistory() {
    renderOrderHistoryFiltered();
 }
 
+let currentOrderHistoryPage = 1;
+const orderHistoryPageSize = 25;
+let filteredOrderHistoryCache = [];
+
 function renderOrderHistoryFiltered() {
    const monthEl = document.getElementById("orderHistoryMonth");
    const searchEl = document.getElementById("orderHistorySearch");
    const month = monthEl ? monthEl.value : "";
    const search = searchEl ? searchEl.value.trim().toLowerCase() : "";
 
-   const filtered = orderHistoryCache.filter(o => {
+   filteredOrderHistoryCache = orderHistoryCache.filter(o => {
       if (month && o._month !== month) return false;
       if (search && o._search.indexOf(search) === -1) return false;
       return true;
    });
 
-   renderOrderHistoryTables(filtered);
+   // Reset to page 1 on new filter/search
+   currentOrderHistoryPage = 1;
+   renderOrderHistoryTables();
 }
 
+function changeOrderHistoryPage(direction) {
+   const maxPage = Math.ceil(filteredOrderHistoryCache.length / orderHistoryPageSize) || 1;
+   currentOrderHistoryPage += direction;
+   if (currentOrderHistoryPage < 1) currentOrderHistoryPage = 1;
+   if (currentOrderHistoryPage > maxPage) currentOrderHistoryPage = maxPage;
+   renderOrderHistoryTables();
+}
+
+function renderOrderHistoryTables() {
+   const desktopBody = document.getElementById("orderHistoryTableBody");
+   const mobileList = document.getElementById("orderHistoryMobileList");
+   const infoTop = document.getElementById("orderHistoryInfoTop");
+   const infoBottom = document.getElementById("orderHistoryInfo");
+
+   if (!filteredOrderHistoryCache.length) {
+      if (desktopBody) desktopBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No orders found.</td></tr>';
+      if (mobileList) mobileList.innerHTML = '<div class="text-center text-muted py-4">No orders found.</div>';
+      if (infoTop) infoTop.textContent = "0 orders • Total Sales: ₹0.00";
+      if (infoBottom) infoBottom.textContent = "0 orders • Total Sales: ₹0.00";
+      renderOrderHistoryPaginationControls(0);
+      return;
+   }
+
+   filteredOrderHistoryCache.sort(function (a, b) {
+      return String(b.orderId || "").localeCompare(String(a.orderId || ""), undefined, { numeric: true });
+   });
+
+   let totalAmount = filteredOrderHistoryCache.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
+
+   // Slice records for current page
+   const startIndex = (currentOrderHistoryPage - 1) * orderHistoryPageSize;
+   const endIndex = startIndex + orderHistoryPageSize;
+   const paginatedOrders = filteredOrderHistoryCache.slice(startIndex, endIndex);
+
+   let desktopHtml = "";
+   let mobileHtml = "";
+
+   paginatedOrders.forEach(o => {
+      const statusBadge = String(o.paymentStatus).toLowerCase() === "paid" ? "bg-success" : "bg-warning text-dark";
+      const itemsHtml = o._itemsText || "-";
+
+      desktopHtml += `
+         <tr>
+            <td>
+               <div class="fw-bold text-primary">${o.orderId}</div>
+               <div class="small text-muted">${o.orderDate}</div>
+            </td>
+            <td>${escapeHtml(o.customerName)}</td>
+            <td>${escapeHtml(o.mobile)}</td>
+            <td><small class="text-dark fw-medium" style="line-height: 1.5; display: block; max-width: 320px;">${itemsHtml}</small></td>
+            <td><span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></td>
+            <td class="text-end fw-semibold">₹${Number(o.grandTotal).toFixed(2)}</td>
+            <td class="text-center text-nowrap">
+               <button class="btn btn-sm btn-outline-info px-3" onclick="viewPosOrderInvoice('${o.orderId}')" title="View Invoice">👁️ View</button>
+            </td>
+         </tr>
+      `;
+
+      mobileHtml += `
+         <div class="border rounded p-3 mb-2 bg-white shadow-sm">
+            <div class="d-flex justify-content-between align-items-start">
+               <div>
+                  <span class="fw-bold text-primary">${o.orderId}</span>
+                  <div class="small text-muted">${o.orderDate}</div>
+               </div>
+               <div class="fw-bold text-success">₹${Number(o.grandTotal).toFixed(2)}</div>
+            </div>
+            <div class="mt-2">
+               <div><strong>${escapeHtml(o.customerName)}</strong> (${escapeHtml(o.mobile)})</div>
+               <div class="small text-dark mt-1"><strong>Items:</strong><br>${itemsHtml}</div>
+               <div class="small text-muted mt-1">Status: <span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></div>
+            </div>
+            <div class="mt-3">
+               <button class="btn btn-sm btn-outline-info w-100" onclick="viewPosOrderInvoice('${o.orderId}')">👁️ View Invoice</button>
+            </div>
+         </div>
+      `;
+   });
+
+   if (desktopBody) desktopBody.innerHTML = desktopHtml;
+   if (mobileList) mobileList.innerHTML = mobileHtml;
+
+   const summaryText = filteredOrderHistoryCache.length + (filteredOrderHistoryCache.length === 1 ? " order" : " orders") + " • Total Sales: ₹" + totalAmount.toFixed(2);
+   if (infoTop) infoTop.textContent = summaryText;
+   if (infoBottom) infoBottom.textContent = summaryText;
+
+   renderOrderHistoryPaginationControls(filteredOrderHistoryCache.length);
+}
+
+function renderOrderHistoryPaginationControls(totalRecords) {
+   // Optional: Inject pagination buttons container if it exists or render inline below table
+   const maxPage = Math.ceil(totalRecords / orderHistoryPageSize) || 1;
+   let paginationContainer = document.getElementById("orderHistoryPagination");
+   
+   if (!paginationContainer && totalRecords > orderHistoryPageSize) {
+      const targetTable = document.getElementById("orderHistoryTableBody")?.closest(".table-responsive");
+      if (targetTable) {
+         paginationContainer = document.createElement("div");
+         paginationContainer.id = "orderHistoryPagination";
+         paginationContainer.className = "d-flex justify-content-between align-items-center my-3 px-2";
+         targetTable.parentNode.insertBefore(paginationContainer, targetTable.nextSibling);
+      }
+   }
+
+   if (!paginationContainer) return;
+
+   if (totalRecords <= orderHistoryPageSize) {
+      paginationContainer.innerHTML = "";
+      return;
+   }
+
+   paginationContainer.innerHTML = `
+      <div class="small text-muted">Page ${currentOrderHistoryPage} of ${maxPage}</div>
+      <div class="btn-group">
+         <button class="btn btn-sm btn-outline-secondary" ${currentOrderHistoryPage === 1 ? 'disabled' : ''} onclick="changeOrderHistoryPage(-1)">Previous</button>
+         <button class="btn btn-sm btn-outline-secondary" ${currentOrderHistoryPage === maxPage ? 'disabled' : ''} onclick="changeOrderHistoryPage(1)">Next</button>
+      </div>
+   `;
+}
 
 // Load order back to POS form for editing
 function loadOrderToPOS(orderId) {
@@ -4535,78 +4783,7 @@ function loadOrderHistory() {
       .getOrderHistoryData(month);
 }
 
-function renderOrderHistoryTables(orders) {
-   const desktopBody = document.getElementById("orderHistoryTableBody");
-   const mobileList = document.getElementById("orderHistoryMobileList");
-   const infoTop = document.getElementById("orderHistoryInfoTop");
-   const infoBottom = document.getElementById("orderHistoryInfo");
 
-   if (!orders.length) {
-      if (desktopBody) desktopBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No orders found.</td></tr>';
-      if (mobileList) mobileList.innerHTML = '<div class="text-center text-muted py-4">No orders found.</div>';
-      if (infoTop) infoTop.textContent = "0 orders • Total Sales: ₹0.00";
-      if (infoBottom) infoBottom.textContent = "0 orders • Total Sales: ₹0.00";
-      return;
-   }
-
-   orders.sort(function (a, b) {
-      return String(b.orderId || "").localeCompare(String(a.orderId || ""), undefined, { numeric: true });
-   });
-
-   let totalAmount = 0;
-   let desktopHtml = "";
-   let mobileHtml = "";
-
-   orders.forEach(o => {
-      totalAmount += Number(o.grandTotal || 0);
-      const statusBadge = String(o.paymentStatus).toLowerCase() === "paid" ? "bg-success" : "bg-warning text-dark";
-      const itemsHtml = o._itemsText || "-";
-
-      desktopHtml += `
-         <tr>
-            <td>
-               <div class="fw-bold text-primary">${o.orderId}</div>
-               <div class="small text-muted">${o.orderDate}</div>
-            </td>
-            <td>${escapeHtml(o.customerName)}</td>
-            <td>${escapeHtml(o.mobile)}</td>
-            <td><small class="text-dark fw-medium" style="line-height: 1.5; display: block; max-width: 320px;">${itemsHtml}</small></td>
-            <td><span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></td>
-            <td class="text-end fw-semibold">₹${Number(o.grandTotal).toFixed(2)}</td>
-            <td class="text-center text-nowrap">
-               <button class="btn btn-sm btn-outline-info px-3" onclick="viewPosOrderInvoice('${o.orderId}')" title="View Invoice">👁️ View</button>
-            </td>
-         </tr>
-      `;
-
-      mobileHtml += `
-         <div class="border rounded p-3 mb-2 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-start">
-               <div>
-                  <span class="fw-bold text-primary">${o.orderId}</span>
-                  <div class="small text-muted">${o.orderDate}</div>
-               </div>
-               <div class="fw-bold text-success">₹${Number(o.grandTotal).toFixed(2)}</div>
-            </div>
-            <div class="mt-2">
-               <div><strong>${escapeHtml(o.customerName)}</strong> (${escapeHtml(o.mobile)})</div>
-               <div class="small text-dark mt-1"><strong>Items:</strong><br>${itemsHtml}</div>
-               <div class="small text-muted mt-1">Status: <span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></div>
-            </div>
-            <div class="mt-3">
-               <button class="btn btn-sm btn-outline-info w-100" onclick="viewPosOrderInvoice('${o.orderId}')">👁️ View Invoice</button>
-            </div>
-         </div>
-      `;
-   });
-
-   if (desktopBody) desktopBody.innerHTML = desktopHtml;
-   if (mobileList) mobileList.innerHTML = mobileHtml;
-
-   const summaryText = orders.length + (orders.length === 1 ? " order" : " orders") + " • Total Sales: ₹" + totalAmount.toFixed(2);
-   if (infoTop) infoTop.textContent = summaryText;
-   if (infoBottom) infoBottom.textContent = summaryText;
-}
 
 
 // ==========================================

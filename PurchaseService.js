@@ -570,3 +570,45 @@ function getDeletedPurchases() {
       purchases: deletedPurchases
    };
 }
+
+
+
+/**
+ * ==========================================
+ * Get Purchase Module Bootstrap Data (Fixed)
+ * ==========================================
+ * Safely aggregates settings, item master list, and history using your existing functions.
+ */
+function getPurchaseModuleBootstrapData(monthStr) {
+   try {
+      // 1. Fetch settings using your existing function
+      const settings = typeof loadPurchaseSettings === "function" ? loadPurchaseSettings() : {};
+      
+      // 2. Fetch items using your existing function
+      const items = typeof getPurchaseItems === "function" ? getPurchaseItems() : [];
+      
+      // 3. Fetch purchase history and filters using your existing bootstrap function
+      let historyData = { months: [], suppliers: [], purchases: [] };
+      if (typeof getPurchaseBootstrapData === "function") {
+         const res = getPurchaseBootstrapData(monthStr);
+         if (res && res.success) {
+            historyData = res;
+         }
+      }
+
+      return {
+         success: true,
+         settings: settings,
+         items: items,
+         months: historyData.months || [],
+         suppliers: historyData.suppliers || [],
+         purchases: historyData.purchases || []
+      };
+   } catch (error) {
+      console.error("Purchase Module Bootstrap Error:", error);
+      return {
+         success: false,
+         message: error && error.message ? error.message : String(error)
+      };
+   }
+}
