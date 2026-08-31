@@ -104,6 +104,24 @@ function injectMobileSmoothStyles() {
       `;
       document.head.appendChild(style);
    }
+
+
+/**
+ * Debounce utility to optimize high-frequency events like typing in search bars.
+ * Ensures the callback only runs after the user stops typing for the specified delay.
+ */
+function debounce(func, wait) {
+   let timeout;
+   return function (...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(function () {
+         func.apply(context, args);
+      }, wait || 300);
+   };
+}
+
+
    /* ==========================================
    Navigation
 ========================================== */
@@ -330,14 +348,10 @@ function injectMobileSmoothStyles() {
 
          element.dataset.localFilterBound = "true";
          const eventName = element.tagName === "INPUT" ? "input" : "change";
-         let timer = null;
 
-         element.addEventListener(eventName, function () {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(function () {
-               renderPersonalExpenseHistoryFromCache();
-            }, 80);
-         });
+         element.addEventListener(eventName, debounce(function () {
+            renderPersonalExpenseHistoryFromCache();
+         }, 300));
       });
    }
 
@@ -469,15 +483,13 @@ function injectMobileSmoothStyles() {
       if (!input || input.dataset.smartSearchBound === "true") return;
 
       input.dataset.smartSearchBound = "true";
-      let searchTimer = null;
 
-      input.addEventListener("input", function () {
-         if (searchTimer) clearTimeout(searchTimer);
-         searchTimer = setTimeout(function () {
-            showPersonalExpenseDescriptionSuggestions(input.value);
-            applyPersonalExpenseSmartCategory();
-         }, 80);
-      });
+      const handleSmartSearch = debounce(function () {
+         showPersonalExpenseDescriptionSuggestions(input.value);
+         applyPersonalExpenseSmartCategory();
+      }, 300);
+
+      input.addEventListener("input", handleSmartSearch);
 
       input.addEventListener("focus", function () {
          if (String(input.value || "").trim().length >= 2) {
@@ -2222,14 +2234,10 @@ function resetOrderEditState() {
 
          element.dataset.localFilterBound = "true";
          const eventName = element.tagName === "INPUT" ? "input" : "change";
-         let timer = null;
 
-         element.addEventListener(eventName, function () {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(function () {
-               renderPurchaseHistoryFromCache();
-            }, 80);
-         });
+         element.addEventListener(eventName, debounce(function () {
+            renderPurchaseHistoryFromCache();
+         }, 300));
       });
    }
 
@@ -4185,17 +4193,11 @@ function shareBulkWhatsApp() {
       });
    });
 
-   let purchaseSearchTimer = null;
-
-   function debouncedPurchaseSearch() {
-      clearTimeout(purchaseSearchTimer);
-
-      purchaseSearchTimer = setTimeout(function () {
-         if (typeof searchPurchaseItems === "function") {
-            searchPurchaseItems();
-         }
-      }, 200);
-   }
+   const debouncedPurchaseSearch = debounce(function () {
+      if (typeof searchPurchaseItems === "function") {
+         searchPurchaseItems();
+      }
+   }, 300);
 
    function escapeHtml(str) {
       return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");

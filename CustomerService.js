@@ -5,7 +5,56 @@
  * ==========================================================
  */
 
+/**
+ * ==========================================
+ * Get Customer Cache (Slimmed Payload)
+ * ==========================================
+ */
+function getCustomerCacheOptimized() {
+   const cache = CacheService.getScriptCache();
+   const cacheKey = "smoky_swaad_customers_slim_cache_v1";
 
+   const cached = cache.get(cacheKey);
+   if (cached) {
+      try {
+         return JSON.parse(cached);
+      } catch (e) {}
+   }
+
+   const sheet = getSheet("Customers"); // Adjust constant if named differently in your Constants.js
+   const lastRow = sheet.getLastRow();
+   const customers = [];
+
+   if (lastRow >= 2) {
+      // Read only essential columns: ID(1), Name(2), Mobile(3), Address(4), Area(5)
+      const data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+      
+      data.forEach(function(row) {
+         const mobile = String(row[2] || "").trim();
+         if (mobile) {
+            customers.push({
+               customerId: String(row[0] || "").trim(),
+               customerName: String(row[1] || "").trim(),
+               mobile: mobile,
+               houseAddress: String(row[3] || "").trim(),
+               deliveryArea: String(row[4] || "").trim()
+            });
+         }
+      });
+   }
+
+   try {
+      cache.put(cacheKey, JSON.stringify(customers), 3600); // Cache for 1 hour
+   } catch (e) {}
+
+   return customers;
+}
+
+function clearCustomerCache() {
+   try {
+      CacheService.getScriptCache().remove("smoky_swaadv2_customers_slim_cache_v1");
+   } catch (e) {}
+}
 /**
  * ==========================================================
  * Save Or Update Customer
