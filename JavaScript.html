@@ -64,46 +64,102 @@
 
       openScreen("POS");
    }
-
-   /**
-    * ==========================================
-    * MOBILE VIEWPORT & BUTTER-SMOOTH UI ENHANCEMENTS
-    * ==========================================
-    */
+/**
+ * ==========================================
+ * MOBILE VIEWPORT & BUTTER-SMOOTH UI ENHANCEMENTS
+ * ==========================================
+ */
 function injectMobileSmoothStyles() {
-      if (document.getElementById("smokySmoothMobileStyle")) return;
-      const style = document.createElement("style");
-      style.id = "smokySmoothMobileStyle";
-      style.textContent = `
-         /* Adjusted padding to prevent navbar overlap without creating whitespace */
-         body {
-            padding-top: 15px !important;
+   if (document.getElementById("smokySmoothMobileStyle")) return;
+   const style = document.createElement("style");
+   style.id = "smokySmoothMobileStyle";
+   style.textContent = `
+      /* Adjusted padding to prevent navbar overlap without creating whitespace */
+      body {
+         padding-top: 15px !important;
+      }
+
+      /* ==========================================
+         EXPLICIT CARD HEADER BACKGROUND & TEXT CONTRAST FIX
+         ========================================== */
+      /* Ensure dark card headers have a solid dark background and explicit white text */
+      .card-header.bg-dark {
+         background-color: #212529 !important;
+         color: #ffffff !important;
+      }
+      .card-header.bg-dark h5, 
+      .card-header.bg-dark span, 
+      .card-header.bg-dark div, 
+      .card-header.bg-dark * {
+         color: #ffffff !important;
+      }
+
+      /* Ensure primary card headers have a solid blue background and explicit white text */
+      .card-header.bg-primary {
+         background-color: #0d6efd !important;
+         color: #ffffff !important;
+      }
+      .card-header.bg-primary h5, 
+      .card-header.bg-primary span, 
+      .card-header.bg-primary div, 
+      .card-header.bg-primary * {
+         color: #ffffff !important;
+      }
+
+      /* Standard light card headers */
+      .card-header:not([class*="bg-"]) {
+         background-color: #f8f9fa !important;
+         color: #212529 !important;
+      }
+      .card-header:not([class*="bg-"]) h5, 
+      .card-header:not([class*="bg-"]) span, 
+      .card-header:not([class*="bg-"]) * {
+         color: #212529 !important;
+      }
+
+      /* Force outline-light buttons to use high-contrast dark text and a solid background */
+      .btn-outline-light {
+         color: #212529 !important;
+         background-color: #ffffff !important;
+         border-color: #ced4da !important;
+         font-weight: 600 !important;
+      }
+      .btn-outline-light:hover, .btn-outline-light:focus, .btn-outline-light:active {
+         color: #000000 !important;
+         background-color: #e2e6ea !important;
+         border-color: #adb5bd !important;
+      }
+
+      @media (max-width: 768px) {
+         /* Prevent iOS auto-zoom on input focus by maintaining 16px minimum font size */
+         input.form-control, select.form-select, textarea.form-control {
+            font-size: 16px !important;
          }
-         @media (max-width: 768px) {
-            /* Prevent iOS auto-zoom on input focus by maintaining 16px minimum font size */
-            input.form-control, select.form-select, textarea.form-control {
-               font-size: 16px !important;
-            }
-            /* Enhance touch targets for buttons on mobile viewports */
-            .btn-sm {
-               padding: 0.4rem 0.75rem !important;
-               font-size: 0.875rem !important;
-            }
-            /* Smooth scrolling and momentum on mobile wrappers */
-            .table-responsive {
+         /* Enhance touch targets for buttons on mobile viewports */
+         .btn-sm {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.875rem !important;
+         }
+         /* Smooth scrolling and momentum on mobile wrappers */
+         .table-responsive {
                -webkit-overflow-scrolling: touch;
-            }
-            /* Fluid spacing for mobile card blocks */
-            #purchaseMobileList .border {
-               transition: transform 0.1s ease, box-shadow 0.1s ease;
-            }
-            #purchaseMobileList .border:active {
-               transform: scale(0.99);
-            }
          }
-      `;
-      document.head.appendChild(style);
-   }
+         /* Fluid spacing for mobile card blocks */
+         #purchaseMobileList .border {
+               transition: transform 0.1s ease, box-shadow 0.1s ease;
+         }
+         #purchaseMobileList .border:active {
+               transform: scale(0.99);
+         }
+         /* Prevent any accidental low-contrast muted text on small screens */
+         .text-muted {
+            color: #495057 !important;
+         }
+      }
+   `;
+   document.head.appendChild(style);
+}
+
    /* ==========================================
    Navigation
 ========================================== */

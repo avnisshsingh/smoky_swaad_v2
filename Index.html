@@ -4,16 +4,21 @@
 <head>
   <base target="_top">
   
-  <!-- Critical mobile viewport tag for iOS/Android native app feel -->
+  <!-- Critical mobile viewport tag for native app feel -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <!-- Web App capability tags to hide browser chrome on mobile -->
+  <!-- PWA & Mobile App Capability Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Smoky Swaad">
   <meta name="theme-color" content="#ff6b00">
   
-  <title>Smoky Swaad</title>
+  <title>Smoky Swaad ERP</title>
+
+  <!-- Mobile Home Screen Shortcut & App Icons -->
+  <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/kawasaki-ninja.png">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/kawasaki-ninja.png">
   
   <?!= include('CSS'); ?>
 </head>
@@ -21,8 +26,9 @@
 <body>
 
 <!-- ========================================== -->
-<!-- PIN LOCK SCREEN OVERLAY -->
+<!-- PIN LOCK SCREEN OVERLAY (COMMENTED OUT FOR FUTURE USE) -->
 <!-- ========================================== -->
+<!--
 <div id="pin-lock-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1e293b; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
   
   <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Smoky Swaad ERP</h1>
@@ -35,6 +41,7 @@
   <p id="pin-error-msg" style="color: #ef4444; margin-top: 20px; font-size: 1.1rem; font-weight: bold; visibility: hidden;">Incorrect PIN</p>
 
 </div>
+-->
 
   <!-- Header -->
   <?!= include('Header'); ?>
