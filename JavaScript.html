@@ -1583,15 +1583,34 @@ function savePersonalExpense() {
       selectedLink.classList.add("active");
    }
 
+document.addEventListener("input", function (e) {
+      if (e.target && e.target.id === "mobile") {
+         searchCustomer();
+      }
+   });
+
+   document.addEventListener("paste", function (e) {
+      if (e.target && e.target.id === "mobile") {
+         setTimeout(searchCustomer, 100);
+      }
+   });
+
    function searchCustomer() {
       const mobileBox = document.getElementById("mobile");
       if (!mobileBox) return;
-      const mobile = mobileBox.value.trim();
+      
+      // Normalize mobile input to extract the last 10 digits cleanly
+      const mobile = mobileBox.value.trim().replace(/\D/g, "").slice(-10);
       if (mobile.length !== 10) return;
 
-      const customer = customerCache.find((c) => c.mobile === mobile);
-      if (customer) fillCustomerForm(customer);
-      else fillCustomerForm(null);
+      const customer = customerCache.find((c) => {
+         const cMobile = String(c.mobile || "").trim().replace(/\D/g, "").slice(-10);
+         return cMobile === mobile;
+      });
+
+      if (customer) {
+         fillCustomerForm(customer);
+      }
    }
 
    function fillCustomerForm(customer) {
@@ -4696,7 +4715,7 @@ function renderOrderHistoryTables() {
             <td><span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></td>
             <td class="text-end fw-semibold">₹${Number(o.grandTotal).toFixed(2)}</td>
             <td class="text-center text-nowrap">
-               <button class="btn btn-sm btn-outline-info px-3" onclick="viewPosOrderInvoice('${o.orderId}')" title="View Invoice">👁️ View</button>
+               <button class="btn btn-sm btn-outline-primary px-3" onclick="loadOrderToPOS('${o.orderId}')" title="Edit Order">✏️ Edit</button>
             </td>
          </tr>
       `;
@@ -4718,7 +4737,7 @@ function renderOrderHistoryTables() {
                <div class="small text-muted mt-1">Status: <span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></div>
             </div>
             <div class="mt-3">
-               <button class="btn btn-sm btn-outline-info w-100" onclick="viewPosOrderInvoice('${o.orderId}')">👁️ View Invoice</button>
+               <button class="btn btn-sm btn-outline-primary w-100" onclick="loadOrderToPOS('${o.orderId}')">✏️ Edit Order</button>
             </div>
          </div>
       `;
