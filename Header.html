@@ -1,56 +1,84 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow fixed-top">
-
-  <div class="container-fluid">
-
-    <!-- Logo -->
-    <a class="navbar-brand fw-bold" href="#">
-
-      🍛 Smoky Swaad ERP
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow fixed-top smoky-erp-navbar">
+  <div class="container-fluid smoky-erp-navbar-inner">
+    <!-- Official Smoky Swaad logo and ERP title -->
+    <a class="navbar-brand fw-bold smoky-erp-brand" href="#" aria-label="Smoky Swaad ERP home">
+      <img
+        class="smoky-erp-logo"
+        src="https://drive.google.com/thumbnail?id=1uQUAcDC_fBc8wyZsXvGxkp9Ieoi8f1jY&sz=w512"
+        alt="Smoky Swaad logo"
+        width="40"
+        height="40"
+        decoding="async"
+      >
+      <span class="smoky-erp-brand-title">Smoky Swaad ERP</span>
     </a>
 
-    <!-- Mobile Toggle Button -->
-
-    <button class="navbar-toggler"
+    <button class="navbar-toggler smoky-erp-toggler"
             type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#navbarMenu">
-
+            data-bs-target="#navbarMenu"
+            aria-controls="navbarMenu"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
-
     </button>
 
-    <!-- Right Menu -->
-
-    <div class="collapse navbar-collapse justify-content-end"
-         id="navbarMenu">
-
-      <ul class="navbar-nav">
-
+    <div class="collapse navbar-collapse justify-content-end" id="navbarMenu">
+      <ul class="navbar-nav align-items-lg-center">
         <li class="nav-item">
-
-          <a class="nav-link active" href="#">
-
-            Smoky Swaad
-
-          </a>
-
+          <a class="nav-link active" href="#">Smoky Swaad</a>
         </li>
-
         <li class="nav-item">
-
-          <a class="nav-link" href="#">
-
-            👤 Avnissh
-
-          </a>
-
+          <a class="nav-link" href="#">👤 Avnissh</a>
         </li>
-
       </ul>
-
     </div>
-
   </div>
-
 </nav>
+
+<style>
+  /* Header branding: shared across every ERP module */
+  .smoky-erp-navbar {
+    min-height: 62px;
+    z-index: 1030;
+  }
+  .smoky-erp-navbar-inner {
+    min-height: 62px;
+    gap: 12px;
+  }
+  .smoky-erp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin-right: 12px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    white-space: nowrap;
+  }
+  .smoky-erp-logo {
+    display: block;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .smoky-erp-brand-title {
+    display: inline-block;
+    color: #fff;
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    line-height: 1.2;
+  }
+  .smoky-erp-toggler { flex: 0 0 auto; }
+  @media (max-width: 575.98px) {
+    .smoky-erp-navbar-inner { padding-left: 10px; padding-right: 10px; }
+    .smoky-erp-brand { gap: 7px; margin-right: 4px; max-width: calc(100% - 58px); }
+    .smoky-erp-logo { width: 34px; height: 34px; flex-basis: 34px; }
+    .smoky-erp-brand-title { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; }
+    .smoky-erp-navbar .navbar-collapse { flex-basis: 100%; }
+    .smoky-erp-navbar .navbar-nav { align-items: stretch !important; padding-top: 6px; }
+  }
+</style>

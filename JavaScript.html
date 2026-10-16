@@ -54,15 +54,42 @@
       bindMenuEvents();
       injectMobileSmoothStyles();
 
-      const defaultMenu = document.querySelector(
-         '.menu-link[data-screen="POS"]',
+      // Restore the last open module after a browser refresh.
+      // Fall back to POS for first-time visits or invalid saved values.
+      const savedScreen = getSavedAppScreen();
+      const targetScreen = savedScreen || "POS";
+      const targetMenu = document.querySelector(
+         '.menu-link[data-screen="' + targetScreen + '"]'
       );
 
-      if (defaultMenu) {
-         setActiveMenu(defaultMenu);
+      if (targetMenu) {
+         setActiveMenu(targetMenu);
+      } else {
+         // The stored screen may have been removed/renamed in a later version.
+         localStorage.removeItem("smokySwaadLastOpenScreen");
+         const defaultMenu = document.querySelector(
+            '.menu-link[data-screen="POS"]'
+         );
+         if (defaultMenu) setActiveMenu(defaultMenu);
       }
 
-      openScreen("POS");
+      openScreen(targetMenu ? targetScreen : "POS");
+   }
+
+   function getSavedAppScreen() {
+      try {
+         const savedScreen = localStorage.getItem("smokySwaadLastOpenScreen");
+         if (!savedScreen) return null;
+
+         // Only restore a screen that still exists in the navigation.
+         const menu = document.querySelector(
+            '.menu-link[data-screen="' + savedScreen.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"]'
+         );
+         return menu ? savedScreen : null;
+      } catch (error) {
+         console.warn("Unable to restore the last open module:", error);
+         return null;
+      }
    }
 /**
  * ==========================================
@@ -92,6 +119,60 @@ function injectMobileSmoothStyles() {
       .card-header.bg-dark div, 
       .card-header.bg-dark * {
          color: #ffffff !important;
+      }
+
+      /* Refresh/action buttons inside dark headers must keep their own contrast. */
+      .card-header.bg-dark .btn-outline-light,
+      .card-header.bg-dark button.btn-outline-light {
+         color: #212529 !important;
+         background-color: #ffffff !important;
+         border-color: #ced4da !important;
+         position: relative !important;
+         z-index: 2 !important;
+         flex: 0 0 auto !important;
+         white-space: nowrap !important;
+         visibility: visible !important;
+         opacity: 1 !important;
+      }
+
+      .card-header.bg-dark .btn-outline-light:hover,
+      .card-header.bg-dark .btn-outline-light:focus,
+      .card-header.bg-dark .btn-outline-light:active {
+         color: #000000 !important;
+         background-color: #e2e6ea !important;
+      }
+
+      /* Keep mobile card-header title and actions in a stable two-column row. */
+      @media (max-width: 768px) {
+         #content .pe-card-header > .d-flex {
+            display: flex !important;
+            flex-flow: row nowrap !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+            width: 100% !important;
+            min-width: 0 !important;
+         }
+
+         #content .pe-card-header > .d-flex > strong {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            overflow-wrap: anywhere !important;
+         }
+
+         #content .pe-card-header > .d-flex > button {
+            display: inline-flex !important;
+            flex: 0 0 auto !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 76px !important;
+            min-height: 34px !important;
+            margin-left: auto !important;
+            padding: 6px 9px !important;
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+            white-space: nowrap !important;
+         }
       }
 
       /* Ensure primary card headers have a solid blue background and explicit white text */
@@ -178,6 +259,13 @@ function injectMobileSmoothStyles() {
    }
 
    function openScreen(screen) {
+      // Remember the selected module so browser refresh returns to this screen.
+      try {
+         localStorage.setItem("smokySwaadLastOpenScreen", screen);
+      } catch (error) {
+         console.warn("Unable to save the current module:", error);
+      }
+
       google.script.run
          .withSuccessHandler(function (html) {
             document.getElementById("content").innerHTML = html;
@@ -2427,23 +2515,23 @@ function renderPurchasesTable() {
 
         mobileHtml += `
          <div class="border rounded p-3 mb-2 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-start">
-               <div>
-                  <span class="fw-bold text-primary">${o.orderId}</span>
-                  <div class="small text-muted">${o.orderDate}</div>
+            <div class="d-flex justify-content-between align-items-start gap-2">
+               <div class="min-w-0">
+                  <div class="fw-bold text-primary">${escapeHtml(p.purchaseId)}</div>
+                  <div class="small text-muted">${escapeHtml(p.purchaseDate)}</div>
                </div>
-               <div class="fw-bold text-success">₹${Number(o.grandTotal).toFixed(2)}</div>
+               <div class="fw-bold text-success text-nowrap">${formatCurrencyCustom(p.amount)}</div>
             </div>
             <div class="mt-2">
-               <div class="fw-bold text-dark">${escapeHtml(o.customerName)}</div>
-               <div class="fw-bold text-secondary mt-1" style="user-select: all; -webkit-user-select: all; font-size: 0.95rem; letter-spacing: 0.5px;" title="Tap to select number">
-                  📱 ${escapeHtml(o.mobile)}
-               </div>
-               <div class="small text-dark mt-1"><strong>Items:</strong><br>${itemsHtml}</div>
-               <div class="small text-muted mt-1">Status: <span class="badge ${statusBadge}">${escapeHtml(o.paymentStatus)}</span></div>
+               <div class="fw-bold text-dark">${escapeHtml(p.itemName)}</div>
+               <div class="small text-muted">${escapeHtml(p.quantity)} ${escapeHtml(p.unit)}</div>
+               <div class="small mt-1"><strong>Supplier:</strong> ${escapeHtml(p.supplier || "-")}</div>
+               <div class="small mt-1"><strong>Payment:</strong> ${escapeHtml(p.paymentType || "-")}</div>
+               ${p.remarks ? '<div class="small text-muted mt-1"><strong>Remarks:</strong> ' + escapeHtml(p.remarks) + '</div>' : ''}
             </div>
-            <div class="mt-3">
-               <button class="btn btn-sm btn-outline-info w-100" onclick="viewPosOrderInvoice('${o.orderId}')">👁️ View Invoice</button>
+            <div class="d-flex gap-2 mt-3">
+               <button type="button" class="btn btn-sm btn-outline-primary flex-fill" onclick='editPurchase(${jsonStr})'>✏️ Edit</button>
+               <button type="button" class="btn btn-sm btn-outline-danger flex-fill" onclick="deletePurchase('${escapeJs(p.purchaseId)}', '${escapeJs(p.itemName)}', ${Number(p.amount || 0)})">🗑️ Delete</button>
             </div>
          </div>
       `;
@@ -4645,6 +4733,100 @@ let currentOrderHistoryPage = 1;
 const orderHistoryPageSize = 25;
 let filteredOrderHistoryCache = [];
 
+// Order History table sorting state.
+let orderHistorySortKey = "orderId";
+let orderHistorySortDirection = "desc";
+
+const orderHistorySortLabels = {
+   orderDate: "Date / ID",
+   paymentStatus: "Payment",
+   grandTotal: "Grand Total"
+};
+
+function sortOrderHistoryBy(key) {
+   if (!Object.prototype.hasOwnProperty.call(orderHistorySortLabels, key)) return;
+
+   if (orderHistorySortKey === key) {
+      orderHistorySortDirection =
+         orderHistorySortDirection === "asc" ? "desc" : "asc";
+   } else {
+      orderHistorySortKey = key;
+      orderHistorySortDirection = "asc";
+   }
+
+   currentOrderHistoryPage = 1;
+   renderOrderHistoryTables();
+}
+
+function parseOrderHistoryDate(value) {
+   if (!value) return 0;
+
+   const text = String(value).trim();
+   const dmy = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+
+   if (dmy) {
+      return new Date(
+         Number(dmy[3]),
+         Number(dmy[2]) - 1,
+         Number(dmy[1])
+      ).getTime();
+   }
+
+   const timestamp = Date.parse(text);
+   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function updateOrderHistorySortIndicators() {
+   Object.keys(orderHistorySortLabels).forEach(function (key) {
+      const header = document.getElementById("orderHistorySort-" + key);
+      if (!header) return;
+
+      const active = orderHistorySortKey === key;
+      const indicator = active
+         ? (orderHistorySortDirection === "asc" ? " ▲" : " ▼")
+         : " ↕";
+
+      header.textContent = orderHistorySortLabels[key] + indicator;
+      header.setAttribute(
+         "aria-sort",
+         active
+            ? (orderHistorySortDirection === "asc" ? "ascending" : "descending")
+            : "none"
+      );
+      header.style.cursor = "pointer";
+      header.style.userSelect = "none";
+   });
+
+   // The first column is labelled "Date / ID", and the default sort is by ID.
+   if (orderHistorySortKey === "orderId") {
+      const header = document.getElementById("orderHistorySort-orderDate");
+      if (header) {
+         header.textContent = "Date / ID ▼";
+         header.setAttribute("aria-sort", "descending");
+      }
+   }
+}
+
+function getOrderHistorySortValue(order, key) {
+   switch (key) {
+      case "orderDate":
+         return parseOrderHistoryDate(order.orderDateRaw || order.orderDate);
+      case "customerName":
+         return String(order.customerName || "").toLowerCase();
+      case "mobile":
+         return String(order.mobile || "");
+      case "items":
+         return String(order._itemsText || "").replace(/<[^>]*>/g, " ").toLowerCase();
+      case "paymentStatus":
+         return String(order.paymentStatus || "").toLowerCase();
+      case "grandTotal":
+         return Number(order.grandTotal || 0);
+      case "orderId":
+      default:
+         return String(order.orderId || "");
+   }
+}
+
 function renderOrderHistoryFiltered() {
    const monthEl = document.getElementById("orderHistoryMonth");
    const searchEl = document.getElementById("orderHistorySearch");
@@ -4685,16 +4867,49 @@ function renderOrderHistoryTables() {
       return;
    }
 
-   filteredOrderHistoryCache.sort(function (a, b) {
-      return String(b.orderId || "").localeCompare(String(a.orderId || ""), undefined, { numeric: true });
+   const sortedOrders = filteredOrderHistoryCache.slice();
+
+   sortedOrders.sort(function (a, b) {
+      const valueA = getOrderHistorySortValue(a, orderHistorySortKey);
+      const valueB = getOrderHistorySortValue(b, orderHistorySortKey);
+      let comparison;
+
+      if (typeof valueA === "number" && typeof valueB === "number") {
+         comparison = valueA - valueB;
+      } else {
+         comparison = String(valueA).localeCompare(
+            String(valueB),
+            undefined,
+            { numeric: true, sensitivity: "base" }
+         );
+      }
+
+      // Default order: Order ID descending, then order date descending.
+      // For other sorts, use order ID as the stable tie-breaker.
+      if (comparison === 0) {
+         if (orderHistorySortKey === "orderId") {
+            comparison = parseOrderHistoryDate(a.orderDateRaw || a.orderDate) -
+                         parseOrderHistoryDate(b.orderDateRaw || b.orderDate);
+         } else {
+            comparison = String(a.orderId || "").localeCompare(
+               String(b.orderId || ""),
+               undefined,
+               { numeric: true, sensitivity: "base" }
+            );
+         }
+      }
+
+      return orderHistorySortDirection === "asc" ? comparison : -comparison;
    });
+
+   updateOrderHistorySortIndicators();
 
    let totalAmount = filteredOrderHistoryCache.reduce((sum, o) => sum + Number(o.grandTotal || 0), 0);
 
-   // Slice records for current page
+   // Slice the sorted records for the current page.
    const startIndex = (currentOrderHistoryPage - 1) * orderHistoryPageSize;
    const endIndex = startIndex + orderHistoryPageSize;
-   const paginatedOrders = filteredOrderHistoryCache.slice(startIndex, endIndex);
+   const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
 
    let desktopHtml = "";
    let mobileHtml = "";

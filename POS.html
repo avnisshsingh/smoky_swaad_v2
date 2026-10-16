@@ -603,12 +603,24 @@ padding:12px!important;
                <table class="table table-hover align-middle mb-0">
                  <thead class="table-light">
                    <tr>
-                     <th>Date / ID</th>
+                     <th id="orderHistorySort-orderDate"
+                         role="button" tabindex="0"
+                         onclick="sortOrderHistoryBy('orderDate')"
+                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortOrderHistoryBy('orderDate')}"
+                         title="Sort by order date">Date / ID</th>
                      <th>Customer</th>
                      <th>Mobile</th>
                      <th>Ordered Items</th>
-                     <th>Payment</th>
-                     <th class="text-end">Grand Total</th>
+                     <th id="orderHistorySort-paymentStatus"
+                         role="button" tabindex="0"
+                         onclick="sortOrderHistoryBy('paymentStatus')"
+                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortOrderHistoryBy('paymentStatus')}"
+                         title="Sort by payment status">Payment</th>
+                     <th id="orderHistorySort-grandTotal"
+                         class="text-end" role="button" tabindex="0"
+                         onclick="sortOrderHistoryBy('grandTotal')"
+                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortOrderHistoryBy('grandTotal')}"
+                         title="Sort by grand total">Grand Total</th>
                      <th class="text-center">Actions</th>
                    </tr>
                  </thead>

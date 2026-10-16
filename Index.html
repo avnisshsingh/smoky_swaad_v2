@@ -1,71 +1,55 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <base target="_top">
-  
-  <!-- Critical mobile viewport tag for native app feel -->
+  <!-- Mobile viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  
-  <!-- PWA & Mobile App Capability Tags -->
+  <!-- PWA & mobile app capability -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Smoky Swaad">
-  <meta name="theme-color" content="#ff6b00">
-  
+  <meta name="theme-color" content="#222222">
   <title>Smoky Swaad ERP</title>
-
-  <!-- Mobile Home Screen Shortcut & App Icons -->
-  <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/kawasaki-ninja.png">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/96/kawasaki-ninja.png">
-  
+  <!-- Official Smoky Swaad logo for browser tab and mobile shortcut -->
+  <link rel="icon" href="https://drive.google.com/thumbnail?id=1uQUAcDC_fBc8wyZsXvGxkp9Ieoi8f1jY&sz=w512">
+  <link rel="apple-touch-icon" href="https://drive.google.com/thumbnail?id=1uQUAcDC_fBc8wyZsXvGxkp9Ieoi8f1jY&sz=w512">
   <?!= include('CSS'); ?>
 </head>
-
 <body>
 
-<!-- ========================================== -->
 <!-- PIN LOCK SCREEN OVERLAY (COMMENTED OUT FOR FUTURE USE) -->
-<!-- ========================================== -->
 <!--
 <div id="pin-lock-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1e293b; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
-  
   <h1 style="margin-bottom: 10px; font-size: 2.5rem;">Smoky Swaad ERP</h1>
   <p style="margin-bottom: 30px; color: #94a3b8; font-size: 1.2rem;">Enter PIN to unlock</p>
-  
   <input type="password" id="app-pin-input" maxlength="4" style="font-size: 32px; width: 150px; text-align: center; letter-spacing: 15px; padding: 15px; border-radius: 8px; border: none; outline: none; margin-bottom: 20px; color: #0f172a; font-weight: bold;" oninput="this.value = this.value.replace(/[^0-9]/g, '')" autofocus>
-  
   <button onclick="unlockSystem()" style="background-color: #3b82f6; color: white; border: none; padding: 15px 50px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">UNLOCK</button>
-  
   <p id="pin-error-msg" style="color: #ef4444; margin-top: 20px; font-size: 1.1rem; font-weight: bold; visibility: hidden;">Incorrect PIN</p>
-
 </div>
 -->
 
-  <!-- Header -->
-  <?!= include('Header'); ?>
+<!-- Shared header: logo is embedded in Header.html and appears across all modules -->
+<?!= include('Header'); ?>
 
-  <div id="sidebar">
-    <?!= include('Sidebar'); ?>
+<div id="sidebar">
+  <?!= include('Sidebar'); ?>
+</div>
+<div id="main-content">
+  <div id="content">
+    <?!= include('POS'); ?>
   </div>
+</div>
 
-  <div id="main-content">
-    <div id="content">
-      <?!= include('POS'); ?>
-    </div>
-  </div>
+<!-- Client-side logic -->
+<?!= include('JavaScript'); ?>
+<?!= include('BusinessCostsClient'); ?>
+<?!= include('PricingCalculatorClient'); ?>
 
-  <!-- Client-side Logic -->
-  <?!= include('JavaScript'); ?>
-  <?!= include('BusinessCostsClient'); ?>
-  <?!= include('PricingCalculatorClient'); ?>
+<!-- External libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- External Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-
-<!-- Custom Branded Confirmation Modal -->
+<!-- Custom branded confirmation modal -->
 <div class="modal fade" id="customConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
@@ -84,92 +68,57 @@
   </div>
 </div>
 
-
-<!-- ========================================== -->
-<!-- GLOBAL HIDDEN INVOICE CONTAINER FOR PDF EXPORTS -->
-<!-- ========================================== -->
+<!-- Global hidden invoice container for PDF exports -->
 <div id="invoicePdfContainer" style="display: none; width: 794px; background: #ffffff; padding: 20px; font-family: Arial, sans-serif;">
-   <div class="card border-0">
-      <div class="card-header bg-white border-bottom pb-3">
-         <div class="d-flex justify-content-between align-items-center">
-            <div>
-               <h3 class="fw-bold text-dark mb-1">🍛 Smoky Swaad</h3>
-               <p class="text-muted small mb-0">Authentic Odia Flavors & Cloud Kitchen ERP</p>
-            </div>
-            <div class="text-end">
-               <h5 class="fw-bold text-primary mb-1">INVOICE</h5>
-               <p class="small text-muted mb-0">Order ID: <span id="invOrderId">-</span></p>
-               <p class="small text-muted mb-0">Date: <span id="invDate">-</span></p>
-            </div>
-         </div>
+  <div class="card border-0">
+    <div class="card-header bg-white border-bottom pb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Smoky Swaad</h3>
+          <p class="text-muted small mb-0">Authentic Odia Flavors &amp; Cloud Kitchen ERP</p>
+        </div>
+        <div class="text-end">
+          <h5 class="fw-bold text-primary mb-1">INVOICE</h5>
+          <p class="small text-muted mb-0">Order ID: <span id="invOrderId">-</span></p>
+          <p class="small text-muted mb-0">Date: <span id="invDate">-</span></p>
+        </div>
       </div>
-      <div class="card-body py-3">
-         <div class="row g-3 mb-3">
-            <div class="col-6">
-               <div class="p-2 border rounded bg-light">
-                  <small class="text-muted fw-bold">CUSTOMER DETAILS</small>
-                  <div class="fw-bold text-dark mt-1" id="invCustomer">-</div>
-                  <div class="small text-muted" id="invMobile">-</div>
-                  <div class="small text-muted mt-1">Area: <span id="invDeliveryArea">-</span></div>
-                  <div class="small text-muted" id="invAddress">-</div>
-               </div>
-            </div>
-            <div class="col-6">
-               <div class="p-2 border rounded bg-light">
-                  <small class="text-muted fw-bold">ORDER & PAYMENT INFO</small>
-                  <div class="small text-muted mt-1">Type: <span id="invOrderType">-</span></div>
-                  <div class="small text-muted">Payment Mode: <span id="invPaymentMode2">-</span></div>
-                  <div class="small text-muted mt-1">Status: <span id="invStatus"></span> | Pay Status: <span id="invPaymentStatus"></span></div>
-                  <div class="small text-muted mt-1">Instructions: <span id="invInstructions">-</span></div>
-               </div>
-            </div>
-         </div>
-         <div class="table-responsive mb-3">
-            <table class="table table-bordered align-middle mb-0" style="font-size: 12px;">
-               <thead class="table-light">
-                  <tr>
-                     <th>Item Name</th>
-                     <th class="text-center">Qty</th>
-                     <th class="text-end">Price</th>
-                     <th class="text-end">Total</th>
-                  </tr>
-               </thead>
-               <tbody id="invoiceItemsBody">
-               </tbody>
-            </table>
-         </div>
-         <div class="row justify-content-end">
-            <div class="col-6">
-               <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
-                  <tr>
-                     <td>Subtotal:</td>
-                     <td class="text-end" id="invSubtotal">₹0.00</td>
-                  </tr>
-                  <tr id="invAddonsRow" style="display:none;">
-                     <td>Add-ons (<span id="invAddons"></span>):</td>
-                     <td class="text-end" id="invAddonTotal">₹0.00</td>
-                  </tr>
-                  <tr>
-                     <td>Delivery Charge:</td>
-                     <td class="text-end" id="invDeliveryCharge">₹0.00</td>
-                  </tr>
-                  <tr>
-                     <td>Discount:</td>
-                     <td class="text-end" id="invDiscount">₹0.00</td>
-                  </tr>
-                  <tr class="border-top fw-bold fs-6">
-                     <td>Grand Total:</td>
-                     <td class="text-end text-success" id="invGrandTotal">₹0.00</td>
-                  </tr>
-               </table>
-            </div>
-         </div>
+    </div>
+    <div class="card-body py-3">
+      <div class="row g-3 mb-3">
+        <div class="col-6"><div class="p-2 border rounded bg-light">
+          <small class="text-muted fw-bold">CUSTOMER DETAILS</small>
+          <div class="fw-bold text-dark mt-1" id="invCustomer">-</div>
+          <div class="small text-muted" id="invMobile">-</div>
+          <div class="small text-muted mt-1">Area: <span id="invDeliveryArea">-</span></div>
+          <div class="small text-muted" id="invAddress">-</div>
+        </div></div>
+        <div class="col-6"><div class="p-2 border rounded bg-light">
+          <small class="text-muted fw-bold">ORDER &amp; PAYMENT INFO</small>
+          <div class="small text-muted mt-1">Type: <span id="invOrderType">-</span></div>
+          <div class="small text-muted">Payment Mode: <span id="invPaymentMode2">-</span></div>
+          <div class="small text-muted mt-1">Status: <span id="invStatus"></span> | Pay Status: <span id="invPaymentStatus"></span></div>
+          <div class="small text-muted mt-1">Instructions: <span id="invInstructions">-</span></div>
+        </div></div>
       </div>
-      <div class="card-footer bg-white text-center text-muted small pt-3 border-top">
-         Thank you for ordering with Smoky Swaad! ❤️ | Fresh, Hygienic & Authentic
+      <div class="table-responsive mb-3">
+        <table class="table table-bordered align-middle mb-0" style="font-size: 12px;">
+          <thead class="table-light"><tr><th>Item Name</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead>
+          <tbody id="invoiceItemsBody"></tbody>
+        </table>
       </div>
-   </div>
+      <div class="row justify-content-end"><div class="col-6">
+        <table class="table table-sm table-borderless mb-0" style="font-size: 13px;">
+          <tr><td>Subtotal:</td><td class="text-end" id="invSubtotal">₹0.00</td></tr>
+          <tr id="invAddonsRow" style="display:none;"><td>Add-ons (<span id="invAddons"></span>):</td><td class="text-end" id="invAddonTotal">₹0.00</td></tr>
+          <tr><td>Delivery Charge:</td><td class="text-end" id="invDeliveryCharge">₹0.00</td></tr>
+          <tr><td>Discount:</td><td class="text-end" id="invDiscount">₹0.00</td></tr>
+          <tr class="border-top fw-bold fs-6"><td>Grand Total:</td><td class="text-end text-success" id="invGrandTotal">₹0.00</td></tr>
+        </table>
+      </div></div>
+    </div>
+    <div class="card-footer bg-white text-center text-muted small pt-3 border-top">Thank you for ordering with Smoky Swaad! ❤️ | Fresh, Hygienic &amp; Authentic</div>
+  </div>
 </div>
-
 </body>
 </html>
