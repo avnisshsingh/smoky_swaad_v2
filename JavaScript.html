@@ -121,60 +121,6 @@ function injectMobileSmoothStyles() {
          color: #ffffff !important;
       }
 
-      /* Refresh/action buttons inside dark headers must keep their own contrast. */
-      .card-header.bg-dark .btn-outline-light,
-      .card-header.bg-dark button.btn-outline-light {
-         color: #212529 !important;
-         background-color: #ffffff !important;
-         border-color: #ced4da !important;
-         position: relative !important;
-         z-index: 2 !important;
-         flex: 0 0 auto !important;
-         white-space: nowrap !important;
-         visibility: visible !important;
-         opacity: 1 !important;
-      }
-
-      .card-header.bg-dark .btn-outline-light:hover,
-      .card-header.bg-dark .btn-outline-light:focus,
-      .card-header.bg-dark .btn-outline-light:active {
-         color: #000000 !important;
-         background-color: #e2e6ea !important;
-      }
-
-      /* Keep mobile card-header title and actions in a stable two-column row. */
-      @media (max-width: 768px) {
-         #content .pe-card-header > .d-flex {
-            display: flex !important;
-            flex-flow: row nowrap !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            gap: 8px !important;
-            width: 100% !important;
-            min-width: 0 !important;
-         }
-
-         #content .pe-card-header > .d-flex > strong {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-            overflow-wrap: anywhere !important;
-         }
-
-         #content .pe-card-header > .d-flex > button {
-            display: inline-flex !important;
-            flex: 0 0 auto !important;
-            align-items: center !important;
-            justify-content: center !important;
-            min-width: 76px !important;
-            min-height: 34px !important;
-            margin-left: auto !important;
-            padding: 6px 9px !important;
-            font-size: 12px !important;
-            line-height: 1.2 !important;
-            white-space: nowrap !important;
-         }
-      }
-
       /* Ensure primary card headers have a solid blue background and explicit white text */
       .card-header.bg-primary {
          background-color: #0d6efd !important;
@@ -426,6 +372,9 @@ function injectMobileSmoothStyles() {
             personalExpenseHistoryCache = Array.isArray(response.history)
                ? response.history
                : [];
+
+            // Sort Quick Category tiles by historical usage, most-used first.
+            sortPersonalExpenseQuickCategoriesByUsage();
 
             for (let i = 0; i < personalExpenseHistoryCache.length; i++) {
                const expense = personalExpenseHistoryCache[i];
@@ -814,6 +763,56 @@ function injectMobileSmoothStyles() {
          .trim()
          .toLowerCase();
       return PERSONAL_EXPENSE_CATEGORY_ICONS[key] || "📌";
+   }
+
+   /**
+    * Sort Quick Category tiles by transaction count across the expense history
+    * returned by the bootstrap call. Ties preserve the original tile order.
+    */
+   function sortPersonalExpenseQuickCategoriesByUsage() {
+      const grid = peEl("personalExpenseQuickCategoryGrid");
+      if (!grid) return;
+
+      const counts = Object.create(null);
+      const history = Array.isArray(personalExpenseHistoryCache)
+         ? personalExpenseHistoryCache
+         : [];
+
+      history.forEach(function (expense) {
+         if (!expense) return;
+
+         // Match the existing expense-history semantics: only actual expenses
+         // contribute to category usage; transfers/refunds do not.
+         const nature = String(expense.nature || "Expense").trim().toLowerCase();
+         if (nature && nature !== "expense") return;
+
+         const category = String(expense.category || "").trim().toLowerCase();
+         if (!category) return;
+
+         counts[category] = (counts[category] || 0) + 1;
+      });
+
+      const buttons = Array.from(
+         grid.querySelectorAll(".pe-quick-btn")
+      ).map(function (button, index) {
+         const match = String(button.getAttribute("onclick") || "")
+            .match(/selectPersonalExpenseCategory\(['"](.+?)['"]\)/);
+
+         return {
+            button: button,
+            index: index,
+            category: match ? match[1].trim().toLowerCase() : "",
+            count: match ? (counts[match[1].trim().toLowerCase()] || 0) : 0
+         };
+      });
+
+      buttons.sort(function (a, b) {
+         return (b.count - a.count) || (a.index - b.index);
+      });
+
+      buttons.forEach(function (item) {
+         grid.appendChild(item.button);
+      });
    }
 
    function populatePersonalExpenseCategories(categories) {
