@@ -340,6 +340,30 @@ function injectMobileSmoothStyles() {
 
       registerPersonalExpenseSmartDescription();
       registerPersonalExpenseLocalHistoryFilters();
+
+      // Show the last known data-backed categories immediately on repeat visits.
+      // The Apps Script bootstrap refreshes the list in the background.
+      const cachedQuickCategories = readCachedPersonalExpenseQuickCategories();
+      const quickGrid = peEl("personalExpenseQuickCategoryGrid");
+      if (quickGrid) {
+         quickGrid.setAttribute("aria-busy", "true");
+         if (cachedQuickCategories.length) {
+            ensurePersonalExpenseQuickCategories(
+               cachedQuickCategories,
+               cachedQuickCategories.map(function (name) {
+                  return { category: name };
+               })
+            );
+         } else {
+            quickGrid.replaceChildren();
+            const loading = document.createElement("div");
+            loading.className = "text-muted small py-2";
+            loading.textContent = "Loading categories…";
+            loading.setAttribute("role", "status");
+            quickGrid.appendChild(loading);
+         }
+      }
+
       loadPersonalExpenseBootstrap();
    }
 
@@ -373,8 +397,12 @@ function injectMobileSmoothStyles() {
                ? response.history
                : [];
 
-            // Sort Quick Category tiles by historical usage, most-used first.
-            sortPersonalExpenseQuickCategoriesByUsage();
+            // Render only categories that have at least one saved transaction.
+            // This uses the same bootstrap response and keeps the tiles alphabetized.
+            ensurePersonalExpenseQuickCategories(
+               personalExpenseCategoryCache,
+               personalExpenseHistoryCache
+            );
 
             for (let i = 0; i < personalExpenseHistoryCache.length; i++) {
                const expense = personalExpenseHistoryCache[i];
@@ -769,50 +797,175 @@ function injectMobileSmoothStyles() {
     * Sort Quick Category tiles by transaction count across the expense history
     * returned by the bootstrap call. Ties preserve the original tile order.
     */
-   function sortPersonalExpenseQuickCategoriesByUsage() {
+   /**
+    * Sort all Quick Category tiles alphabetically by visible category name.
+    * Tiles are authored in PersonalExpenses.html so the first render is instant.
+    * Configured categories are also appended when missing from the curated grid.
+    */
+   const PERSONAL_EXPENSE_QUICK_CATEGORY_CACHE_KEY =
+      "smokySwaad.expenses.quickCategories.v2";
+
+   function readCachedPersonalExpenseQuickCategories() {
+      try {
+         const raw = localStorage.getItem(PERSONAL_EXPENSE_QUICK_CATEGORY_CACHE_KEY);
+         const parsed = raw ? JSON.parse(raw) : null;
+         return Array.isArray(parsed)
+            ? parsed.filter(function (name) {
+                 return typeof name === "string" && name.trim();
+              })
+            : [];
+      } catch (error) {
+         return [];
+      }
+   }
+
+   function saveCachedPersonalExpenseQuickCategories(names) {
+      try {
+         localStorage.setItem(
+            PERSONAL_EXPENSE_QUICK_CATEGORY_CACHE_KEY,
+            JSON.stringify(names)
+         );
+      } catch (error) {
+         // Storage may be disabled/full; server rendering still works.
+      }
+   }
+
+   function normalizePersonalExpenseCategoryName(value) {
+      return String(value || "").trim().replace(/\s+/g, " ");
+   }
+
+   function getPersonalExpenseQuickCategoryName(button) {
+      // Prefer an explicit category data attribute; static tiles use this form.
+      const dataName = button.getAttribute("data-pe-category");
+      if (dataName) return normalizePersonalExpenseCategoryName(dataName);
+
+      // Backward compatibility with buttons wired through onclick.
+      const match = String(button.getAttribute("onclick") || "")
+         .match(/selectPersonalExpenseCategory\(['"](.+?)['"]\)/);
+      if (match) return normalizePersonalExpenseCategoryName(match[1]);
+
+      const label = button.querySelector(".pe-category-name");
+      if (label) return normalizePersonalExpenseCategoryName(label.textContent);
+
+      return normalizePersonalExpenseCategoryName(button.textContent)
+         .replace(/^[^\p{L}\p{N}]+/u, "");
+   }
+
+   function getPersonalExpenseQuickCategoryButtons() {
+      const grid = peEl("personalExpenseQuickCategoryGrid");
+      return grid ? Array.from(grid.querySelectorAll(".pe-quick-btn")) : [];
+   }
+
+   function sortPersonalExpenseQuickCategoriesAlphabetically() {
       const grid = peEl("personalExpenseQuickCategoryGrid");
       if (!grid) return;
 
-      const counts = Object.create(null);
-      const history = Array.isArray(personalExpenseHistoryCache)
-         ? personalExpenseHistoryCache
-         : [];
-
-      history.forEach(function (expense) {
-         if (!expense) return;
-
-         // Match the existing expense-history semantics: only actual expenses
-         // contribute to category usage; transfers/refunds do not.
-         const nature = String(expense.nature || "Expense").trim().toLowerCase();
-         if (nature && nature !== "expense") return;
-
-         const category = String(expense.category || "").trim().toLowerCase();
-         if (!category) return;
-
-         counts[category] = (counts[category] || 0) + 1;
-      });
-
-      const buttons = Array.from(
-         grid.querySelectorAll(".pe-quick-btn")
-      ).map(function (button, index) {
-         const match = String(button.getAttribute("onclick") || "")
-            .match(/selectPersonalExpenseCategory\(['"](.+?)['"]\)/);
-
-         return {
-            button: button,
-            index: index,
-            category: match ? match[1].trim().toLowerCase() : "",
-            count: match ? (counts[match[1].trim().toLowerCase()] || 0) : 0
-         };
-      });
-
+      const buttons = getPersonalExpenseQuickCategoryButtons();
       buttons.sort(function (a, b) {
-         return (b.count - a.count) || (a.index - b.index);
+         return getPersonalExpenseQuickCategoryName(a).localeCompare(
+            getPersonalExpenseQuickCategoryName(b),
+            undefined,
+            { sensitivity: "base", numeric: true }
+         );
       });
 
-      buttons.forEach(function (item) {
-         grid.appendChild(item.button);
+      const fragment = document.createDocumentFragment();
+      buttons.forEach(function (button) {
+         fragment.appendChild(button);
       });
+      grid.appendChild(fragment);
+   }
+
+   function ensurePersonalExpenseQuickCategories(categories, history) {
+      const grid = peEl("personalExpenseQuickCategoryGrid");
+      if (!grid || !Array.isArray(categories)) return;
+
+      // A Quick Category is displayed only if at least one saved transaction
+      // references it. The full configured list remains available in dropdowns.
+      const usedCategories = Object.create(null);
+      (Array.isArray(history) ? history : []).forEach(function (expense) {
+         if (!expense) return;
+         const name = normalizePersonalExpenseCategoryName(expense.category);
+         if (!name) return;
+         usedCategories[name.toLocaleLowerCase()] = true;
+      });
+
+      const iconMap = {
+         "atm cash": "🏧", "baby": "👶", "baby / kids": "👶",
+         "bills": "💡", "donation": "💝", "education": "🎓",
+         "entertainment": "🎬", "food": "🍽️", "fruits": "🍎",
+         "fuel": "⛽", "grocery": "🛒", "house": "🏠",
+         "maintenance": "🛠️", "medical": "💊", "milk": "🥛",
+         "naasta": "🥪", "other": "📌", "recharge": "📱",
+         "shopping": "🛍️", "staff": "👤", "staff / help": "👤",
+         "stall": "🏪", "tea": "☕", "transfer": "💸",
+         "vegetables": "🥬", "vehicle": "🚗", "xerox": "📄"
+      };
+
+      // Build one canonical set: configured categories first, then any curated
+      // tile not present in Settings. Case/whitespace differences are duplicates.
+      const namesByKey = Object.create(null);
+      (Array.isArray(categories) ? categories : []).forEach(function (raw) {
+         const name = normalizePersonalExpenseCategoryName(raw);
+         if (!name) return;
+         const key = name.toLocaleLowerCase();
+         if (!namesByKey[key]) namesByKey[key] = name;
+      });
+
+      // Retain curated tiles only when they represent a category not in Settings.
+      getPersonalExpenseQuickCategoryButtons().forEach(function (button) {
+         const name = getPersonalExpenseQuickCategoryName(button);
+         if (!name) return;
+         const key = name.toLocaleLowerCase();
+         if (!namesByKey[key]) namesByKey[key] = name;
+      });
+
+      const names = Object.keys(namesByKey)
+         .filter(function (key) {
+            return Boolean(usedCategories[key]);
+         })
+         .map(function (key) {
+            return namesByKey[key];
+         })
+         .sort(function (a, b) {
+         return a.localeCompare(b, undefined, {
+            sensitivity: "base",
+            numeric: true
+         });
+      });
+
+      // Persist the final data-backed list for instant rendering on the next visit.
+      saveCachedPersonalExpenseQuickCategories(names);
+
+      const fragment = document.createDocumentFragment();
+      names.forEach(function (name) {
+         const button = document.createElement("button");
+         button.type = "button";
+         button.className = "btn btn-outline-secondary pe-quick-btn";
+         button.setAttribute("data-pe-category", name);
+         button.setAttribute("title", name);
+         button.setAttribute(
+            "onclick",
+            "selectPersonalExpenseCategory(" + JSON.stringify(name) + ")"
+         );
+
+         const icon = document.createElement("span");
+         icon.className = "pe-category-icon";
+         icon.setAttribute("aria-hidden", "true");
+         icon.textContent = iconMap[name.toLocaleLowerCase()] || "📂";
+
+         const label = document.createElement("span");
+         label.className = "pe-category-name";
+         label.textContent = name;
+
+         button.appendChild(icon);
+         button.appendChild(document.createTextNode(" "));
+         button.appendChild(label);
+         fragment.appendChild(button);
+      });
+
+      // One DOM replacement prevents duplicate/uneven appended buttons.
+      grid.replaceChildren(fragment);
    }
 
    function populatePersonalExpenseCategories(categories) {
@@ -876,47 +1029,9 @@ function injectMobileSmoothStyles() {
          if (currentHistory) historySelect.value = currentHistory;
       }
 
-      const grid = document.getElementById("personalExpenseQuickCategoryGrid");
-      if (grid) {
-         const hiddenTiles = [
-            "education",
-            "entertainment",
-            "medical",
-            "vegetables",
-         ];
-         grid.innerHTML = clean
-            .filter(function (category) {
-               return !hiddenTiles.includes(category.toLowerCase());
-            })
-            .map(function (category) {
-               const icon = getPersonalExpenseCategoryIcon(category);
-               return (
-                  '<button type="button" class="btn btn-outline-secondary pe-quick-btn" data-pe-category="' +
-                  escapePersonalExpenseHtml(category) +
-                  '" title="' +
-                  escapePersonalExpenseHtml(category) +
-                  '">' +
-                  '<span class="pe-category-icon" aria-hidden="true">' +
-                  icon +
-                  "</span>" +
-                  '<span class="pe-category-name">' +
-                  escapePersonalExpenseHtml(category) +
-                  "</span></button>"
-               );
-            })
-            .join("");
+      // Quick Category tiles are reconciled once from configured categories
+      // by ensurePersonalExpenseQuickCategories() after bootstrap.
 
-         if (grid.dataset.categoryDelegateBound !== "true") {
-            grid.dataset.categoryDelegateBound = "true";
-            grid.addEventListener("click", function (event) {
-               const button = event.target.closest("[data-pe-category]");
-               if (!button || !grid.contains(button)) return;
-               selectPersonalExpenseCategory(
-                  button.getAttribute("data-pe-category"),
-               );
-            });
-         }
-      }
    }
 
    function showAddPersonalExpenseCategory() {
