@@ -2595,6 +2595,15 @@ function resetOrderEditState() {
    let currentPurchaseHistoryPage = 1;
 const purchaseHistoryPageSize = 25;
 let filteredPurchaseHistoryCache = [];
+let purchaseDateSortDirection = "desc"; // Default: newest purchase date first
+
+function togglePurchaseDateSort() {
+   purchaseDateSortDirection = purchaseDateSortDirection === "desc" ? "asc" : "desc";
+   purchaseLastHistorySignature = "";
+   const indicator = document.getElementById("purchaseDateSortIndicator");
+   if (indicator) indicator.textContent = purchaseDateSortDirection === "desc" ? "↓" : "↑";
+   renderPurchaseHistoryFromCache();
+}
 
 function renderPurchaseHistoryFromCache() {
    if (!purchaseBootstrapLoaded) return;
@@ -2607,7 +2616,7 @@ function renderPurchaseHistoryFromCache() {
    const supplier = supplierEl ? String(supplierEl.value || "") : "";
    const search = searchEl ? String(searchEl.value || "").trim().toLowerCase() : "";
 
-   const signature = month + "\u0001" + supplier + "\u0001" + search + "\u0001" + purchaseHistoryCache.length;
+   const signature = month + "\u0001" + supplier + "\u0001" + search + "\u0001" + purchaseHistoryCache.length + "\u0001" + purchaseDateSortDirection;
    if (signature === purchaseLastHistorySignature) return;
 
    purchaseLastHistorySignature = signature;
@@ -2626,7 +2635,12 @@ function renderPurchaseHistoryFromCache() {
    }
 
    filteredPurchaseHistoryCache.sort(function (a, b) {
-      return String(b.purchaseId || "").localeCompare(String(a.purchaseId || ""), undefined, { numeric: true });
+      // Sort by purchase date first; use purchase ID as a stable tie-breaker.
+      const dateA = String(a.purchaseDateRaw || "");
+      const dateB = String(b.purchaseDateRaw || "");
+      const dateCompare = dateA.localeCompare(dateB);
+      if (dateCompare !== 0) return purchaseDateSortDirection === "asc" ? dateCompare : -dateCompare;
+      return String(a.purchaseId || "").localeCompare(String(b.purchaseId || ""), undefined, { numeric: true }) * (purchaseDateSortDirection === "asc" ? 1 : -1);
    });
 
    // Reset to page 1 on filter/search change

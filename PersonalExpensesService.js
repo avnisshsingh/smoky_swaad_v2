@@ -3091,15 +3091,12 @@ function addPersonalExpenseCategory(category) {
 
     clearPersonalExpenseCache_();
 
-    // Return the fresh merged list from bootstrap.
-    const bootstrap =
-      getPersonalExpenseBootstrapData();
-
+    // Avoid rebuilding the full expense bootstrap (history, summaries and
+    // suggestions) for a simple category mutation. The client updates its
+    // category cache locally, making this operation much faster.
     return {
       success: true,
-      category: category,
-      categories:
-        bootstrap.categories || []
+      category: category
     };
 
   } catch (error) {
@@ -3150,8 +3147,17 @@ function deletePersonalExpenseCategory(category) {
     const expenseSheet = getSheet(SHEETS.PERSONAL_EXPENSES);
     const lastExpenseRow = expenseSheet.getLastRow();
     if (lastExpenseRow >= 2) {
-      const usedCategories = expenseSheet.getRange(2, 3, lastExpenseRow - 1, 1).getDisplayValues();
-      if (usedCategories.some(function (row) { return String(row[0] || "").trim().toLowerCase() === category.toLowerCase(); })) {
+      // Read category (column C) and status (column P) together.
+      // Soft-deleted expenses must not block category deletion.
+      const expenseRows = expenseSheet.getRange(2, 3, lastExpenseRow - 1, 14).getDisplayValues();
+      const categoryIndex = 0; // C within C:P
+      const statusIndex = 13;  // P within C:P
+      const categoryInUse = expenseRows.some(function (row) {
+        const rowCategory = String(row[categoryIndex] || "").trim().toLowerCase();
+        const rowStatus = String(row[statusIndex] || "").trim().toLowerCase();
+        return rowCategory === category.toLowerCase() && rowStatus !== "deleted";
+      });
+      if (categoryInUse) {
         return { success: false, message: "This category is used by existing expenses and cannot be deleted." };
       }
     }
@@ -3168,8 +3174,8 @@ function deletePersonalExpenseCategory(category) {
 
     settingsSheet.getRange(targetRow, 17).clearContent();
     clearPersonalExpenseCache_();
-    const bootstrap = getPersonalExpenseBootstrapData();
-    return { success: true, category: category, categories: bootstrap.categories || [] };
+    // Do not reload the complete expense bootstrap just to delete a category.
+    return { success: true, category: category };
   } catch (error) {
     return { success: false, message: error && error.message ? error.message : String(error) };
   } finally {
