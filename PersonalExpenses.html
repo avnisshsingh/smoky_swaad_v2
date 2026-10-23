@@ -423,20 +423,16 @@
          PAGE HEADER
     ======================================= -->
 
-    <div class="mb-3">
+    <div class="mb-3 d-flex flex-wrap justify-content-between align-items-start gap-2">
 
-        <h4 class="pe-page-title fw-bold mb-0">
-
-            💳 Personal Expenses
-
-        </h4>
-
-        <div
-            class="pe-page-subtitle text-muted">
-
-            Track personal & household spending
-
+        <div>
+            <h4 class="pe-page-title fw-bold mb-0">💳 Personal Expenses</h4>
+            <div class="pe-page-subtitle text-muted">Track personal & household spending</div>
         </div>
+
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="showManagePersonalExpenseCategories()">
+            ⚙️ Manage Categories
+        </button>
 
     </div>
 
@@ -1612,3 +1608,38 @@
 </div>
 
 </div>
+
+<!-- Branded category manager modal (replaces browser prompt/confirm popups) -->
+<div class="modal fade" id="managePersonalExpenseCategoriesModal" tabindex="-1" aria-labelledby="managePersonalExpenseCategoriesTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="managePersonalExpenseCategoriesTitle">⚙️ Manage Expense Categories</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-4">
+          <label for="newPersonalExpenseCategoryName" class="form-label fw-semibold">Add a category</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="newPersonalExpenseCategoryName" maxlength="60" placeholder="Enter new category name">
+            <button type="button" class="btn btn-primary" id="btnAddPersonalExpenseCategory" onclick="submitAddPersonalExpenseCategory()">＋ Add</button>
+          </div>
+        </div>
+        <hr>
+        <div>
+          <label for="deletePersonalExpenseCategorySelect" class="form-label fw-semibold">Delete a custom category</label>
+          <select class="form-select" id="deletePersonalExpenseCategorySelect">
+            <option value="">Select category to delete</option>
+          </select>
+          <div class="form-text">Categories already used by expenses and built-in categories cannot be deleted.</div>
+          <button type="button" class="btn btn-outline-danger mt-2" id="btnDeletePersonalExpenseCategory" onclick="submitDeletePersonalExpenseCategory()">🗑 Delete Category</button>
+        </div>
+        <div id="managePersonalExpenseCategoriesFeedback" class="small mt-3" role="status"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+

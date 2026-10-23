@@ -1034,52 +1034,111 @@ function injectMobileSmoothStyles() {
 
    }
 
-   function showAddPersonalExpenseCategory() {
-      const value = window.prompt("Enter new expense category:");
-      if (value === null) return;
-
-      const category = String(value || "")
-         .trim()
-         .replace(/\s+/g, " ");
-      if (!category) return;
-
-      const duplicate = personalExpenseCategoryCache.some(function (item) {
-         return item.toLowerCase() === category.toLowerCase();
-      });
-
-      if (duplicate) {
-         selectPersonalExpenseCategory(
-            personalExpenseCategoryCache.find(function (item) {
-               return item.toLowerCase() === category.toLowerCase();
-            }),
-         );
-         showPersonalExpenseMessage("Category already exists.", "info");
+   function showManagePersonalExpenseCategories() {
+      const modalEl = document.getElementById("managePersonalExpenseCategoriesModal");
+      if (!modalEl || !window.bootstrap) {
+         showPersonalExpenseMessage("Category manager is unavailable. Please refresh the page.", "danger");
          return;
       }
+      const nameInput = document.getElementById("newPersonalExpenseCategoryName");
+      const feedback = document.getElementById("managePersonalExpenseCategoriesFeedback");
+      if (nameInput) nameInput.value = "";
+      if (feedback) feedback.textContent = "";
+      populatePersonalExpenseCategoryDeleteOptions();
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+   }
 
+   function populatePersonalExpenseCategoryDeleteOptions() {
+      const select = document.getElementById("deletePersonalExpenseCategorySelect");
+      if (!select) return;
+      select.innerHTML = '<option value="">Select category to delete</option>';
+      personalExpenseCategoryCache.forEach(function (category) {
+         const option = document.createElement("option");
+         option.value = category;
+         option.textContent = category;
+         select.appendChild(option);
+      });
+   }
+
+   function setPersonalExpenseCategoryManagerFeedback(message, type) {
+      const feedback = document.getElementById("managePersonalExpenseCategoriesFeedback");
+      if (!feedback) return;
+      feedback.className = "small mt-3 text-" + (type || "muted");
+      feedback.textContent = message || "";
+   }
+
+   function submitAddPersonalExpenseCategory() {
+      const input = document.getElementById("newPersonalExpenseCategoryName");
+      const button = document.getElementById("btnAddPersonalExpenseCategory");
+      const category = String(input ? input.value : "").trim().replace(/\s+/g, " ");
+      if (!category) {
+         setPersonalExpenseCategoryManagerFeedback("Enter a category name first.", "danger");
+         if (input) input.focus();
+         return;
+      }
+      const existing = personalExpenseCategoryCache.find(function (item) {
+         return String(item).toLowerCase() === category.toLowerCase();
+      });
+      if (existing) {
+         setPersonalExpenseCategoryManagerFeedback("That category already exists.", "warning");
+         return;
+      }
+      if (button) button.disabled = true;
       google.script.run
          .withSuccessHandler(function (response) {
+            if (button) button.disabled = false;
             if (!response || response.success !== true) {
-               showPersonalExpenseMessage(
-                  response && response.message
-                     ? response.message
-                     : "Unable to add category.",
-                  "danger",
-               );
+               setPersonalExpenseCategoryManagerFeedback(response && response.message ? response.message : "Unable to add category.", "danger");
                return;
             }
             personalExpenseCategoryCache = response.categories || [];
             populatePersonalExpenseCategories(personalExpenseCategoryCache);
+            populatePersonalExpenseCategoryDeleteOptions();
             selectPersonalExpenseCategory(response.category);
-            showPersonalExpenseMessage("Category added.", "success");
+            if (input) input.value = "";
+            setPersonalExpenseCategoryManagerFeedback('Category "' + response.category + '" added successfully.', "success");
          })
          .withFailureHandler(function (error) {
-            showPersonalExpenseMessage(
-               error && error.message ? error.message : String(error),
-               "danger",
-            );
+            if (button) button.disabled = false;
+            setPersonalExpenseCategoryManagerFeedback(error && error.message ? error.message : String(error), "danger");
          })
          .addPersonalExpenseCategory(category);
+   }
+
+   function submitDeletePersonalExpenseCategory() {
+      const select = document.getElementById("deletePersonalExpenseCategorySelect");
+      const category = select ? select.value : "";
+      const button = document.getElementById("btnDeletePersonalExpenseCategory");
+      if (!category) {
+         setPersonalExpenseCategoryManagerFeedback("Select a category to delete.", "danger");
+         return;
+      }
+      showCustomConfirm(
+         "Delete Expense Category",
+         'Delete category "' + category + '"? Categories used by existing expenses and built-in categories cannot be deleted.',
+         "Delete Category",
+         "btn-danger",
+         function () {
+            if (button) button.disabled = true;
+            google.script.run
+               .withSuccessHandler(function (response) {
+                  if (button) button.disabled = false;
+                  if (!response || response.success !== true) {
+                     setPersonalExpenseCategoryManagerFeedback(response && response.message ? response.message : "Unable to delete category.", "danger");
+                     return;
+                  }
+                  personalExpenseCategoryCache = response.categories || [];
+                  populatePersonalExpenseCategories(personalExpenseCategoryCache);
+                  populatePersonalExpenseCategoryDeleteOptions();
+                  setPersonalExpenseCategoryManagerFeedback('Category "' + category + '" deleted successfully.', "success");
+               })
+               .withFailureHandler(function (error) {
+                  if (button) button.disabled = false;
+                  setPersonalExpenseCategoryManagerFeedback(error && error.message ? error.message : String(error), "danger");
+               })
+               .deletePersonalExpenseCategory(category);
+         }
+      );
    }
 
    function selectPersonalExpenseCategory(category) {

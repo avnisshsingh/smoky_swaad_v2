@@ -865,4 +865,317 @@ function saveRecipePricing() {
         .saveRecipeData(payload);
 }
 
+
+
+/**
+ * Add Food Item tab - form feedback helpers.
+ */
+function resetNewFoodItemMessage() {
+    const message = document.getElementById("newFoodItemMessage");
+    if (!message) return;
+    message.className = "alert d-none mb-0";
+    message.textContent = "";
+}
+
+function showNewFoodItemMessage(text, isSuccess) {
+    const message = document.getElementById("newFoodItemMessage");
+    if (!message) {
+        alert(text);
+        return;
+    }
+    message.className = "alert mb-0 " + (isSuccess ? "alert-success" : "alert-danger");
+    message.textContent = text;
+}
+
+/**
+ * Refresh in-memory and local POS menu data after a successful menu insert.
+ * This means POS search sees the new item without waiting for the old browser cache.
+ */
+function refreshPOSMenuAfterFoodItemSave() {
+    google.script.run
+        .withSuccessHandler(function(menu) {
+            const freshMenu = (menu || []).map(function(item) {
+                return Object.assign({}, item, {
+                    searchName: String(item.itemName || "").trim().toLowerCase()
+                });
+            });
+
+            // JavaScript.html owns this variable in the parent app scope.
+            if (typeof menuCache !== "undefined") {
+                menuCache = freshMenu;
+            }
+
+            try {
+                const raw = localStorage.getItem("smoky_swaad_pos_cache");
+                const cached = raw ? JSON.parse(raw) : {};
+                cached.menu = freshMenu;
+                cached.timestamp = Date.now();
+                localStorage.setItem("smoky_swaad_pos_cache", JSON.stringify(cached));
+            } catch (storageError) {
+                console.warn("Could not update local POS menu cache:", storageError);
+            }
+        })
+        .withFailureHandler(function(error) {
+            console.error("Food item was saved, but POS menu refresh failed:", error);
+        })
+        .loadMenu();
+}
+
+
+
+/** Menu management UI: load all active and inactive items. */
+function showMenuManagementMessage(message, success) {
+  const el = document.getElementById("menuManagementMessage");
+  if (!el) return;
+  el.className = "alert " + (success ? "alert-success" : "alert-danger");
+  el.textContent = message;
+}
+
+function loadMenuManagement() {
+  const tbody = document.getElementById("menuManagementTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading menu items...</td></tr>';
+  google.script.run
+    .withSuccessHandler(function(items) {
+      window.menuManagementItems = Array.isArray(items) ? items : [];
+      renderMenuManagementTable(window.menuManagementItems);
+    })
+    .withFailureHandler(function(error) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Could not load menu items.</td></tr>';
+      showMenuManagementMessage(error && error.message ? error.message : String(error), false);
+    })
+    .getMenuItemsForManagement();
+}
+
+function renderMenuManagementTable(items) {
+  const tbody = document.getElementById("menuManagementTableBody");
+  if (!tbody) return;
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No menu items found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(function(item) {
+    const id = escapeMenuManagerValue(item.itemId);
+    const name = escapeMenuManagerValue(item.itemName);
+    const category = escapeMenuManagerValue(item.category);
+    return `<tr data-menu-id="${id}">
+      <td><div class="fw-semibold">${name}</div><small class="text-muted">${id}</small></td>
+      <td><input class="form-control form-control-sm menu-manager-category" maxlength="80" value="${category}" aria-label="Category for ${name}"></td>
+      <td><input class="form-control form-control-sm menu-manager-price" type="number" min="0.01" step="0.01" value="${Number(item.price) || 0}" aria-label="Selling price for ${name}"></td>
+      <td><input class="form-control form-control-sm menu-manager-cost" type="number" min="0" step="0.01" value="${Number(item.cost) || 0}" aria-label="Cost price for ${name}"></td>
+      <td><select class="form-select form-select-sm menu-manager-active" aria-label="Status for ${name}"><option value="yes" ${item.isActive ? 'selected' : ''}>Active</option><option value="no" ${!item.isActive ? 'selected' : ''}>Inactive</option></select></td>
+      <td><div class="d-flex gap-1 flex-wrap"><button class="btn btn-sm btn-primary" onclick="saveMenuManagerRow(this)">Save</button><button class="btn btn-sm btn-outline-danger" onclick="removeMenuManagerItem(this, '${id}', '${name}')" ${item.isActive ? '' : 'disabled'}>Remove</button></div></td>
+    </tr>`;
+  }).join("");
+}
+
+function escapeMenuManagerValue(value) {
+  return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function saveMenuManagerRow(button) {
+  const row = button.closest("tr");
+  const payload = {
+    itemId: row.getAttribute("data-menu-id"),
+    category: row.querySelector(".menu-manager-category").value.trim(),
+    price: Number(row.querySelector(".menu-manager-price").value),
+    cost: Number(row.querySelector(".menu-manager-cost").value),
+    isActive: row.querySelector(".menu-manager-active").value === "yes"
+  };
+  if (!payload.category || !Number.isFinite(payload.price) || payload.price <= 0 || !Number.isFinite(payload.cost) || payload.cost < 0) {
+    showMenuManagementMessage("Please enter a category, a selling price greater than zero, and a valid non-negative cost price.", false);
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Saving...";
+  google.script.run
+    .withSuccessHandler(function(response) {
+      button.disabled = false;
+      button.textContent = "Save";
+      if (!response || !response.success) {
+        showMenuManagementMessage(response && response.message ? response.message : "Unable to update menu item.", false);
+        return;
+      }
+      showMenuManagementMessage(response.message, true);
+      refreshPOSMenuAfterFoodItemSave();
+      if (typeof loadMenuItems === "function") loadMenuItems();
+      loadMenuManagement();
+    })
+    .withFailureHandler(function(error) {
+      button.disabled = false;
+      button.textContent = "Save";
+      showMenuManagementMessage(error && error.message ? error.message : String(error), false);
+    })
+    .updateMenuItemDetails(payload);
+}
+
+function removeMenuManagerItem(button, itemId, itemName) {
+  if (!window.confirm('Remove "' + itemName + '" from the POS menu? It will be marked inactive; past orders will be preserved.')) return;
+  button.disabled = true;
+  button.textContent = "Removing...";
+  google.script.run
+    .withSuccessHandler(function(response) {
+      if (!response || !response.success) {
+        button.disabled = false;
+        button.textContent = "Remove";
+        showMenuManagementMessage(response && response.message ? response.message : "Unable to remove menu item.", false);
+        return;
+      }
+      showMenuManagementMessage(response.message, true);
+      refreshPOSMenuAfterFoodItemSave();
+      if (typeof loadMenuItems === "function") loadMenuItems();
+      loadMenuManagement();
+    })
+    .withFailureHandler(function(error) {
+      button.disabled = false;
+      button.textContent = "Remove";
+      showMenuManagementMessage(error && error.message ? error.message : String(error), false);
+    })
+    .deactivateMenuItem(itemId);
+}
+
+/**
+ * Save a new food item to the same Menu sheet used by POS search.
+ */
+function saveNewFoodItemFromPricing(event) {
+    if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
+    }
+
+    const form = document.getElementById("addFoodItemForm");
+    const saveButton = document.getElementById("saveNewFoodItemButton");
+    if (!form) return;
+
+    const payload = {
+        itemName: String(document.getElementById("newFoodItemName").value || "").trim(),
+        category: String(document.getElementById("newFoodItemCategory").value || "").trim(),
+        price: Number(document.getElementById("newFoodItemPrice").value),
+        cost: Number(document.getElementById("newFoodItemCost").value || 0),
+        prepTime: Number(document.getElementById("newFoodItemPrepTime").value || 0),
+        isActive: document.getElementById("newFoodItemActive").checked
+    };
+
+    if (!payload.itemName || !payload.category || !Number.isFinite(payload.price) || payload.price <= 0) {
+        showNewFoodItemMessage("Enter a food item name, category, and selling price greater than zero.", false);
+        return;
+    }
+
+    resetNewFoodItemMessage();
+    if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
+    }
+
+    google.script.run
+        .withSuccessHandler(function(response) {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = "💾 Save Food Item";
+            }
+            if (!response || !response.success) {
+                showNewFoodItemMessage(response && response.message ? response.message : "Unable to save the food item.", false);
+                return;
+            }
+
+            showNewFoodItemMessage(response.message || "Food item saved successfully.", true);
+
+            if (payload.isActive) {
+                refreshPOSMenuAfterFoodItemSave();
+            }
+
+            // Refresh the existing Pricing Calculator dropdown too.
+            if (typeof loadMenuItems === "function") {
+                loadMenuItems();
+            }
+
+            form.reset();
+            document.getElementById("newFoodItemCost").value = "0";
+            document.getElementById("newFoodItemPrepTime").value = "30";
+            document.getElementById("newFoodItemActive").checked = true;
+        })
+        .withFailureHandler(function(error) {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = "💾 Save Food Item";
+            }
+            showNewFoodItemMessage(error && error.message ? error.message : "Unable to save the food item.", false);
+        })
+        .addFoodItemToMenu(payload);
+}
+
+
+// Load all menu items (including inactive ones) into the menu management table.
+document.addEventListener("shown.bs.tab", function(event) {
+    if (event.target && event.target.id === "manage-menu-tab") loadManageMenuItems();
+});
+
+function showManageMenuMessage(message, success) {
+    const el = document.getElementById("manageMenuMessage");
+    if (!el) return;
+    el.className = "alert " + (success ? "alert-success" : "alert-danger");
+    el.textContent = message;
+    el.classList.remove("d-none");
+}
+
+function loadManageMenuItems() {
+    const body = document.getElementById("manageMenuItemsBody");
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="6" class="text-center">Loading menu items...</td></tr>';
+    google.script.run.withSuccessHandler(function(items) {
+        if (!items || !items.length) { body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No menu items found.</td></tr>'; return; }
+        body.innerHTML = items.map(function(item) {
+            const esc = function(v) { return String(v == null ? "" : v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;"); };
+            return '<tr data-item-id="' + esc(item.itemId) + '">' +
+                '<td><div class="fw-semibold">' + esc(item.itemName) + '</div><small class="text-muted">' + esc(item.itemId) + '</small></td>' +
+                '<td><input class="form-control form-control-sm menu-category" value="' + esc(item.category) + '" required></td>' +
+                '<td><input class="form-control form-control-sm menu-cost" type="number" min="0" step="0.01" value="' + esc(item.cost) + '" required></td>' +
+                '<td><input class="form-control form-control-sm menu-price" type="number" min="0.01" step="0.01" value="' + esc(item.price) + '" required></td>' +
+                '<td><input class="form-check-input menu-active" type="checkbox" ' + (item.isActive ? 'checked' : '') + ' aria-label="Active"></td>' +
+                '<td><button type="button" class="btn btn-outline-danger btn-sm" onclick="deactivateMenuItemRow(this)">Remove</button></td></tr>';
+        }).join("");
+    }).withFailureHandler(function(err) {
+        body.innerHTML = '<tr><td colspan="6" class="text-danger">Could not load menu items.</td></tr>';
+        showManageMenuMessage(err && err.message ? err.message : String(err), false);
+    }).getMenuItemsForManagement();
+}
+
+function deactivateMenuItemRow(button) {
+    const row = button.closest("tr");
+    if (!row) return;
+    const name = row.querySelector("td .fw-semibold").textContent;
+    if (!confirm('Remove "' + name + '" from the active POS menu? This preserves the spreadsheet row and old orders. Click Save All Changes to apply.')) return;
+    row.querySelector(".menu-active").checked = false;
+    row.classList.add("table-warning");
+}
+
+function saveAllMenuItems() {
+    const button = document.getElementById("saveAllMenuItemsButton");
+    const rows = Array.from(document.querySelectorAll("#manageMenuItemsBody tr[data-item-id]"));
+    if (!rows.length) { showManageMenuMessage("There are no menu changes to save.", false); return; }
+    const items = rows.map(function(row) { return {
+        itemId: row.getAttribute("data-item-id"),
+        category: row.querySelector(".menu-category").value.trim(),
+        cost: Number(row.querySelector(".menu-cost").value),
+        price: Number(row.querySelector(".menu-price").value),
+        isActive: row.querySelector(".menu-active").checked
+    }; });
+    for (const item of items) {
+        if (!item.category || !Number.isFinite(item.cost) || item.cost < 0 || !Number.isFinite(item.price) || item.price <= 0) {
+            showManageMenuMessage("Check each row: category is required, cost must be 0 or more, and selling price must be greater than 0.", false); return;
+        }
+    }
+    button.disabled = true; button.textContent = "Saving All...";
+    google.script.run.withSuccessHandler(function(response) {
+        button.disabled = false; button.textContent = "💾 Save All Changes";
+        if (!response || !response.success) { showManageMenuMessage(response && response.message ? response.message : "Unable to save menu changes.", false); return; }
+        showManageMenuMessage(response.message || "All menu changes saved.", true);
+        if (typeof refreshPOSMenuAfterFoodItemSave === "function") refreshPOSMenuAfterFoodItemSave();
+        if (typeof loadMenuItems === "function") loadMenuItems();
+        loadManageMenuItems();
+    }).withFailureHandler(function(err) {
+        button.disabled = false; button.textContent = "💾 Save All Changes";
+        showManageMenuMessage(err && err.message ? err.message : String(err), false);
+    }).saveMenuItemsBulk(items);
+}
+
 </script>

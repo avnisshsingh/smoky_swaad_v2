@@ -3123,3 +3123,56 @@ function addPersonalExpenseCategory(category) {
 }
 
 
+
+
+/**
+ * Delete a custom Personal Expense category from Settings column Q.
+ * Built-in categories are protected; categories already used in expenses
+ * cannot be deleted so historical records remain consistent.
+ */
+function deletePersonalExpenseCategory(category) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    category = String(category || "").trim().replace(/\s+/g, " ");
+    if (!category) return { success: false, message: "Category is required." };
+
+    const builtInCategories = [
+      "Grocery", "Fuel", "Baby", "Shopping", "Recharge", "House", "Food",
+      "Medical", "Vehicle", "Bills", "Staff", "Transfer", "Education",
+      "Entertainment", "ATM Cash", "Maintenance", "Naasta", "Vegetables",
+      "Tea", "Xerox", "Fruits", "Milk"
+    ];
+    if (builtInCategories.some(function (item) { return item.toLowerCase() === category.toLowerCase(); })) {
+      return { success: false, message: "Built-in categories cannot be deleted. You can delete custom categories only." };
+    }
+
+    const expenseSheet = getSheet(SHEETS.PERSONAL_EXPENSES);
+    const lastExpenseRow = expenseSheet.getLastRow();
+    if (lastExpenseRow >= 2) {
+      const usedCategories = expenseSheet.getRange(2, 3, lastExpenseRow - 1, 1).getDisplayValues();
+      if (usedCategories.some(function (row) { return String(row[0] || "").trim().toLowerCase() === category.toLowerCase(); })) {
+        return { success: false, message: "This category is used by existing expenses and cannot be deleted." };
+      }
+    }
+
+    const settingsSheet = getSheet(SHEETS.SETTINGS);
+    const lastSettingsRow = settingsSheet.getLastRow();
+    if (lastSettingsRow < 2) return { success: false, message: "Category was not found in Settings." };
+    const values = settingsSheet.getRange(2, 17, lastSettingsRow - 1, 1).getDisplayValues();
+    let targetRow = -1;
+    for (let i = 0; i < values.length; i++) {
+      if (String(values[i][0] || "").trim().toLowerCase() === category.toLowerCase()) { targetRow = i + 2; break; }
+    }
+    if (targetRow === -1) return { success: false, message: "Category was not found in Settings." };
+
+    settingsSheet.getRange(targetRow, 17).clearContent();
+    clearPersonalExpenseCache_();
+    const bootstrap = getPersonalExpenseBootstrapData();
+    return { success: true, category: category, categories: bootstrap.categories || [] };
+  } catch (error) {
+    return { success: false, message: error && error.message ? error.message : String(error) };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
