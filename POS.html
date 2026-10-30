@@ -603,11 +603,17 @@ padding:12px!important;
                <table class="table table-hover align-middle mb-0">
                  <thead class="table-light">
                    <tr>
-                     <th id="orderHistorySort-orderDate"
-                         role="button" tabindex="0"
-                         onclick="sortOrderHistoryBy('orderDate')"
-                         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortOrderHistoryBy('orderDate')}"
-                         title="Sort by order date">Date / ID</th>
+                     <th class="text-nowrap" title="Sort orders by order ID or order date">
+                       <button type="button" id="orderHistorySort-orderId"
+                               class="btn btn-link btn-sm p-0 text-decoration-none text-dark fw-semibold"
+                               onclick="sortOrderHistoryBy('orderId')"
+                               title="Sort by order ID">Order ID</button>
+                       <span class="text-muted mx-1">/</span>
+                       <button type="button" id="orderHistorySort-orderDate"
+                               class="btn btn-link btn-sm p-0 text-decoration-none text-dark fw-semibold"
+                               onclick="sortOrderHistoryBy('orderDate')"
+                               title="Sort by order date">Date</button>
+                     </th>
                      <th>Customer</th>
                      <th>Mobile</th>
                      <th>Ordered Items</th>

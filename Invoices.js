@@ -206,6 +206,18 @@ function getInvoice(orderId) {
           )
         : "";
 
+    // Keep a machine-readable date for the POS <input type="date">.
+    // The display date above is for humans; it cannot be assigned directly
+    // to a date input because it uses dd/MM/yyyy format.
+    const orderDateRaw =
+      orderRow[1]
+        ? Utilities.formatDate(
+            new Date(orderRow[1]),
+            timezone,
+            "yyyy-MM-dd"
+          )
+        : "";
+
 
     const createdAt =
       orderRow[13]
@@ -232,6 +244,9 @@ function getInvoice(orderId) {
 
         orderDate:
           orderDate,
+
+        orderDateRaw:
+          orderDateRaw,
 
         customerName:
           String(orderRow[2] || ""),

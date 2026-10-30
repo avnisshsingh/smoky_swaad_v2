@@ -4811,8 +4811,18 @@ function loadOrderForEditing() {
           document.getElementById("paymentStatus").value = order.paymentStatus || "Pending";
           document.getElementById("specialInstructions").value = order.specialInstructions || "";
           document.getElementById("discount").value = order.discount || "0";
-          if (document.getElementById("orderDate") && order.orderDateRaw) {
-             document.getElementById("orderDate").value = order.orderDateRaw;
+          // Preserve the saved order date when editing. Prefer the ISO date
+          // returned by getInvoice; safely parse the display date as fallback.
+          const orderDateInput = document.getElementById("orderDate");
+          if (orderDateInput) {
+             let savedOrderDate = order.orderDateRaw || "";
+             if (!savedOrderDate && order.orderDate) {
+                const dateParts = String(order.orderDate).split("/");
+                if (dateParts.length === 3) {
+                   savedOrderDate = `${dateParts[2]}-${String(dateParts[1]).padStart(2, "0")}-${String(dateParts[0]).padStart(2, "0")}`;
+                }
+             }
+             if (savedOrderDate) orderDateInput.value = savedOrderDate;
           }
 
           // Set editing state
@@ -4925,7 +4935,8 @@ let orderHistorySortKey = "orderId";
 let orderHistorySortDirection = "desc";
 
 const orderHistorySortLabels = {
-   orderDate: "Date / ID",
+   orderId: "Order ID",
+   orderDate: "Date",
    paymentStatus: "Payment",
    grandTotal: "Grand Total"
 };
@@ -4938,7 +4949,8 @@ function sortOrderHistoryBy(key) {
          orderHistorySortDirection === "asc" ? "desc" : "asc";
    } else {
       orderHistorySortKey = key;
-      orderHistorySortDirection = "asc";
+      // Default to newest/highest first when switching to ID or date sorting.
+      orderHistorySortDirection = (key === "orderId" || key === "orderDate") ? "desc" : "asc";
    }
 
    currentOrderHistoryPage = 1;
@@ -4964,7 +4976,33 @@ function parseOrderHistoryDate(value) {
 }
 
 function updateOrderHistorySortIndicators() {
-   Object.keys(orderHistorySortLabels).forEach(function (key) {
+   // The Date / ID column contains two independent sorting controls.
+   const dateIdHeader = document.getElementById("orderHistorySort-orderDate");
+   if (dateIdHeader) {
+      const idActive = orderHistorySortKey === "orderId";
+      const dateActive = orderHistorySortKey === "orderDate";
+      const idIndicator = idActive
+         ? (orderHistorySortDirection === "asc" ? " ▲" : " ▼")
+         : " ↕";
+      const dateIndicator = dateActive
+         ? (orderHistorySortDirection === "asc" ? " ▲" : " ▼")
+         : " ↕";
+
+      dateIdHeader.innerHTML =
+         '<button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-dark fw-normal" ' +
+         'onclick="sortOrderHistoryBy(\'orderDate\')" aria-label="Sort by date">Date' + dateIndicator + '</button>' +
+         '<span class="text-muted mx-1">/</span>' +
+         '<button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-dark fw-normal" ' +
+         'onclick="sortOrderHistoryBy(\'orderId\')" aria-label="Sort by order ID">ID' + idIndicator + '</button>';
+      dateIdHeader.setAttribute(
+         "aria-sort",
+         idActive || dateActive
+            ? (orderHistorySortDirection === "asc" ? "ascending" : "descending")
+            : "none"
+      );
+   }
+
+   ["paymentStatus", "grandTotal"].forEach(function (key) {
       const header = document.getElementById("orderHistorySort-" + key);
       if (!header) return;
 
@@ -4972,7 +5010,6 @@ function updateOrderHistorySortIndicators() {
       const indicator = active
          ? (orderHistorySortDirection === "asc" ? " ▲" : " ▼")
          : " ↕";
-
       header.textContent = orderHistorySortLabels[key] + indicator;
       header.setAttribute(
          "aria-sort",
@@ -4983,15 +5020,6 @@ function updateOrderHistorySortIndicators() {
       header.style.cursor = "pointer";
       header.style.userSelect = "none";
    });
-
-   // The first column is labelled "Date / ID", and the default sort is by ID.
-   if (orderHistorySortKey === "orderId") {
-      const header = document.getElementById("orderHistorySort-orderDate");
-      if (header) {
-         header.textContent = "Date / ID ▼";
-         header.setAttribute("aria-sort", "descending");
-      }
-   }
 }
 
 function getOrderHistorySortValue(order, key) {
