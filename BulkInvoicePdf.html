@@ -3,22 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    @page { margin: 15px 20px; }
+    @page { size: A4 portrait; margin: 10mm 12mm; }
     body {
       font-family: Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
       color: #212529;
-      font-size: 11px;
+      font-size: 9.5px;
+      line-height: 1.25;
     }
-    .card, tr, .brand-header, .footer { page-break-inside: avoid; }
+
+    /* Let long sections flow naturally across pages.
+       Keeping the entire order card together caused the blank first page
+       and isolated payment-summary page in the previous PDF. */
+    .card { page-break-inside: auto; break-inside: auto; overflow: visible; }
+    .card-header { page-break-after: avoid; break-after: avoid; }
+    .brand-header, tr, .footer, .closing-section {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    .data-table tr { page-break-inside: avoid; break-inside: avoid; }
     
     .brand-header {
       background-color: #ff6b00;
       color: white;
-      padding: 10px 15px;
+      padding: 7px 11px;
       border-radius: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 7px;
     }
     .brand-table { width: 100%; border-collapse: collapse; }
     .brand-table td { border: none; padding: 0; vertical-align: middle; }
@@ -31,11 +44,11 @@
     .card {
       border: 1px solid #dee2e6;
       border-radius: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 7px;
       overflow: hidden;
     }
-    .card-header { padding: 6px 12px; font-weight: bold; font-size: 12px; }
-    .card-body { padding: 8px 12px; }
+    .card-header { padding: 5px 10px; font-weight: bold; font-size: 10.5px; }
+    .card-body { padding: 6px 10px; }
     
     .bg-dark { background-color: #212529; color: white; }
     .bg-primary { background-color: #0d6efd; color: white; }
@@ -43,13 +56,13 @@
     .bg-warning { background-color: #ffc107; color: #000; }
 
     .grid-table { width: 100%; border-collapse: collapse; }
-    .grid-table td { border: none; padding: 4px; vertical-align: top; }
+    .grid-table td { border: none; padding: 3px; vertical-align: top; }
     .label { color: #6c757d; font-size: 10px; margin-bottom: 2px; display: block; }
     .value { font-size: 12px; font-weight: bold; margin: 0; }
 
     table.data-table { width: 100%; border-collapse: collapse; margin: 0; }
     table.data-table th, table.data-table td {
-      padding: 6px 10px; border-bottom: 1px solid #dee2e6;
+      padding: 4px 7px; border-bottom: 1px solid #dee2e6;
       text-align: left; vertical-align: middle; font-size: 11px;
     }
     table.data-table th { background-color: #f8f9fa; color: #495057; font-weight: bold; border-bottom: 2px solid #dee2e6; }
@@ -62,11 +75,11 @@
     .badge-pending { background-color: #6c757d; }
 
     .summary-table { width: 100%; border-collapse: collapse; }
-    .summary-table td { padding: 4px 12px; font-size: 12px; border: none; }
+    .summary-table td { padding: 3px 10px; font-size: 10px; border: none; }
     .grand-total-row { background-color: #d1e7dd; }
-    .grand-total-row td { padding: 8px 12px; font-size: 14px; font-weight: bold; color: #0f5132; }
+    .grand-total-row td { padding: 6px 10px; font-size: 14px; font-weight: bold; color: #0f5132; }
 
-    .footer { text-align: center; margin-top: 15px; }
+    .footer { text-align: center; margin-top: 8px; }
     .footer h5 { color: #198754; margin: 0 0 3px 0; font-size: 13px; font-weight: bold; }
     .footer p { margin: 2px 0; font-size: 11px; color: #6c757d; }
     .footer .phone { color: #212529; font-weight: bold; font-size: 13px; }
@@ -188,6 +201,8 @@
     </div>
   </div>
 
+  <!-- Keep payment summary and footer together where possible. -->
+  <div class="closing-section">
   <!-- PAYMENT SUMMARY (Warning Card) -->
   <div class="card">
     <div class="card-header bg-warning">
@@ -235,6 +250,7 @@
     <p>Fresh • Hot • Homemade</p>
     <p class="phone">☎ 7873337525</p>
   </div>
+  </div><!-- /.closing-section -->
 
 </body>
 </html>
