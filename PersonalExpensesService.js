@@ -369,6 +369,15 @@ function getPersonalExpenseBootstrapData() {
           latestByDescription[key] = {
             description: description,
             category: category,
+            subcategory: String(row[3] || "").trim(),
+            amount: Number(row[5]) || "",
+            paymentMode: String(row[6] || "").trim(),
+            paidTo: String(row[7] || "").trim(),
+            expenseFor: String(row[8] || "").trim(),
+            nature: String(row[9] || "").trim(),
+            recurring: String(row[10] || "").trim(),
+            referenceNo: String(row[11] || "").trim(),
+            remarks: String(row[12] || "").trim(),
             unit: unit,
             quantity: quantity,
             lastUsed: lastUsed,
@@ -461,6 +470,24 @@ function getPersonalExpenseBootstrapData() {
               item.description,
             category:
               item.category,
+            subcategory:
+              item.subcategory,
+            amount:
+              item.amount,
+            paymentMode:
+              item.paymentMode,
+            paidTo:
+              item.paidTo,
+            expenseFor:
+              item.expenseFor,
+            nature:
+              item.nature,
+            recurring:
+              item.recurring,
+            referenceNo:
+              item.referenceNo,
+            remarks:
+              item.remarks,
             unit:
               item.unit,
             quantity:

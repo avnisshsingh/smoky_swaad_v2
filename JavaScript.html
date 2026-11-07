@@ -544,13 +544,29 @@ function injectMobileSmoothStyles() {
          .map(function (item) {
             const description = String(item.description || "").trim();
             return {
+               // Keep all values returned by the server. The previous
+               // normalizer discarded amount/payment/other fields needed
+               // when a remembered description was selected.
+               ...item,
                description: description,
                category: String(item.category || "").trim(),
+               subcategory: String(item.subcategory || "").trim(),
                quantity:
                   item.quantity === null || item.quantity === undefined
                      ? ""
                      : String(item.quantity).trim(),
                unit: String(item.unit || "").trim(),
+               amount:
+                  item.amount === null || item.amount === undefined
+                     ? ""
+                     : String(item.amount),
+               paymentMode: String(item.paymentMode || "").trim(),
+               paidTo: String(item.paidTo || "").trim(),
+               expenseFor: String(item.expenseFor || "").trim(),
+               nature: String(item.nature || "").trim(),
+               recurring: String(item.recurring || "").trim(),
+               referenceNo: String(item.referenceNo || "").trim(),
+               remarks: String(item.remarks || "").trim(),
                searchText: description.toLowerCase(),
             };
          })
@@ -709,17 +725,41 @@ function injectMobileSmoothStyles() {
 
    function selectPersonalExpenseDescription(item) {
       const description = peEl("personalExpenseDescription");
-      const category = document.getElementById("personalExpenseCategory");
-      const quantity = peEl("personalExpenseQuantity");
-      const unit = peEl("personalExpenseUnit");
-
       if (description) description.value = item.description || "";
-      if (category && item.category) category.value = item.category;
-      if (quantity) quantity.value = item.quantity || "";
-      if (unit) unit.value = item.unit || "";
 
+      applyPersonalExpenseRememberedDetails(item);
       hidePersonalExpenseDescriptionSuggestions();
-      if (quantity) quantity.focus();
+
+      const amount = peEl("personalExpenseAmount");
+      if (amount) amount.focus();
+   }
+
+   // Restore the latest saved details for a previously entered expense item.
+   // Used for both a selected suggestion and an exact description match.
+   function applyPersonalExpenseRememberedDetails(item) {
+      if (!item) return;
+
+      const fields = [
+         ["personalExpenseCategory", item.category],
+         ["personalExpenseSubcategory", item.subcategory],
+         ["personalExpenseQuantity", item.quantity],
+         ["personalExpenseUnit", item.unit],
+         ["personalExpenseAmount", item.amount],
+         ["personalExpensePaymentMode", item.paymentMode],
+         ["personalExpensePaidTo", item.paidTo],
+         ["personalExpenseFor", item.expenseFor],
+         ["personalExpenseNature", item.nature],
+         ["personalExpenseRecurring", item.recurring],
+         ["personalExpenseReference", item.referenceNo],
+         ["personalExpenseRemarks", item.remarks]
+      ];
+
+      fields.forEach(function (entry) {
+         const element = peEl(entry[0]);
+         const value = entry[1];
+         if (!element || value === null || value === undefined || value === "") return;
+         element.value = value;
+      });
    }
 
    function hidePersonalExpenseDescriptionSuggestions() {
@@ -751,11 +791,8 @@ function injectMobileSmoothStyles() {
       const remembered = personalExpenseDescriptionMap[key];
       if (!remembered) return;
 
-      if (remembered.category) category.value = remembered.category;
-      const quantity = peEl("personalExpenseQuantity");
-      if (quantity) quantity.value = remembered.quantity || "";
-      const unit = peEl("personalExpenseUnit");
-      if (unit) unit.value = remembered.unit || "";
+      // Exact description match restores the latest saved item details.
+      applyPersonalExpenseRememberedDetails(remembered);
    }
 
    const PERSONAL_EXPENSE_CATEGORY_ICONS = Object.freeze({
@@ -1257,7 +1294,16 @@ function savePersonalExpense() {
    function editPersonalExpense(expense) {
       if (!expense) return;
 
-      setPersonalExpenseValue("personalExpenseDate", expense.expenseDateRaw);
+      // Bootstrap history exposes the machine-readable date as expenseDateKey.
+      // Keep expenseDateRaw as a compatibility fallback for older payloads.
+      const originalExpenseDate =
+         expense.expenseDateKey ||
+         expense.expenseDateRaw ||
+         (typeof expense.expenseDate === "string" &&
+          /^\d{2}-\d{2}-\d{4}$/.test(expense.expenseDate)
+            ? expense.expenseDate.split("-").reverse().join("-")
+            : "");
+      setPersonalExpenseValue("personalExpenseDate", originalExpenseDate);
       setPersonalExpenseValue("personalExpenseCategory", expense.category);
       setPersonalExpenseValue(
          "personalExpenseSubcategory",
