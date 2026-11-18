@@ -1485,7 +1485,12 @@
                 class="table-responsive d-none d-md-block">
 
 
-                <table
+                <style>
+[data-pe-sort] { cursor: pointer; white-space: nowrap; }
+[data-pe-sort]:hover { color: #0d6efd !important; }
+</style>
+
+<table
                     class="table table-hover align-middle mb-0">
 
 
@@ -1494,11 +1499,21 @@
                         <tr>
 
                             <th>
-                                Date
+                                <button type="button"
+                                    class="btn btn-link p-0 text-decoration-none text-reset fw-semibold"
+                                    data-pe-sort="date"
+                                    onclick="togglePersonalExpenseSort('date')">
+                                    Date <span data-pe-sort-indicator>↕</span>
+                                </button>
                             </th>
 
                             <th>
-                                Category
+                                <button type="button"
+                                    class="btn btn-link p-0 text-decoration-none text-reset fw-semibold"
+                                    data-pe-sort="category"
+                                    onclick="togglePersonalExpenseSort('category')">
+                                    Category <span data-pe-sort-indicator>↕</span>
+                                </button>
                             </th>
 
                             <th>
@@ -1510,11 +1525,21 @@
                             </th>
 
                             <th>
-                                Payment
+                                <button type="button"
+                                    class="btn btn-link p-0 text-decoration-none text-reset fw-semibold"
+                                    data-pe-sort="payment"
+                                    onclick="togglePersonalExpenseSort('payment')">
+                                    Payment <span data-pe-sort-indicator>↕</span>
+                                </button>
                             </th>
 
                             <th class="text-end">
-                                Amount
+                                <button type="button"
+                                    class="btn btn-link p-0 text-decoration-none text-reset fw-semibold"
+                                    data-pe-sort="amount"
+                                    onclick="togglePersonalExpenseSort('amount')">
+                                    Amount <span data-pe-sort-indicator>↕</span>
+                                </button>
                             </th>
 
                             <th class="text-center">

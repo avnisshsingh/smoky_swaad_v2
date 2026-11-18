@@ -276,6 +276,9 @@ function injectMobileSmoothStyles() {
    let personalExpenseBootstrapLoaded = false;
    let personalExpenseDom = Object.create(null);
    let personalExpenseLastHistorySignature = "";
+   // Expense History sorting: newest date first by default.
+   let personalExpenseHistorySort = { field: "date", direction: "desc" };
+
    let personalExpenseLastDescriptionQuery = "";
    let personalExpenseLastDescriptionHtml = "";
    let personalExpenseVisibleDescriptionMatches = [];
@@ -462,6 +465,69 @@ function injectMobileSmoothStyles() {
       });
    }
 
+   function getPersonalExpenseSortValue(expense, field) {
+      if (!expense) return "";
+      if (field === "date") {
+         const key = String(expense.expenseDateKey || "").trim();
+         if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return key;
+         const display = String(expense.expenseDate || "").trim();
+         const match = display.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+         return match ? match[3] + "-" + match[2] + "-" + match[1] : display;
+      }
+      if (field === "category") return String(expense.category || "").trim().toLocaleLowerCase();
+      if (field === "payment") return String(expense.paymentMode || "").trim().toLocaleLowerCase();
+      if (field === "amount") return Number(expense.amount) || 0;
+      return "";
+   }
+
+   function sortPersonalExpenseRows(expenses) {
+      const field = personalExpenseHistorySort.field;
+      const direction = personalExpenseHistorySort.direction === "asc" ? 1 : -1;
+      return expenses.slice().sort(function (a, b) {
+         const av = getPersonalExpenseSortValue(a, field);
+         const bv = getPersonalExpenseSortValue(b, field);
+         let result = 0;
+         if (field === "amount") {
+            result = av === bv ? 0 : (av < bv ? -1 : 1);
+         } else {
+            result = String(av).localeCompare(String(bv), undefined, {
+               numeric: true, sensitivity: "base"
+            });
+         }
+         if (result === 0) {
+            result = String(a.expenseDateKey || "").localeCompare(String(b.expenseDateKey || ""));
+            if (result === 0) result = String(a.expenseId || "").localeCompare(String(b.expenseId || ""), undefined, { numeric: true });
+         }
+         return result * direction;
+      });
+   }
+
+   function updatePersonalExpenseSortIndicators() {
+      document.querySelectorAll("[data-pe-sort]").forEach(function (button) {
+         const field = button.getAttribute("data-pe-sort");
+         const indicator = button.querySelector("[data-pe-sort-indicator]");
+         if (!indicator) return;
+         indicator.textContent = personalExpenseHistorySort.field !== field
+            ? "↕"
+            : (personalExpenseHistorySort.direction === "asc" ? "↑" : "↓");
+      });
+   }
+
+   function togglePersonalExpenseSort(field) {
+      if (!["date", "category", "payment", "amount"].includes(field)) return;
+      if (personalExpenseHistorySort.field === field) {
+         personalExpenseHistorySort.direction =
+            personalExpenseHistorySort.direction === "asc" ? "desc" : "asc";
+      } else {
+         personalExpenseHistorySort.field = field;
+         personalExpenseHistorySort.direction = field === "date" ? "desc" : "asc";
+      }
+      personalExpenseLastHistorySignature = "";
+      updatePersonalExpenseSortIndicators();
+      if (personalExpenseBootstrapLoaded) renderPersonalExpenseHistoryFromCache();
+      else loadPersonalExpenseHistory();
+   }
+
    function renderPersonalExpenseHistoryFromCache() {
       if (!personalExpenseBootstrapLoaded) return;
 
@@ -484,7 +550,11 @@ function injectMobileSmoothStyles() {
          "\u0001" +
          search +
          "\u0001" +
-         personalExpenseHistoryCache.length;
+         personalExpenseHistoryCache.length +
+         "\u0001" +
+         personalExpenseHistorySort.field +
+         "\u0001" +
+         personalExpenseHistorySort.direction;
       if (signature === personalExpenseLastHistorySignature) return;
 
       personalExpenseLastHistorySignature = signature;
@@ -501,12 +571,8 @@ function injectMobileSmoothStyles() {
          if (expense._isExpense) total += expense._amount;
       }
 
-      // Sort by date/time of addition (Newest first using expenseId)
-      filtered.sort(function (a, b) {
-         return String(b.expenseId || "").localeCompare(String(a.expenseId || ""), undefined, { numeric: true });
-      });
-
-      renderPersonalExpenses(filtered);
+      renderPersonalExpenses(sortPersonalExpenseRows(filtered));
+      updatePersonalExpenseSortIndicators();
 
       const info = document.getElementById("personalExpenseHistoryInfo");
       if (info) {
@@ -1696,7 +1762,8 @@ function savePersonalExpense() {
                return;
             }
             updatePersonalExpenseSummary(response.summary);
-            renderPersonalExpenses(response.expenses || []);
+            renderPersonalExpenses(sortPersonalExpenseRows(response.expenses || []));
+            updatePersonalExpenseSortIndicators();
          })
          .withFailureHandler(function (error) {
             const message =
